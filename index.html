@@ -33885,8 +33885,50 @@ function beginFastAnglingRetrieve(){
   resetAnglingRetrieveWake();
   stopAnglingActionHold?.();anglingPendingCatch=null;anglingFishShadow.visible=false;anglingFishVisual.visible=false;
   anglingQte.classList.remove('show','now','second-lap');
-  const terminal=anglingUsesDeeper()?anglingDeeper:(anglingUsesArtificialLure()?anglingLure:anglingBobber);
+  const artificial=anglingUsesArtificialLure();
+  const terminal=anglingUsesDeeper()?anglingDeeper:(artificial?anglingLure:anglingBobber);
   anglingRetrieveStart.copy(terminal.position);
+
+  // Schnelles Einholen darf die vorhandene Schnurauflage nicht umgehen.
+  // Bei einem echten Kontakt wird ausschließlich der Kunstkoeder beschleunigt
+  // bis zum letzten Umlenkpunkt gezogen. Dort uebernimmt unveraendert die
+  // normale Hängerlogik; die direkte Rueckkehr zum Ufer bleibt gesperrt.
+  if(artificial){
+    computeAnglingLureLineEntry(anglingLineEntryTmp);
+    const lineContact=updateAnglingLineObstacleContact(anglingLineEntryTmp,anglingRetrieveStart);
+    if(lineContact.active){
+      const pullDistance=anglingRetrieveStart.distanceTo(lineContact.point);
+      if(pullDistance<.055){
+        beginAnglingObstacleSnag('artificial',lineContact);
+        return;
+      }
+
+      anglingRetrieveEnd.copy(lineContact.point);
+      aczoClipPointInsideMasterPond(anglingRetrieveEnd,anglingRetrieveStart,.04);
+      const contactLimits=anglingLureDepthLimits(anglingRetrieveEnd.x,anglingRetrieveEnd.y);
+      if(contactLimits){
+        const contactSurface=anglingSurfaceZ(anglingRetrieveEnd.x,anglingRetrieveEnd.y);
+        const desiredDepth=THREE.MathUtils.clamp(
+          contactSurface-anglingRetrieveEnd.z,
+          contactLimits.minDepth,
+          contactLimits.maxDepth
+        );
+        anglingRetrieveEnd.z=contactSurface-desiredDepth;
+        anglingLureRetrieveStartDepth=Math.max(.12,anglingSurfaceZ(anglingRetrieveStart.x,anglingRetrieveStart.y)-anglingRetrieveStart.z);
+        anglingLureRetrieveEndDepth=desiredDepth;
+      }
+
+      anglingState='lure-retrieving';anglingStateTime=0;
+      anglingRetrieveDuration=THREE.MathUtils.clamp(.30+pullDistance*.055,.38,.88);
+      anglingLureGuidedDistance+=pullDistance;
+      anglingActionBtn.disabled=true;anglingActionBtn.textContent='Schnell einholen …';
+      const atPier=lineContact.kind==='north-pier'||lineContact.kind==='small-pier'||lineContact.kind==='east-boat-pier';
+      setAnglingStatus(atPier?'Schnur am Steg':'Schnur am Hindernis','Der Kunstköder wird schnell bis zum Umlenkpunkt gezogen.');
+      recalcAnglingAtCurrentTerminal();
+      return;
+    }
+  }
+
   const shore=anglingSelection.shore,dx=terminal.position.x-shore.x,dy=terminal.position.y-shore.y;
   const dist=Math.max(.001,Math.hypot(dx,dy)),ux=dx/dist,uy=dy/dist;
   anglingRetrieveEnd.set(shore.x+ux*.45,shore.y+uy*.45,terminal.position.z);
@@ -33902,7 +33944,7 @@ function beginFastAnglingRetrieve(){
   anglingFloatZoom.setAttribute('aria-hidden','true');
   anglingReelZoom.style.display='none';
   anglingReelZoom.setAttribute('aria-hidden','true');
-  if(anglingUsesArtificialLure()){
+  if(artificial){
     anglingCinematicView='reset-return';anglingCinematicBlend=0;
     // Die Rute steht weiterhin am Ufer und wird beim Abbruch sofort wieder
     // sichtbar. So entsteht beim Eintreffen der Rückflugkamera kein Leerbild.
