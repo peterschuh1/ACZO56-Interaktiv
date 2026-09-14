@@ -4548,7 +4548,7 @@ html,body{
          <section><h3>📡 Deeper-Echolot</h3><p>Kaufe und montiere den Deeper in der Tacklebox, wähle einen Messpunkt und wirf ihn wie einen Köder aus. Das Sonar zeigt aktuelle Tiefe, Bodenverlauf, Messkegel und erkannte Fischsignale. Mit „Stelle speichern“ setzt du am Messpunkt eine Markierung. Ziehe den Deeper normal ein oder hole ihn am Desktop per Rechtsklick und mobil per Doppeltipp schnell zurück.</p></section>
          <section><h3>🌽 Naturköder</h3><p>Wurm, Made, Mais und Spezial-Naturköder werden beim erfolgreichen Anhieb verbraucht. Bei einem verpassten Anhieb besteht eine kleinere Chance auf Köderverlust. Einfaches Einholen verbraucht keinen Naturköder.</p></section>
          <section><h3>🐟 Köderfisch</h3><p>Geeignete gefangene Kleinfische erhöhen deinen Köderfischbestand. Ein Köderfisch wird bei einer Raubfischattacke verbraucht. Er kann nicht gekauft werden.</p></section>
-         <section><h3>🌀 Kunstköder</h3><p>Blinker und Gummifisch fangen nur in Bewegung. Klick oder Tipp holt etwa 0,5 m ein, Halten kurbelt kontinuierlich. Mobil holt ein Doppeltipp schnell komplett ein; am Desktop bleibt es der Rechtsklick. Maus- oder Fingerbewegung nach oben/unten verändert die Rutenhöhe und Lauftiefe; links/rechts gibt einen kleinen seitlichen Impuls. Ein Fisch kann nur dann gerissen werden, wenn der Kunstköder während des aktiven Einkurbelns den Fischkörper unmittelbar berührt. Beim freien Absinken oder wenn der Köder reglos am Grund liegt, kann kein Fisch gerissen werden. Die Schnur kollidiert weiterhin mit Unterwasserholz und Stegstreben: läuft sie über ein Hindernis, bleibt sie auf dessen Oberseite liegen, bildet dort einen klaren Knick/Winkel und zieht den Köder beim Einholen zuerst zu diesem Kontaktpunkt. Dadurch kann anschließend auch ein Hänger entstehen.</p></section>
+         <section><h3>🌀 Kunstköder</h3><p>Blinker und Gummifisch fangen nur in Bewegung. Klick oder Tipp holt etwa 0,5 m ein, Halten kurbelt kontinuierlich. Mobil holt ein Doppeltipp schnell komplett ein; am Desktop bleibt es der Rechtsklick. Maus- oder Fingerbewegung nach oben/unten verändert die Rutenhöhe und Lauftiefe; links/rechts gibt einen kleinen seitlichen Impuls. Ein Fisch kann nur dann gerissen werden, wenn der Kunstköder während des aktiven Einkurbelns den Fischkörper unmittelbar berührt. Beim freien Absinken oder wenn der Köder reglos am Grund liegt, kann kein Fisch gerissen werden. Die Schnur kollidiert weiterhin mit Unterwasserholz, Bäumen und Stegen. Läuft sie über mehrere Hindernisse, kann sie nun auf mehreren Punkten gleichzeitig aufliegen und entsprechend mehrere Knicke bilden. Beim Einholen wird der Köder zuerst zum jeweils nächsten Kontaktpunkt gezogen; dort kann anschließend auch ein Hänger entstehen.</p></section>
          <section><h3>🐊 Spezialköder</h3><p>Premium- und artspezifische Köder erhöhen die Gewichtung bestimmter Fischarten, garantieren aber keinen Biss. Standort, Tiefe, Aktivität und Zufall bleiben relevant.</p></section>
          <section><h3>⚡ Biss & Anhieb</h3><p>Beim Posenangeln zeigt der Schwimmer zuerst den Biss. Danach läuft das Reaktions-QTE zweimal vollständig. Ein exakt mittiger Treffer gilt als perfekter Anhieb und bringt beim Fang +8 EP. Triff den grünen beziehungsweise besonders guten Bereich. Ein früher Fehlversuch beendet nicht sofort den gesamten Versuch.</p></section>
          <section><h3>🎣 Drill</h3><p>Beobachte Schnurspannung, Fisch-Ausdauer und Entfernung. Halte „Kurbeln“ gedrückt und führe die Rute immer auf die Gegenseite des Fisches: Fisch links bedeutet Rute rechts, Fisch rechts bedeutet Rute links. Kurbeln gewinnt Schnur, erhöht aber die Belastung. Bei zu hoher Spannung musst du kurz lösen, sonst droht Schnurbruch. Ein montierter Kunstköder geht bei Schnurbruch verloren.</p></section>
@@ -4830,7 +4830,7 @@ Wetterdaten: Open-Meteo · Astronomische Berechnungen: SunCalc<br>
 // Three.js-Block ausgeführt wird. Er wird erst nach einem echten Renderbild freigegeben.
 // Öffentliche Versionsbezeichnung. Interner Arbeitsstand: Build 1.34.
 const VIEWER_VERSION='ACZO56-Interaktiv-V1.1';
-const ACZO_INTERNAL_BUILD='1.34';
+const ACZO_INTERNAL_BUILD='1.35';
 const helpVersion=document.getElementById('helpVersion');
 if(helpVersion) helpVersion.textContent=VIEWER_VERSION;
 
@@ -15153,6 +15153,16 @@ function buildNorthPier(){
     }
   }
 
+  // Build 1.35: Auch die sichtbare Blechoberseite gehört zur Schnurphysik.
+  for(const side of [-NORTH_PIER_WIDTH/3,0,NORTH_PIER_WIDTH/3]){
+    const a=northPierPoint(.02,side,northPierDeckTopZ(.02)+.010);
+    const b=northPierPoint(.98,side,northPierDeckTopZ(.98)+.010);
+    northWoodData.push({
+      start:{x:a.x,y:a.y,z:a.z},end:{x:b.x,y:b.y,z:b.z},
+      r:.10,kind:'north-pier',surfaceContact:true
+    });
+  }
+
   // Nur der wirklich eingetauchte Anfang der Plattenunterseite traegt Algen.
   // Weiter vorne steigt das Blech aus dem Wasser und bleibt verzinkt sichtbar.
   const algaeEndT=THREE.MathUtils.clamp(
@@ -15503,6 +15513,24 @@ for(const pier of aczoSmallPierData){
     aczoSmallPierCrossBars.setMatrixAt(aczoSmallPierCrossIndex++,aczoSmallPierDummy.matrix);
   }
 
+  // Auch der 1x1-m-Gitterrost selbst ist eine Schnurauflage.
+  for(const side of [-.32,0,.32]){
+    const a=new THREE.Vector3(
+      pier.shore.x+pier.tangent.x*side,
+      pier.shore.y+pier.tangent.y*side,
+      pier.topZ+.018
+    );
+    const b=new THREE.Vector3(
+      pier.shore.x+pier.inward.x*.98+pier.tangent.x*side,
+      pier.shore.y+pier.inward.y*.98+pier.tangent.y*side,
+      pier.topZ+.018
+    );
+    northWoodData.push({
+      start:{x:a.x,y:a.y,z:a.z},end:{x:b.x,y:b.y,z:b.z},
+      r:.095,kind:'small-pier',pierNumber:pier.number,surfaceContact:true
+    });
+  }
+
   const frontCenter=pier.shore.clone().addScaledVector(pier.inward,.96);
   const frontTopZ=pier.topZ-.075;
   const waterJointZ=Math.min(frontTopZ,WATER_OVERLAY_Z-.025);
@@ -15719,6 +15747,15 @@ function buildEastBoatPier(){
   seam.position.set(0,.75,EAST_BOAT_PIER_PLATFORM_TOP_Z+.004);
   eastBoatPierAdd(seam,'BOOTSTEG_PODEST_MITTELFUGE',false,false);
 
+  for(const y of [.18,.75,1.32]){
+    const a=eastBoatPierLocalToWorld(-1.96,y,EAST_BOAT_PIER_PLATFORM_TOP_Z+.015);
+    const b=eastBoatPierLocalToWorld( 1.96,y,EAST_BOAT_PIER_PLATFORM_TOP_Z+.015);
+    northWoodData.push({
+      start:{x:a.x,y:a.y,z:a.z},end:{x:b.x,y:b.y,z:b.z},
+      r:.12,kind:'east-boat-pier',surfaceContact:true
+    });
+  }
+
   // Umlaufender Unterrahmen des hohen Podests.
   const deckFrameZ=EAST_BOAT_PIER_PLATFORM_TOP_Z-.13;
   for(const y of [.08,1.42])eastBoatPierTubeLocal(
@@ -15734,6 +15771,15 @@ function buildEastBoatPier(){
   // Gitterrost. Die beiden Rechtecke treffen sich ohne doppelte Deckfläche.
   eastBoatPierBuildGridRect(2.30,.75,.60,1.50,'BOOTSTEG_GITTER_RECHTS');
   eastBoatPierBuildGridRect(.30,1.80,4.60,.60,'BOOTSTEG_GITTER_VORN');
+
+  for(const spec of [[-2.00,1.80,2.60,1.80],[2.30,.05,2.30,1.45]]){
+    const a=eastBoatPierLocalToWorld(spec[0],spec[1],EAST_BOAT_PIER_GRID_TOP_Z+.018);
+    const b=eastBoatPierLocalToWorld(spec[2],spec[3],EAST_BOAT_PIER_GRID_TOP_Z+.018);
+    northWoodData.push({
+      start:{x:a.x,y:a.y,z:a.z},end:{x:b.x,y:b.y,z:b.z},
+      r:.13,kind:'east-boat-pier',surfaceContact:true
+    });
+  }
 
   const platformStations=[[-1.82,.16],[0,.16],[1.82,.16],[-1.82,1.34],[0,1.34],[1.82,1.34]];
   const platformFloors=new Map();
@@ -21595,34 +21641,51 @@ let anglingVisibleStrikeActor=null;
 let anglingLockedStrikeCatch=null; // P49: echter sichtbarer Räuber bleibt bis zum Anhieb derselbe Fisch
 const anglingLurePrevWorldPos=new THREE.Vector3();
 const anglingLureSweepStart=new THREE.Vector3();
-const anglingSnagSweepVector=new THREE.Vector3();
-const anglingSnagSweepToFish=new THREE.Vector3();
-const anglingSnagSweepClosest=new THREE.Vector3();
+const anglingSnagLocalA=new THREE.Vector3();
+const anglingSnagLocalB=new THREE.Vector3();
+const anglingSnagLocalD=new THREE.Vector3();
 let anglingLurePrevValid=false,anglingLureWorldSpeed=0,anglingSnagCooldownUntil=0;
 
 function anglingLureDirectFishCollision(actor){
   if(!actor?.obj||!anglingLurePrevValid)return false;
-  // Nur ein echter Einholzug darf einen Fisch reißen. Sinkbewegung, Taumeln
-  // und ein regloser Köder am Grund sind ausdrücklich ausgeschlossen.
-  if(anglingState!=='lure-retrieving'||anglingLureGrounded||anglingLureWorldSpeed<=.18)return false;
-  if(anglingRetrieveStart.distanceToSquared(anglingRetrieveEnd)<.0025)return false;
 
-  const a=anglingLureSweepStart,b=anglingLure.position,p=actor.obj.position;
-  anglingSnagSweepVector.copy(b).sub(a);
-  const len2=anglingSnagSweepVector.lengthSq();
-  let t=0;
-  if(len2>1e-8){
-    anglingSnagSweepToFish.copy(p).sub(a);
-    t=THREE.MathUtils.clamp(anglingSnagSweepToFish.dot(anglingSnagSweepVector)/len2,0,1);
+  // Interaktiv V1.1 / Build 1.35: nur echtes Einkurbeln kann einen Fisch reißen.
+  if(anglingState!=='lure-retrieving'||anglingLureGrounded||anglingLureWorldSpeed<=.12)return false;
+  if(anglingRetrieveStart.distanceToSquared(anglingRetrieveEnd)<.0016)return false;
+
+  // Prüfe den realen Köderweg gegen die sichtbare Fisch-Bildebene.
+  actor.obj.updateMatrixWorld(true);
+  anglingSnagLocalA.copy(anglingLureSweepStart);
+  anglingSnagLocalB.copy(anglingLure.position);
+  actor.obj.worldToLocal(anglingSnagLocalA);
+  actor.obj.worldToLocal(anglingSnagLocalB);
+  anglingSnagLocalD.copy(anglingSnagLocalB).sub(anglingSnagLocalA);
+
+  const zTol=.075;
+  let tMin=0,tMax=1;
+  const dz=anglingSnagLocalD.z;
+  if(Math.abs(dz)<1e-7){
+    if(Math.abs(anglingSnagLocalA.z)>zTol)return false;
+  }else{
+    let ta=(-zTol-anglingSnagLocalA.z)/dz;
+    let tb=( zTol-anglingSnagLocalA.z)/dz;
+    if(ta>tb){const sw=ta;ta=tb;tb=sw;}
+    tMin=Math.max(0,ta);tMax=Math.min(1,tb);
+    if(tMin>tMax)return false;
   }
-  anglingSnagSweepClosest.copy(a).addScaledVector(anglingSnagSweepVector,t);
 
-  const fishW=Math.abs(actor.obj.userData.baseFishWidth||actor.obj.scale.x||.22);
-  const fishH=Math.abs(actor.obj.userData.baseFishHeight||actor.obj.scale.y||fishW*.45);
-  // Deutlich engere Körperzone als bisher: Der Köder muss den Fisch wirklich
-  // treffen und nicht nur in seiner großzügigen Umgebung vorbeilaufen.
-  const hitRadius=THREE.MathUtils.clamp(Math.sqrt(fishW*fishH)*.22+.025,.05,.22);
-  return anglingSnagSweepClosest.distanceToSquared(p)<=hitRadius*hitRadius;
+  const fishW=Math.max(.08,Math.abs(actor.obj.userData.baseFishWidth||actor.obj.scale.x||.22));
+  const fishH=Math.max(.035,Math.abs(actor.obj.userData.baseFishHeight||actor.obj.scale.y||fishW*.45));
+  const rx=.46+Math.min(.12,.030/fishW);
+  const ry=.40+Math.min(.16,.025/fishH);
+
+  const ax=anglingSnagLocalA.x/rx, ay=anglingSnagLocalA.y/ry;
+  const dx=anglingSnagLocalD.x/rx, dy=anglingSnagLocalD.y/ry;
+  const denom=dx*dx+dy*dy;
+  let t=tMin;
+  if(denom>1e-8)t=THREE.MathUtils.clamp(-(ax*dx+ay*dy)/denom,tMin,tMax);
+  const ex=ax+dx*t,ey=ay+dy*t;
+  return ex*ex+ey*ey<=1;
 }
 function anglingTriggerSnaggedFish(actor){
   if(!actor||!anglingMode||!anglingUsesArtificialLure()||anglingState==='drilling'||anglingState==='landing')return false;
@@ -24792,34 +24855,17 @@ function updateAnglingUnderwaterLureLine(){
   const active=!!(anglingMode&&anglingSelection&&anglingUsesArtificialLure()&&anglingLure.visible&&anglingCinematicView==='underwater');
   anglingUwLineGroup.visible=active;
   if(!active)return;
-  // Eintrittspunkt wird bereits von updateAnglingLine() exakt an der Wasseroberfläche gepflegt.
   const start=anglingLineEntry;
   const end=anglingTerminalPoint(anglingUwLineEnd);
-  const contact=anglingLineObstacleContact;
-  const hasContact=!!contact.active;
-  const lenA=hasContact?start.distanceTo(contact.point):0;
-  const lenB=hasContact?contact.point.distanceTo(end):start.distanceTo(end);
-  const split=hasContact?THREE.MathUtils.clamp(lenA/Math.max(.001,lenA+lenB),.08,.92):1;
-
   function sampleUwLinePath(t,out){
-    if(!hasContact){
-      const sag=Math.sin(Math.PI*t)*.012;
-      return out.lerpVectors(start,end,t).addScaledVector(anglingUp,-sag);
+    if(!anglingLineObstacleContacts.length){
+      const sag=Math.sin(Math.PI*t)*.012;return out.lerpVectors(start,end,t).addScaledVector(anglingUp,-sag);
     }
-    if(t<=split){
-      const q=t/split;
-      const sag=Math.sin(Math.PI*q)*.004;
-      return out.lerpVectors(start,contact.point,q).addScaledVector(anglingUp,-sag);
-    }
-    const q=(t-split)/Math.max(.001,1-split);
-    const sag=Math.sin(Math.PI*q)*.004;
-    return out.lerpVectors(contact.point,end,q).addScaledVector(anglingUp,-sag);
+    return sampleAnglingSupportedLinePath(start,end,t,out,.004);
   }
-
   for(let i=0;i<ANGLING_UW_LINE_SEGMENTS;i++){
     const t0=i/ANGLING_UW_LINE_SEGMENTS,t1=(i+1)/ANGLING_UW_LINE_SEGMENTS;
-    sampleUwLinePath(t0,anglingUwLineA);
-    sampleUwLinePath(t1,anglingUwLineB);
+    sampleUwLinePath(t0,anglingUwLineA);sampleUwLinePath(t1,anglingUwLineB);
     const m=anglingUwLineMeshes[i];
     anglingUwLineDelta.subVectors(anglingUwLineB,anglingUwLineA);
     const len=Math.max(.0001,anglingUwLineDelta.length());
@@ -25149,10 +25195,13 @@ const anglingDeadwoodTmpD=new THREE.Vector3();
 // BETA 1.2: eigener Kollisionszustand für die ANGELSCHNUR.
 // Der Köder selbst hatte bereits Hinderniskollisionen; die Schnur dagegen lief
 // bisher geometrisch durch Totholz/Stegstreben hindurch.
+const ANGLING_MAX_LINE_CONTACTS=7;
+const anglingLineObstacleContacts=[];
 const anglingLineObstacleContact={
   active:false,
   latched:false,
   point:new THREE.Vector3(),
+  visualPoint:new THREE.Vector3(),
   linePoint:new THREE.Vector3(),
   woodPoint:new THREE.Vector3(),
   segment:null,
@@ -25161,6 +25210,7 @@ const anglingLineObstacleContact={
 };
 
 function clearAnglingLineObstacleContact(){
+  anglingLineObstacleContacts.length=0;
   anglingLineObstacleContact.active=false;
   anglingLineObstacleContact.latched=false;
   anglingLineObstacleContact.segment=null;
@@ -30340,114 +30390,112 @@ function closestAnglingSegments3D(p1,q1,p2,q2,outLine,outWood){
   return {s,t,distSq:outLine.distanceToSquared(outWood)};
 }
 
-// Findet den ersten Kontakt der gespannten Unterwasserschnur mit allen bereits
-// registrierten Totholz-, Steg- und Hindernis-Segmenten.
-function updateAnglingLineObstacleContact(start,end){
-  if(!start||!end||!northWoodData?.length||!anglingUsesArtificialLure()){
-    return anglingLineObstacleContact;
-  }
+// Build 1.35: Mehrere Hindernisse können gleichzeitig feste Auflagepunkte
+// der Schnur sein. Der alte Einzelkontakt repräsentiert den letzten Punkt vor dem Köder.
+function anglingObstacleVisualAndPhysicsPoint(seg,t,visualOut,physicsOut){
+  const r=seg.r||.04;
+  const x=THREE.MathUtils.lerp(seg.start.x,seg.end.x,t);
+  const y=THREE.MathUtils.lerp(seg.start.y,seg.end.y,t);
+  const centerZ=THREE.MathUtils.lerp(seg.start.z,seg.end.z,t);
+  const visualZ=seg.surfaceContact?centerZ+.012:centerZ+r+.055;
+  visualOut.set(x,y,visualZ);
+  physicsOut.set(x,y,Math.min(deadwoodSurfaceZ(x,y)-.008,visualZ));
+}
 
-  // BETA 1.7: Ist die Schnur einmal auf einem Ast/Stamm gelandet, bleibt dieser
-  // Punkt FEST. Kein erneutes "Vielleicht berührt sie ihn noch?" pro Frame.
-  // Erst Reset, gelöster Hänger oder neuer Wurf hebt die Umlenkung wieder auf.
-  if(anglingLineObstacleContact.latched&&anglingLineObstacleContact.segment){
-    const seg=anglingLineObstacleContact.segment;
-    const t=THREE.MathUtils.clamp(anglingLineObstacleContact.segmentT,0,1);
-    const r=seg.r||.04;
-    const x=THREE.MathUtils.lerp(seg.start.x,seg.end.x,t);
-    const y=THREE.MathUtils.lerp(seg.start.y,seg.end.y,t);
-
-    if(anglingOwnPierContactIsHarmless(seg,x,y)){
-      clearAnglingLineObstacleContact();
-    }else{
-      const centerZ=THREE.MathUtils.lerp(seg.start.z,seg.end.z,t);
-      const topZ=Math.min(deadwoodSurfaceZ(x,y)-.008,centerZ+r+.055);
-      anglingLineObstacleContact.point.set(x,y,topZ);
-      anglingLineObstacleContact.woodPoint.copy(anglingLineObstacleContact.point);
-      anglingLineObstacleContact.active=true;
-      return anglingLineObstacleContact;
-    }
-  }
-
-  anglingLineObstacleContact.active=false;
-  anglingLineObstacleContact.segment=null;
-  anglingLineObstacleContact.kind='';
-
-  const lineStart2=anglingLineColP1;
-  const lineEnd2=anglingLineColQ1;
-  lineStart2.set(start.x,start.y,0);
-  lineEnd2.set(end.x,end.y,0);
-
-  let best=null;
-  let bestScore=Infinity;
-
+function findAnglingLineObstacleCandidate(start,end,excludedSegments){
+  anglingLineColP1.set(start.x,start.y,0);
+  anglingLineColQ1.set(end.x,end.y,0);
+  let best=null,bestScore=Infinity;
   for(const seg of northWoodData){
+    if(excludedSegments?.has(seg))continue;
     const r=seg.r||.04;
     anglingLineColP2.set(seg.start.x,seg.start.y,0);
     anglingLineColQ2.set(seg.end.x,seg.end.y,0);
-
-    const hit=closestAnglingSegments3D(
-      lineStart2,lineEnd2,
-      anglingLineColP2,anglingLineColQ2,
-      anglingDeadwoodTmpA,anglingDeadwoodTmpB
-    );
-
-    const s=THREE.MathUtils.clamp(hit.s,0,1);
-    const t=THREE.MathUtils.clamp(hit.t,0,1);
-    if(s<=.018||s>=.982)continue;
-
-    const supportX=THREE.MathUtils.lerp(seg.start.x,seg.end.x,t);
-    const supportY=THREE.MathUtils.lerp(seg.start.y,seg.end.y,t);
-    const supportCenterZ=THREE.MathUtils.lerp(seg.start.z,seg.end.z,t);
-
-    // Der eigene Standsteg wird im unmittelbaren Bereich unter/vor der Rute
-    // ausgeblendet. Damit bleibt die Schnur beim normalen Einkurbeln nicht
-    // am Steg hängen, auf dem der Spieler selbst steht.
-    if(anglingOwnPierContactIsHarmless(seg,supportX,supportY))continue;
-
-    const supportTopZ=Math.min(
-      deadwoodSurfaceZ(supportX,supportY)-.008,
-      supportCenterZ+r+.055
-    );
-
-    const lineZ=THREE.MathUtils.lerp(start.z,end.z,s);
-    const distXY=Math.hypot(
-      anglingDeadwoodTmpA.x-anglingDeadwoodTmpB.x,
-      anglingDeadwoodTmpA.y-anglingDeadwoodTmpB.y
-    );
-
-    // Sehr großzügiger "Schnurkorridor": Die Schnur ist dünn, aber für die
-    // Spielphysik darf sie einen Stamm nicht um Millimeter verfehlen und dann
-    // optisch mitten hindurchsinken.
-    const corridor=Math.max(.16,r+.18);
+    const hit=closestAnglingSegments3D(anglingLineColP1,anglingLineColQ1,anglingLineColP2,anglingLineColQ2,anglingDeadwoodTmpA,anglingDeadwoodTmpB);
+    const s=THREE.MathUtils.clamp(hit.s,0,1),t=THREE.MathUtils.clamp(hit.t,0,1);
+    if(s<=.012||s>=.988)continue;
+    const x=THREE.MathUtils.lerp(seg.start.x,seg.end.x,t),y=THREE.MathUtils.lerp(seg.start.y,seg.end.y,t);
+    if(anglingOwnPierContactIsHarmless(seg,x,y))continue;
+    anglingObstacleVisualAndPhysicsPoint(seg,t,anglingDeadwoodTmpC,anglingDeadwoodTmpD);
+    const distXY=Math.hypot(anglingDeadwoodTmpA.x-anglingDeadwoodTmpB.x,anglingDeadwoodTmpA.y-anglingDeadwoodTmpB.y);
+    const corridor=seg.surfaceContact?Math.max(.15,r+.13):Math.max(.16,r+.18);
     if(distXY>corridor)continue;
-
-    // Kontakt wird ausgelöst sobald die gedachte Schnurhöhe die Oberseite des
-    // Hindernisses erreicht oder darunter liegt.
-    if(lineZ>supportTopZ+.075)continue;
-
-    const score=s*3.0+distXY*2.2-Math.max(0,supportTopZ-lineZ)*1.4;
-    if(score<bestScore){
-      bestScore=score;
-      best={seg,s,t,x:supportX,y:supportY,z:supportTopZ,lineZ};
+    const lineZ=THREE.MathUtils.lerp(start.z,end.z,s);
+    if(lineZ>anglingDeadwoodTmpC.z+.075)continue;
+    let duplicate=false;
+    for(const c of anglingLineObstacleContacts){
+      const ep=c.visualPoint||c.point;
+      if(c.kind===(seg.kind||'deadwood')&&Math.hypot(ep.x-anglingDeadwoodTmpC.x,ep.y-anglingDeadwoodTmpC.y)<.34){duplicate=true;break;}
     }
+    if(duplicate)continue;
+    const score=s*4+distXY*2;
+    if(score<bestScore){bestScore=score;best={seg,s,t,visual:anglingDeadwoodTmpC.clone(),physics:anglingDeadwoodTmpD.clone()};}
   }
+  return best;
+}
 
-  if(!best)return anglingLineObstacleContact;
-
-  anglingLineObstacleContact.latched=true;
-  anglingLineObstacleContact.active=true;
-  anglingLineObstacleContact.segment=best.seg;
-  anglingLineObstacleContact.segmentT=best.t;
-  anglingLineObstacleContact.kind=best.seg.kind||'deadwood';
-  anglingLineObstacleContact.point.set(best.x,best.y,best.z);
-  anglingLineObstacleContact.woodPoint.copy(anglingLineObstacleContact.point);
-  anglingLineObstacleContact.linePoint.set(
-    THREE.MathUtils.lerp(start.x,end.x,best.s),
-    THREE.MathUtils.lerp(start.y,end.y,best.s),
-    best.lineZ
-  );
+function syncAnglingPrimaryLineContact(){
+  const c=anglingLineObstacleContacts.length?anglingLineObstacleContacts[anglingLineObstacleContacts.length-1]:null;
+  if(!c){
+    anglingLineObstacleContact.active=false;anglingLineObstacleContact.latched=false;
+    anglingLineObstacleContact.segment=null;anglingLineObstacleContact.kind='';
+    return anglingLineObstacleContact;
+  }
+  anglingLineObstacleContact.active=true;anglingLineObstacleContact.latched=true;
+  anglingLineObstacleContact.segment=c.segment;anglingLineObstacleContact.segmentT=c.segmentT;anglingLineObstacleContact.kind=c.kind;
+  anglingLineObstacleContact.point.copy(c.point);anglingLineObstacleContact.visualPoint.copy(c.visualPoint||c.point);
+  anglingLineObstacleContact.woodPoint.copy(c.visualPoint||c.point);
   return anglingLineObstacleContact;
+}
+
+function updateAnglingLineObstacleContact(start,end){
+  if(!start||!end||!northWoodData?.length||!anglingUsesArtificialLure())return syncAnglingPrimaryLineContact();
+  for(let i=anglingLineObstacleContacts.length-1;i>=0;i--){
+    const c=anglingLineObstacleContacts[i],seg=c.segment;
+    if(!seg){anglingLineObstacleContacts.splice(i,1);continue;}
+    const t=THREE.MathUtils.clamp(c.segmentT,0,1);
+    const x=THREE.MathUtils.lerp(seg.start.x,seg.end.x,t),y=THREE.MathUtils.lerp(seg.start.y,seg.end.y,t);
+    if(anglingOwnPierContactIsHarmless(seg,x,y)){anglingLineObstacleContacts.splice(i,1);continue;}
+    anglingObstacleVisualAndPhysicsPoint(seg,t,c.visualPoint,c.point);
+  }
+  let guard=0;
+  while(anglingLineObstacleContacts.length<ANGLING_MAX_LINE_CONTACTS&&guard++<10){
+    const excluded=new Set(anglingLineObstacleContacts.map(c=>c.segment));
+    let inserted=false;
+    for(let i=0;i<=anglingLineObstacleContacts.length;i++){
+      const a=i===0?start:(anglingLineObstacleContacts[i-1].visualPoint||anglingLineObstacleContacts[i-1].point);
+      const b=i===anglingLineObstacleContacts.length?end:(anglingLineObstacleContacts[i].visualPoint||anglingLineObstacleContacts[i].point);
+      if(a.distanceToSquared(b)<.0025)continue;
+      const best=findAnglingLineObstacleCandidate(a,b,excluded);
+      if(!best)continue;
+      anglingLineObstacleContacts.splice(i,0,{segment:best.seg,segmentT:best.t,kind:best.seg.kind||'deadwood',point:best.physics.clone(),visualPoint:best.visual.clone()});
+      inserted=true;break;
+    }
+    if(!inserted)break;
+  }
+  return syncAnglingPrimaryLineContact();
+}
+
+function sampleAnglingSupportedLinePath(start,end,t,out,sag=.004){
+  t=THREE.MathUtils.clamp(t,0,1);
+  if(!anglingLineObstacleContacts.length){
+    const curve=Math.sin(Math.PI*t);return out.lerpVectors(start,end,t).addScaledVector(anglingUp,-curve*sag);
+  }
+  let total=0,prev=start;
+  for(const c of anglingLineObstacleContacts){const p=c.visualPoint||c.point;total+=prev.distanceTo(p);prev=p;}
+  total+=prev.distanceTo(end);
+  if(total<.0001)return out.copy(end);
+  let target=t*total;prev=start;
+  for(let i=0;i<=anglingLineObstacleContacts.length;i++){
+    const next=i<anglingLineObstacleContacts.length?(anglingLineObstacleContacts[i].visualPoint||anglingLineObstacleContacts[i].point):end;
+    const len=prev.distanceTo(next);
+    if(target<=len||i===anglingLineObstacleContacts.length){
+      const q=len>.0001?THREE.MathUtils.clamp(target/len,0,1):1;
+      const curve=Math.sin(Math.PI*q);return out.lerpVectors(prev,next,q).addScaledVector(anglingUp,-curve*sag);
+    }
+    target-=len;prev=next;
+  }
+  return out.copy(end);
 }
 
 function beginAnglingObstacleSnag(type,collision){
@@ -30558,7 +30606,7 @@ function updateAnglingObstacleSnagState(){
     const baseYaw=Math.atan2(-toShore.x,toShore.y);
     const jitter=.06*Math.sin(anglingStateTime*7.2);
     anglingLure.rotation.z=baseYaw+jitter;
-    const atPier=anglingObstacleSnag.obstacleKind==='north-pier'||anglingObstacleSnag.obstacleKind==='small-pier';
+    const atPier=anglingObstacleSnag.obstacleKind==='north-pier'||anglingObstacleSnag.obstacleKind==='small-pier'||anglingObstacleSnag.obstacleKind==='east-boat-pier';
     anglingLineSummary.textContent=atPier?'⛔ Hänger am Steg':'⛔ Hänger im Holz';
     anglingFloatCaption.textContent=(anglingBaitLabels[anglingSelectedBait]||'Kunstköder')+(atPier?' · am Steg fest':' · im Totholz fest');
   }else{
@@ -30570,7 +30618,7 @@ function updateAnglingObstacleSnagState(){
     window.clearTimeout(anglingToastTimer);
     clearAnglingToastClasses();
     anglingToast.textContent='';
-    const atPier=anglingObstacleSnag.obstacleKind==='north-pier'||anglingObstacleSnag.obstacleKind==='small-pier';
+    const atPier=anglingObstacleSnag.obstacleKind==='north-pier'||anglingObstacleSnag.obstacleKind==='small-pier'||anglingObstacleSnag.obstacleKind==='east-boat-pier';
     showAnglingDeadwoodSnagPrompt('Hänger im Hindernis!',atPier?'Der Köder sitzt am Rohrgestell des Stegs fest. Versuche ihn wieder frei zu bekommen.':'Der Köder sitzt im Totholz fest. Versuche ihn wieder frei zu bekommen.');
     setAnglingStatus('Hänger im Hindernis','Versuche jetzt den Hänger zu lösen.');
   }
@@ -31795,56 +31843,23 @@ function updateAnglingLine(){
   if(!fighting)anglingLine.material.opacity=underwaterLure?.82:0;
 
   if(underwaterLure){
-    // BETA 1.2: Rutenspitze -> Wassereintritt -> optionaler Hinderniskontakt -> Köder.
-    // Dadurch läuft die Schnur nicht mehr optisch durch Totholz/Stegstreben.
     const split=.28;
-    const contact=updateAnglingLineObstacleContact(anglingLineEntry,lineEnd);
-    const hasContact=contact.active;
-    const lenA=hasContact?anglingLineEntry.distanceTo(contact.point):0;
-    const lenB=hasContact?contact.point.distanceTo(lineEnd):anglingLineEntry.distanceTo(lineEnd);
-    const contactFrac=hasContact?THREE.MathUtils.clamp(lenA/Math.max(.001,lenA+lenB),.08,.92):1;
-
+    updateAnglingLineObstacleContact(anglingLineEntry,lineEnd);
     for(let i=0;i<ANGLING_LINE_POINTS;i++){
       const t=i/(ANGLING_LINE_POINTS-1);
       if(t<=split){
-        const q=t/split;
-        const curve=Math.sin(Math.PI*q);
-        pos.setXYZ(i,
-          THREE.MathUtils.lerp(anglingTmpA.x,anglingLineEntry.x,q),
-          THREE.MathUtils.lerp(anglingTmpA.y,anglingLineEntry.y,q),
-          THREE.MathUtils.lerp(anglingTmpA.z,anglingLineEntry.z,q)-curve*.018
-        );
+        const q=t/split,curve=Math.sin(Math.PI*q);
+        pos.setXYZ(i,THREE.MathUtils.lerp(anglingTmpA.x,anglingLineEntry.x,q),THREE.MathUtils.lerp(anglingTmpA.y,anglingLineEntry.y,q),THREE.MathUtils.lerp(anglingTmpA.z,anglingLineEntry.z,q)-curve*.018);
       }else{
         const q=(t-split)/(1-split);
-        if(hasContact){
-          if(q<=contactFrac){
-            const r=q/contactFrac;
-            const curve=Math.sin(Math.PI*r);
-            pos.setXYZ(i,
-              THREE.MathUtils.lerp(anglingLineEntry.x,contact.point.x,r),
-              THREE.MathUtils.lerp(anglingLineEntry.y,contact.point.y,r),
-              THREE.MathUtils.lerp(anglingLineEntry.z,contact.point.z,r)-curve*.004
-            );
-          }else{
-            const r=(q-contactFrac)/Math.max(.001,1-contactFrac);
-            const curve=Math.sin(Math.PI*r);
-            pos.setXYZ(i,
-              THREE.MathUtils.lerp(contact.point.x,lineEnd.x,r),
-              THREE.MathUtils.lerp(contact.point.y,lineEnd.y,r),
-              THREE.MathUtils.lerp(contact.point.z,lineEnd.z,r)-curve*.004
-            );
-          }
+        if(anglingLineObstacleContacts.length){
+          sampleAnglingSupportedLinePath(anglingLineEntry,lineEnd,q,anglingTmpB,.004);
+          pos.setXYZ(i,anglingTmpB.x,anglingTmpB.y,anglingTmpB.z);
         }else{
-          const curve=Math.sin(Math.PI*q);
-          const underSpan=Math.max(.01,anglingLineEntry.distanceTo(lineEnd));
-          const sideX=(lineEnd.y-anglingLineEntry.y)/underSpan;
-          const sideY=-(lineEnd.x-anglingLineEntry.x)/underSpan;
+          const curve=Math.sin(Math.PI*q),underSpan=Math.max(.01,anglingLineEntry.distanceTo(lineEnd));
+          const sideX=(lineEnd.y-anglingLineEntry.y)/underSpan,sideY=-(lineEnd.x-anglingLineEntry.x)/underSpan;
           const tinyFlow=curve*Math.sin(waterUniforms.time.value*.72+q*2.3)*.006;
-          pos.setXYZ(i,
-            THREE.MathUtils.lerp(anglingLineEntry.x,lineEnd.x,q)+sideX*tinyFlow,
-            THREE.MathUtils.lerp(anglingLineEntry.y,lineEnd.y,q)+sideY*tinyFlow,
-            THREE.MathUtils.lerp(anglingLineEntry.z,lineEnd.z,q)-curve*.012
-          );
+          pos.setXYZ(i,THREE.MathUtils.lerp(anglingLineEntry.x,lineEnd.x,q)+sideX*tinyFlow,THREE.MathUtils.lerp(anglingLineEntry.y,lineEnd.y,q)+sideY*tinyFlow,THREE.MathUtils.lerp(anglingLineEntry.z,lineEnd.z,q)-curve*.012);
         }
       }
     }
@@ -31861,43 +31876,19 @@ function updateAnglingLine(){
     const supportContact=(!fighting&&artificialActive&&!lureFlight)
       ? updateAnglingLineObstacleContact(anglingLineEntry,lineEnd)
       : anglingLineObstacleContact;
-    const useSupport=!!(supportContact&&supportContact.active&&artificialActive&&!lureFlight);
+    const useSupport=!!(anglingLineObstacleContacts.length&&supportContact&&supportContact.active&&artificialActive&&!lureFlight);
 
     if(useSupport){
       const splitA=.26;
-      const lenB=anglingLineEntry.distanceTo(supportContact.point);
-      const lenC=supportContact.point.distanceTo(lineEnd);
-      const splitB=THREE.MathUtils.clamp(lenB/Math.max(.001,lenB+lenC),.10,.90);
-
       for(let i=0;i<ANGLING_LINE_POINTS;i++){
         const t=i/(ANGLING_LINE_POINTS-1);
         if(t<=splitA){
-          const q=t/splitA;
-          const curve=Math.sin(Math.PI*q);
-          pos.setXYZ(i,
-            THREE.MathUtils.lerp(anglingTmpA.x,anglingLineEntry.x,q),
-            THREE.MathUtils.lerp(anglingTmpA.y,anglingLineEntry.y,q),
-            THREE.MathUtils.lerp(anglingTmpA.z,anglingLineEntry.z,q)-curve*.018
-          );
+          const q=t/splitA,curve=Math.sin(Math.PI*q);
+          pos.setXYZ(i,THREE.MathUtils.lerp(anglingTmpA.x,anglingLineEntry.x,q),THREE.MathUtils.lerp(anglingTmpA.y,anglingLineEntry.y,q),THREE.MathUtils.lerp(anglingTmpA.z,anglingLineEntry.z,q)-curve*.018);
         }else{
           const q=(t-splitA)/(1-splitA);
-          if(q<=splitB){
-            const r=q/splitB;
-            const curve=Math.sin(Math.PI*r);
-            pos.setXYZ(i,
-              THREE.MathUtils.lerp(anglingLineEntry.x,supportContact.point.x,r),
-              THREE.MathUtils.lerp(anglingLineEntry.y,supportContact.point.y,r),
-              THREE.MathUtils.lerp(anglingLineEntry.z,supportContact.point.z,r)-curve*.004
-            );
-          }else{
-            const r=(q-splitB)/Math.max(.001,1-splitB);
-            const curve=Math.sin(Math.PI*r);
-            pos.setXYZ(i,
-              THREE.MathUtils.lerp(supportContact.point.x,lineEnd.x,r),
-              THREE.MathUtils.lerp(supportContact.point.y,lineEnd.y,r),
-              THREE.MathUtils.lerp(supportContact.point.z,lineEnd.z,r)-curve*.003
-            );
-          }
+          sampleAnglingSupportedLinePath(anglingLineEntry,lineEnd,q,anglingTmpB,.004);
+          pos.setXYZ(i,anglingTmpB.x,anglingTmpB.y,anglingTmpB.z);
         }
       }
     }else{
@@ -35451,10 +35442,13 @@ function updateAnglingMode(dt){
     if(anglingState==='lure-retrieving'&&u>=1){
       // Hat die Schnur einen festen Umlenkpunkt, muss der Köder diesem Weg
       // folgen. Sobald er den Ast/Stamm erreicht, sitzt er fest.
-      if(anglingLineObstacleContact.latched&&
-         anglingLure.position.distanceTo(anglingLineObstacleContact.point)<.22){
-        beginAnglingObstacleSnag('artificial',anglingLineObstacleContact);
-        return false;
+      if(anglingLineObstacleContact.latched){
+        const cp=anglingLineObstacleContact.point;
+        const horizontalToContact=Math.hypot(anglingLure.position.x-cp.x,anglingLure.position.y-cp.y);
+        if(horizontalToContact<.24&&Math.abs(anglingLure.position.z-cp.z)<.42){
+          beginAnglingObstacleSnag('artificial',anglingLineObstacleContact);
+          return false;
+        }
       }
 
       recalcAnglingAtCurrentTerminal();
