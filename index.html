@@ -4828,9 +4828,9 @@ Wetterdaten: Open-Meteo · Astronomische Berechnungen: SunCalc<br>
 <script>
 // V7.75: Der Startlayer ist bereits durch HTML/CSS sichtbar, bevor dieser schwere
 // Three.js-Block ausgeführt wird. Er wird erst nach einem echten Renderbild freigegeben.
-// Öffentliche Versionsbezeichnung. Interner Arbeitsstand: Build 1.40.
+// Öffentliche Versionsbezeichnung. Interner Arbeitsstand: Build 1.41.
 const VIEWER_VERSION='ACZO56-Interaktiv-V1.3';
-const ACZO_INTERNAL_BUILD='1.40';
+const ACZO_INTERNAL_BUILD='1.41';
 const helpVersion=document.getElementById('helpVersion');
 if(helpVersion) helpVersion.textContent=VIEWER_VERSION;
 
@@ -6140,11 +6140,12 @@ fishBottomDetails.renderOrder=2.62;fishBottomDetails.visible=false;scene.add(fis
 // Die freien Außenkanten des Tiefenmeshs werden bis zur Wasserlinie geschlossen.
 // So bleibt die Kiesgrube auch beim Blick schräg zum Ufer eine geschlossene 3D-Form.
 const fishBoundaryEdges=POND_RENDER_BOUNDARY.map((_,i)=>[i,(i+1)%POND_RENDER_BOUNDARY.length]);
-// Die senkrechten Uferflächen erhalten dieselbe Materialfamilie wie der Boden,
-// jedoch gröber und etwas dunkler. Die Textur wird geklont, damit die 54-fache
-// Wiederholung des Bodens nicht auf die Weltkoordinaten-UVs der Wand wirkt.
-const fishBankWallMat=new THREE.MeshLambertMaterial({
-  color:0xbdb59b,vertexColors:true,map:null,side:THREE.DoubleSide
+// Die Uferböschung nutzt bewusst kein winkelabhängiges Lambert-Licht mehr.
+// Auf den langen Dreiecken der Böschung wurden sonst deren Kanten als große,
+// helle Flecken sichtbar. MeshBasic bleibt nebel- und texturfähig, zeigt aber
+// die Kieswand unabhängig von ihrer Triangulierung gleichmäßig.
+const fishBankWallMat=new THREE.MeshBasicMaterial({
+  color:0xa6a18b,vertexColors:true,map:null,side:THREE.DoubleSide,fog:true
 });
 
 function ensureUnderwaterStaticAssets(){
@@ -6173,7 +6174,7 @@ function ensureUnderwaterStaticAssets(){
   }
   gravelTexture=new THREE.CanvasTexture(gravelCanvas);
   gravelTexture.wrapS=gravelTexture.wrapT=THREE.RepeatWrapping;
-  gravelTexture.repeat.set(42,42);
+  gravelTexture.repeat.set(36,36);
   gravelTexture.encoding=THREE.sRGBEncoding;
   fishPondMat.map=gravelTexture;fishPondMat.needsUpdate=true;
 
@@ -6185,7 +6186,7 @@ function ensureUnderwaterStaticAssets(){
   underwaterStaticAssetsReady=true;
 }
 const fishBankWall=new THREE.Mesh(new THREE.BufferGeometry(),fishBankWallMat);
-fishBankWall.receiveShadow=true;
+fishBankWall.receiveShadow=false;
 fishBankWall.visible=false;fishBankWall.renderOrder=2.15;scene.add(fishBankWall);
 
 // Wenige vorstehende Steine brechen die glatte Silhouette der Wand. Auch hier
@@ -6279,8 +6280,10 @@ function rebuildFishBankWall(){
       const z=r===0 ? .205 : -Math.max(.02,p.d)*exaggeration+(r===1 ? .040 : .018); // V2.3.6k: Unterwasserwand ueberlappt die bewegte Wasserhaut stärker; der helle Randspalt verschwindet auch bei Wellen.
       pos.push(p.x,p.y,z);
       uv.push((i/cols)*(perimeter/5.5),v*2.2);
-      const shade=1.03-v*.20;
-      col.push(shade,shade*.97,shade*.86);
+      // Nur eine sanfte, kontinuierliche Tiefenabdunklung. Dadurch entstehen
+      // auch durch die Vertexfarben keine hellen, polygonalen Uferfelder.
+      const shade=.94-v*.09;
+      col.push(shade,shade*.985,shade*.94);
     }
   }
   for(let r=0;r<rows-1;r++){
@@ -14644,7 +14647,7 @@ function spawnPoolParticle(pool,x,y,z,size,life,vx,vy,vz,alpha){
 const underwaterStoneData=[];
 const stoneGeo=new THREE.IcosahedronGeometry(1,0);
 const stoneMat=new THREE.MeshLambertMaterial({color:0x8e8a78});
-const underwaterStoneCount=2200;
+const underwaterStoneCount=3000;
 const underwaterStones=new THREE.InstancedMesh(stoneGeo,stoneMat,underwaterStoneCount);
 underwaterStones.instanceMatrix.setUsage(THREE.StaticDrawUsage);
 underwaterStones.visible=false;underwaterStones.renderOrder=3;
