@@ -3,8 +3,8 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
-<title>ACZO56-Interaktiv-V1.1</title>
-<!-- ACZO56 BETA 1: optimierte Desktop-/Mobilversion fuer den offenen Betatest. -->
+<title>ACZO56-Interaktiv-V1.2</title>
+<!-- ACZO56 BETA 1.2: Hänger-, Fischkontakt-, Touch- und Idle-Korrekturen auf bestehender Basis. -->
 <!-- V7.83: Kritische Viewer-Ressourcen früh anfordern. -->
 <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
 <link rel="preconnect" href="https://geo4.service24.rlp.de" crossorigin>
@@ -5156,7 +5156,29 @@ let lastViewerInputAt=0;
 function markViewerInput(){lastViewerInputAt=performance.now();}
 function releaseViewerPointer(e){
   activeViewerPointers.delete(e.pointerId);
+  try{
+    if(e?.pointerId!=null&&renderer.domElement.hasPointerCapture?.(e.pointerId)){
+      renderer.domElement.releasePointerCapture(e.pointerId);
+    }
+  }catch(err){}
   markViewerInput();
+}
+let aczoGestureResetQueued=false;
+function resetViewerGestureState(){
+  activeViewerPointers.clear();
+  markViewerInput();
+  // OrbitControls verwaltet Pointer-IDs intern. Safari kann pointercancel oder
+  // lostpointercapture liefern, ohne einen normalen pointerup-Abschluss.
+  // Ein einmaliges Disable/Enable setzt nur diesen internen Gestenzustand zurück,
+  // ohne Richtung, Zoomfaktor oder Kameragrenzen zu verändern.
+  if(aczoGestureResetQueued)return;
+  aczoGestureResetQueued=true;
+  const wasEnabled=controls.enabled;
+  controls.enabled=false;
+  requestAnimationFrame(()=>{
+    controls.enabled=wasEnabled;
+    aczoGestureResetQueued=false;
+  });
 }
 function viewerInputBusy(){
   return activeViewerPointers.size>0 || performance.now()-lastViewerInputAt<450;
@@ -5175,12 +5197,27 @@ renderer.domElement.addEventListener('pointermove',e=>{
   if(activeViewerPointers.has(e.pointerId))markViewerInput();
 },true);
 window.addEventListener('pointerup',releaseViewerPointer,true);
-window.addEventListener('pointercancel',releaseViewerPointer,true);
-renderer.domElement.addEventListener('lostpointercapture',releaseViewerPointer,true);
+window.addEventListener('pointercancel',e=>{releaseViewerPointer(e);resetViewerGestureState();},true);
+renderer.domElement.addEventListener('lostpointercapture',e=>{
+  const wasActive=activeViewerPointers.has(e.pointerId);
+  releaseViewerPointer(e);
+  if(wasActive)resetViewerGestureState();
+},true);
+renderer.domElement.addEventListener('touchend',e=>{
+  // OrbitControls setzt beim normalen 2->1-Wechsel den verbleibenden Pointer
+  // selbst neu. Hier nur Aktivität markieren; ein harter Reset ist ausschließlich
+  // für echte Abbruchzustände vorgesehen.
+  markViewerInput();
+},{capture:true,passive:true});
+renderer.domElement.addEventListener('touchcancel',e=>{
+  resetViewerGestureState();
+  e.preventDefault();
+},{capture:true,passive:false});
 renderer.domElement.addEventListener('wheel',markViewerInput,{passive:true});
-window.addEventListener('blur',()=>activeViewerPointers.clear());
+window.addEventListener('blur',resetViewerGestureState);
+window.addEventListener('orientationchange',resetViewerGestureState);
 document.addEventListener('visibilitychange',()=>{
-  if(document.visibilityState!=='visible')activeViewerPointers.clear();
+  if(document.visibilityState!=='visible')resetViewerGestureState();
 });
 
 // BETA 1: Debug-/Profiler-Modus vollständig deaktiviert.
@@ -21677,10 +21714,12 @@ function anglingLureDirectFishCollision(actor){
     if(tMin>tMax)return false;
   }
 
-  const fishW=Math.max(.08,Math.abs(actor.obj.userData.baseFishWidth||actor.obj.scale.x||.22));
-  const fishH=Math.max(.035,Math.abs(actor.obj.userData.baseFishHeight||actor.obj.scale.y||fishW*.45));
-  const rx=.46+Math.min(.12,.030/fishW);
-  const ry=.40+Math.min(.16,.025/fishH);
+  // Kein Komfort-/Umgebungsradius: die vorhandene Fisch-Bildebene wird nur
+  // innerhalb ihrer tatsächlichen Körperellipse ausgewertet. Die Skalierung
+  // des Fischobjekts steckt bereits in worldToLocal(), daher wäre ein weiterer
+  // größenabhängiger Zuschlag eine unsichtbare Kollisionsvergrößerung.
+  const rx=.46;
+  const ry=.40;
 
   const ax=anglingSnagLocalA.x/rx, ay=anglingSnagLocalA.y/ry;
   const dx=anglingSnagLocalD.x/rx, dy=anglingSnagLocalD.y/ry;
@@ -21819,9 +21858,9 @@ function updateAnglingFeedUnderwaterVisual(dt,lureUnderwaterActive){
 // weiterhin Vorrang hat. Der Stör bleibt neutral und flieht nicht automatisch.
 function anglingLureScareProfile(species){
   switch(species){
-    case 'roach':      return {radius:1.35,chance:1.00,distance:[2.8,4.2],duration:[2.0,2.8]};
-    case 'rudd':       return {radius:1.35,chance:1.00,distance:[2.8,4.2],duration:[2.0,2.8]};
-    case 'bream':      return {radius:1.12,chance:.42,distance:[2.4,3.6],duration:[1.8,2.6]};
+    case 'roach':      return {radius:2.00,chance:1.00,distance:[2.8,4.2],duration:[2.0,2.8]};
+    case 'rudd':       return {radius:2.00,chance:1.00,distance:[2.8,4.2],duration:[2.0,2.8]};
+    case 'bream':      return {radius:2.00,chance:.42,distance:[2.4,3.6],duration:[1.8,2.6]};
     case 'carp':       return {radius:1.05,chance:.28,distance:[2.5,3.8],duration:[1.9,2.8]};
     case 'mirrorcarp': return {radius:1.05,chance:.28,distance:[2.5,3.8],duration:[1.9,2.8]};
     case 'grasscarp':  return {radius:1.08,chance:.30,distance:[2.6,4.0],duration:[1.9,2.8]};
@@ -21971,7 +22010,7 @@ function updateFishActors(dt){
         if(lureDist>scareCfg.radius*1.38)f.lureScareInside=false;
 
         const alreadyFleeing=(f.huntFleeUntil||0)>fishWorldTime;
-        if(lureMoving&&lureDist<scareCfg.radius&&!f.lureScareInside&&!alreadyFleeing){
+        if(lureMoving&&lureDist<=scareCfg.radius&&!f.lureScareInside&&!alreadyFleeing){
           f.lureScareInside=true;
           if(Math.random()<scareCfg.chance)triggerAnglingLureScare(f,scareCfg);
         }
@@ -25222,6 +25261,10 @@ let anglingObstacleSnag=null;
 let anglingReturnLossMessage='';
 let anglingObstacleSnagCooldownUntil=0;
 let anglingObstacleSnagLossStreak=0;
+// V1.2: Nach erfolgreichem Lösen wird nur DAS konkrete Hindernis geschützt.
+// Reaktivierung erst nach Mindestzeit UND nachdem Köder + relevante Schnur den
+// erweiterten Kollisionsbereich geometrisch verlassen haben.
+let anglingReleasedSnagGuard=null;
 const anglingObstacleHookPoint=new THREE.Vector3();
 const anglingDeadwoodTmpA=new THREE.Vector3();
 const anglingDeadwoodTmpB=new THREE.Vector3();
@@ -30438,12 +30481,50 @@ function anglingObstacleVisualAndPhysicsPoint(seg,t,visualOut,physicsOut){
   physicsOut.set(x,y,Math.min(deadwoodSurfaceZ(x,y)-.008,visualZ));
 }
 
+function anglingReleasedSnagStillBlocked(seg,start=null,end=null){
+  const g=anglingReleasedSnagGuard;
+  if(!g||!seg||g.segment!==seg)return false;
+
+  const now=performance.now();
+  const minTimeDone=now-g.releasedAt>=3000;
+  const r=Math.max(.28,(seg.r||.04)+.34);
+
+  const a=anglingDeadwoodTmpA.set(seg.start.x,seg.start.y,seg.start.z);
+  const b=anglingDeadwoodTmpB.set(seg.end.x,seg.end.y,seg.end.z);
+  const ab=anglingDeadwoodTmpC.copy(b).sub(a);
+  const denom=Math.max(1e-6,ab.lengthSq());
+
+  const pointNear=p=>{
+    const ap=anglingDeadwoodTmpD.copy(p).sub(a);
+    const t=THREE.MathUtils.clamp(ap.dot(ab)/denom,0,1);
+    anglingObstacleHookPoint.copy(a).addScaledVector(ab,t);
+    return p.distanceToSquared(anglingObstacleHookPoint)<=r*r;
+  };
+
+  let geometryClear=!pointNear(anglingLure.position);
+
+  // Relevanter Schnurabschnitt: Wassereintritt -> Köder. Damit reicht nicht,
+  // nur den Köder aus dem Ast zu ziehen, während die Schnur noch im selben
+  // Hindernis liegt.
+  if(geometryClear&&start&&end){
+    const hit=closestAnglingSegments3D(start,end,a,b,anglingLineColP1,anglingLineColP2);
+    geometryClear=hit.distSq>r*r;
+  }
+
+  if(minTimeDone&&geometryClear){
+    anglingReleasedSnagGuard=null;
+    return false;
+  }
+  return true;
+}
+
 function findAnglingLineObstacleCandidate(start,end,excludedSegments){
   anglingLineColP1.set(start.x,start.y,0);
   anglingLineColQ1.set(end.x,end.y,0);
   let best=null,bestScore=Infinity;
   for(const seg of northWoodData){
     if(excludedSegments?.has(seg))continue;
+    if(anglingReleasedSnagStillBlocked(seg,start,end))continue;
     const r=seg.r||.04;
     anglingLineColP2.set(seg.start.x,seg.start.y,0);
     anglingLineColQ2.set(seg.end.x,seg.end.y,0);
@@ -30541,24 +30622,36 @@ function beginAnglingObstacleSnag(type,collision){
   window.clearTimeout(anglingToastTimer);
   clearAnglingToastClasses();
   anglingToast.textContent='';
+  const snagPhysicsPoint=collision.point.clone();
+  const snagVisualPoint=(collision.visualPoint||collision.woodPoint||collision.point).clone();
+  const snagSurface=anglingSurfaceZ(snagVisualPoint.x,snagVisualPoint.y);
+  const snagAboveWater=type==='artificial'&&snagVisualPoint.z>snagSurface+.03;
   anglingObstacleSnag={
     type,
     obstacleKind:collision.kind||collision.segment?.kind||'deadwood',
-    point:collision.point.clone(),
+    segment:collision.segment||null,
+    point:snagAboveWater?snagVisualPoint:snagPhysicsPoint,
+    physicsPoint:snagPhysicsPoint,
+    startPoint:type==='artificial'?anglingLure.position.clone():null,
+    aboveWater:snagAboveWater,
+    travelDuration:snagAboveWater?THREE.MathUtils.clamp(anglingLure.position.distanceTo(snagVisualPoint)/5.5,.38,.92):0,
+    arrived:!snagAboveWater,
     promptShown:false,
     resolving:false,
-    messageAt:performance.now()+2100
+    messageAt:snagAboveWater?Infinity:performance.now()+2100
   };
   anglingObstacleSnagCooldownUntil=performance.now()+1200;
   anglingState='obstacle-snag';anglingStateTime=0;
   anglingExitBtn.disabled=true;anglingExitBtn.textContent='Hänger …';
   if(type==='artificial'){
-    anglingLure.position.copy(collision.point);
-    anglingLureSinkAnchor.copy(collision.point);
-    anglingCastEnd.copy(collision.point);
-    const surface=anglingSurfaceZ(collision.point.x,collision.point.y);
-    anglingLureDepth=Math.max(.12,surface-collision.point.z);
-    anglingLureGrounded=true;
+    if(!anglingObstacleSnag.aboveWater){
+      anglingLure.position.copy(anglingObstacleSnag.point);
+      anglingLureSinkAnchor.copy(anglingObstacleSnag.point);
+      anglingCastEnd.copy(anglingObstacleSnag.point);
+    }
+    const surface=anglingSurfaceZ(anglingObstacleSnag.point.x,anglingObstacleSnag.point.y);
+    anglingLureDepth=Math.max(.12,surface-anglingLure.position.z);
+    anglingLureGrounded=!anglingObstacleSnag.aboveWater;
     anglingActionBtn.disabled=true;anglingActionBtn.textContent='Fest';
     anglingFloatCaption.textContent=(anglingBaitLabels[anglingSelectedBait]||'Kunstköder')+' · Hänger im Holz';
   }else{
@@ -30625,11 +30718,18 @@ function resolveAnglingObstacleSnag(){
   anglingExitBtn.disabled=false;
   anglingExitBtn.textContent=anglingUsesDeeper()?'Echolot neu auswerfen':'Zum Ufer';
   anglingStateTime=0;
+  if(snag.segment){
+    anglingReleasedSnagGuard={
+      segment:snag.segment,
+      releasedAt:performance.now(),
+      position:snag.point.clone()
+    };
+  }
   anglingObstacleSnag=null;
   clearAnglingLineObstacleContact();
-  // Build 1.36: Nach erfolgreichem Lösen bleibt die Montage länger geschützt.
-  // So hängt derselbe Baum/Steg beim Freikurbeln nicht zwei- oder dreimal direkt erneut.
-  anglingObstacleSnagCooldownUntil=performance.now()+7000;
+  // Nur eine sehr kurze globale Entprellung; der eigentliche Schutz ist oben
+  // objektbezogen und endet erst nach Mindestzeit + echtem geometrischem Verlassen.
+  anglingObstacleSnagCooldownUntil=performance.now()+220;
   hideAnglingSnagPrompt();
   recalcAnglingAtCurrentTerminal();
   showAnglingMajorNotice('✅ HÄNGER GELÖST!','Du bist wieder frei und kannst weiterfischen.','success',1650);
@@ -30637,8 +30737,19 @@ function resolveAnglingObstacleSnag(){
 function updateAnglingObstacleSnagState(){
   if(!anglingObstacleSnag)return;
   if(anglingObstacleSnag.type==='artificial'){
-    anglingLure.position.copy(anglingObstacleSnag.point);
-    anglingLureSinkAnchor.copy(anglingObstacleSnag.point);
+    if(anglingObstacleSnag.aboveWater&&!anglingObstacleSnag.arrived){
+      const q=anglingEase(anglingClamp01(anglingStateTime/Math.max(.15,anglingObstacleSnag.travelDuration)));
+      anglingLure.position.lerpVectors(anglingObstacleSnag.startPoint,anglingObstacleSnag.point,q);
+      anglingLureSinkAnchor.copy(anglingLure.position);
+      anglingCastEnd.copy(anglingLure.position);
+      if(q>=1){
+        anglingObstacleSnag.arrived=true;
+        anglingObstacleSnag.messageAt=performance.now()+180;
+      }
+    }else{
+      anglingLure.position.copy(anglingObstacleSnag.point);
+      anglingLureSinkAnchor.copy(anglingObstacleSnag.point);
+    }
     const toShore=anglingDeadwoodTmpA.set(anglingSelection.shore.x-anglingObstacleSnag.point.x,anglingSelection.shore.y-anglingObstacleSnag.point.y,0);
     if(toShore.lengthSq()<1e-5)toShore.set(0,1,0);
     const baseYaw=Math.atan2(-toShore.x,toShore.y);
@@ -30671,7 +30782,11 @@ function updateAnglingDeadwoodSnagDetection(){
   }
   if(!point)return;
   const collision=findAnglingDeadwoodCollision(point,type==='artificial'?.075:.05);
-  if(collision)beginAnglingObstacleSnag(type,collision);
+  if(collision){
+    computeAnglingLureLineEntry(anglingLineEntry);
+    if(collision.segment&&anglingReleasedSnagStillBlocked(collision.segment,anglingLineEntry,point))return;
+    beginAnglingObstacleSnag(type,collision);
+  }
 }
 let anglingEpPopupTimer=0,anglingEpCounterTimer=0,anglingEpPopupHideTimer=0,anglingEpPopupRevealTimer=0;
 function showAnglingEpGain(gain,oldXp,newXp,snagged=false,detail='',revealDelay=0){
@@ -34898,6 +35013,18 @@ function updateAnglingCinematicCamera(dt){
    anglingCinematicTarget.copy(anglingBobber.position);anglingCinematicTarget.z+=.12;
  }else if(anglingCinematicView==='underwater'){
    under=true;
+   // Oberirdischer Hänger: Die Kamera bleibt selbst unter Wasser und schaut
+   // nach oben, während der Köder entlang der vorhandenen Schnur aus dem Wasser
+   // zum echten Hängerpunkt läuft. Alle normalen Unterwasserfälle bleiben unten
+   // im unveränderten Zweig.
+   if(anglingState==='obstacle-snag'&&anglingObstacleSnag?.aboveWater){
+     const snagPoint=anglingObstacleSnag.point;
+     const surfaceHere=anglingSurfaceZ(anglingLure.position.x,anglingLure.position.y);
+     anglingCinematicPos.copy(anglingLure.position).addScaledVector(toShore,1.10).addScaledVector(side,.28);
+     anglingCinematicPos.z=Math.min(surfaceHere-.20,anglingLure.position.z-.10);
+     anglingCinematicTarget.copy(snagPoint);
+     constrainAnglingUnderwaterColumn(anglingCinematicPos,anglingLure.position,'camera');
+   }else{
    const lureSurface=anglingSurfaceZ(anglingLure.position.x,anglingLure.position.y);
    const lureDepthNow=Math.max(.15,lureSurface-anglingLure.position.z);
    const lureDistance=Math.max(0,Math.hypot(
@@ -34940,6 +35067,7 @@ function updateAnglingCinematicCamera(dt){
    // noch direkt am Ufer der Himmel unter dem Gewässer sichtbar werden.
    constrainAnglingUnderwaterColumn(anglingCinematicPos,anglingLure.position,'camera');
    constrainAnglingUnderwaterColumn(anglingCinematicTarget,anglingLure.position,'target');
+   }
  }else if(anglingCinematicView==='return'){
    anglingCinematicBlend=Math.min(1,anglingCinematicBlend+dt/1.05);
    const u=anglingEase(anglingCinematicBlend);
@@ -36200,8 +36328,8 @@ function aczoPerf7Summary(){
  const aczoTargetFps=aczoArtificialCastFlight
    ?(ACZO_MOBILE_PERF?40:60)
    :(ACZO_MOBILE_PERF
-      ?(aczoInteractive?30:(aczoAmbientMotion?15:(aczoDeepIdle?6:20)))
-      :(aczoInteractive?60:(aczoAmbientMotion?30:(aczoDeepIdle?15:60))));
+      ?(aczoInteractive?30:30)
+      :(aczoInteractive?60:(aczoAmbientMotion?30:(aczoDeepIdle?30:60))));
 
  aczoPerf4State=aczoArtificialCastFlight?'CAST'
    :(aczoInteractive?'ACTIVE'
