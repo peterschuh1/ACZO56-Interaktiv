@@ -4829,8 +4829,8 @@ Wetterdaten: Open-Meteo · Astronomische Berechnungen: SunCalc<br>
 // V7.75: Der Startlayer ist bereits durch HTML/CSS sichtbar, bevor dieser schwere
 // Three.js-Block ausgeführt wird. Er wird erst nach einem echten Renderbild freigegeben.
 // Öffentliche Versionsbezeichnung. Interner Arbeitsstand: Build 1.34.
-const VIEWER_VERSION='ACZO56-Interaktiv-V1.1';
-const ACZO_INTERNAL_BUILD='1.36';
+const VIEWER_VERSION='ACZO56-Interaktiv-V1.2';
+const ACZO_INTERNAL_BUILD='1.37';
 const helpVersion=document.getElementById('helpVersion');
 if(helpVersion) helpVersion.textContent=VIEWER_VERSION;
 
@@ -21686,48 +21686,49 @@ let anglingLurePrevValid=false,anglingLureWorldSpeed=0,anglingSnagCooldownUntil=
 function anglingLureDirectFishCollision(actor){
   if(!actor?.obj||!anglingLurePrevValid)return false;
 
-  // Interaktiv V1.1 / Build 1.36:
-  // Nur echtes Einkurbeln kann einen Fisch reißen. Ein ruhender oder frei
-  // absinkender Köder bleibt ausgeschlossen. Wird der Köder dagegen bewusst
-  // über den Grund gezogen, darf eine echte Körperberührung sehr wohl haken.
+  // Nur aktives Einkurbeln darf einen Fisch reißen.
   if(anglingState!=='lure-retrieving'||anglingLureWorldSpeed<=.04)return false;
   if(anglingRetrieveStart.distanceToSquared(anglingRetrieveEnd)<.0016)return false;
 
-  // Prüfe den realen Köderweg gegen die sichtbare Fisch-Bildebene.
-  actor.obj.updateMatrixWorld(true);
-  anglingSnagLocalA.copy(anglingLureSweepStart);
-  anglingSnagLocalB.copy(anglingLure.position);
-  actor.obj.worldToLocal(anglingSnagLocalA);
-  actor.obj.worldToLocal(anglingSnagLocalB);
-  anglingSnagLocalD.copy(anglingSnagLocalB).sub(anglingSnagLocalA);
+  // V1.2: Swept-3D-Körperkollision statt Kollision gegen die zur Kamera
+  // gedrehte 2D-Fischfläche. Dadurch bleibt die Prüfung auch bei gründelnden,
+  // ruhenden und am Futterplatz stehenden Fischen stabil.
+  const fishW=Math.max(.08,Math.abs(actor.obj.userData.baseFishWidth||actor.obj.scale.x||.22));
+  const fishH=Math.max(.035,Math.abs(actor.obj.userData.baseFishHeight||actor.obj.scale.y||fishW*.45));
 
-  const zTol=.075;
-  let tMin=0,tMax=1;
-  const dz=anglingSnagLocalD.z;
-  if(Math.abs(dz)<1e-7){
-    if(Math.abs(anglingSnagLocalA.z)>zTol)return false;
-  }else{
-    let ta=(-zTol-anglingSnagLocalA.z)/dz;
-    let tb=( zTol-anglingSnagLocalA.z)/dz;
-    if(ta>tb){const sw=ta;ta=tb;tb=sw;}
-    tMin=Math.max(0,ta);tMax=Math.min(1,tb);
-    if(tMin>tMax)return false;
-  }
+  // Tatsächliche Körperausdehnung, kein Komfort-/Umgebungsradius.
+  const rx=Math.max(.035,fishW*.46);   // halbe sichtbare Körperlänge
+  const ry=Math.max(.025,fishH*.34);   // reale Körperbreite
+  const rz=Math.max(.025,fishH*.40);   // reale Körperhöhe
 
-  // Kein Komfort-/Umgebungsradius: die vorhandene Fisch-Bildebene wird nur
-  // innerhalb ihrer tatsächlichen Körperellipse ausgewertet. Die Skalierung
-  // des Fischobjekts steckt bereits in worldToLocal(), daher wäre ein weiterer
-  // größenabhängiger Zuschlag eine unsichtbare Kollisionsvergrößerung.
-  const rx=.46;
-  const ry=.40;
+  const yaw=Number.isFinite(actor.shadowYaw)?actor.shadowYaw:0;
+  const pitch=Number.isFinite(actor.visualPitch)?actor.visualPitch:0;
+  const cp=Math.cos(pitch),sp=Math.sin(pitch);
+  const fx=-Math.sin(yaw),fy=Math.cos(yaw);
 
-  const ax=anglingSnagLocalA.x/rx, ay=anglingSnagLocalA.y/ry;
-  const dx=anglingSnagLocalD.x/rx, dy=anglingSnagLocalD.y/ry;
-  const denom=dx*dx+dy*dy;
-  let t=tMin;
-  if(denom>1e-8)t=THREE.MathUtils.clamp(-(ax*dx+ay*dy)/denom,tMin,tMax);
-  const ex=ax+dx*t,ey=ay+dy*t;
-  return ex*ex+ey*ey<=1;
+  // Körperachsen: Längsachse folgt Schwimmrichtung/Fressneigung,
+  // Querachse bleibt horizontal, Hochachse steht senkrecht dazu.
+  const longX=fx*cp,longY=fy*cp,longZ=sp;
+  const sideX=-fy,sideY=fx,sideZ=0;
+  const upX=-fx*sp,upY=-fy*sp,upZ=cp;
+
+  const cx=actor.obj.position.x,cy=actor.obj.position.y,cz=actor.obj.position.z;
+  const a=anglingLureSweepStart,b=anglingLure.position;
+
+  const ax=((a.x-cx)*longX+(a.y-cy)*longY+(a.z-cz)*longZ)/rx;
+  const ay=((a.x-cx)*sideX+(a.y-cy)*sideY+(a.z-cz)*sideZ)/ry;
+  const az=((a.x-cx)*upX +(a.y-cy)*upY +(a.z-cz)*upZ )/rz;
+  const bx=((b.x-cx)*longX+(b.y-cy)*longY+(b.z-cz)*longZ)/rx;
+  const by=((b.x-cx)*sideX+(b.y-cy)*sideY+(b.z-cz)*sideZ)/ry;
+  const bz=((b.x-cx)*upX +(b.y-cy)*upY +(b.z-cz)*upZ )/rz;
+
+  const dx=bx-ax,dy=by-ay,dz=bz-az;
+  const denom=dx*dx+dy*dy+dz*dz;
+  let t=0;
+  if(denom>1e-10)t=THREE.MathUtils.clamp(-(ax*dx+ay*dy+az*dz)/denom,0,1);
+  const ex=ax+dx*t,ey=ay+dy*t,ez=az+dz*t;
+
+  return ex*ex+ey*ey+ez*ez<=1;
 }
 function anglingTriggerSnaggedFish(actor){
   if(!actor||!anglingMode||!anglingUsesArtificialLure()||anglingState==='drilling'||anglingState==='landing')return false;
@@ -22151,8 +22152,9 @@ function updateFishActors(dt){
         const centerClearance=Math.max(.11,fishW*.34);
         f.obj.position.z=THREE.MathUtils.lerp(f.obj.position.z,floor+centerClearance,Math.min(1,step*1.8));
 
-        // Negatives Vorzeichen: Kopf zeigt zum Grund. P58 war optisch genau verkehrt herum.
-        f.visualPitch=-THREE.MathUtils.degToRad(45);
+        // Störe grundeln horizontal. Karpfen, Spiegelkarpfen, Schleien und
+        // Brassen behalten ihre bisherige 45°-Fresspose.
+        f.visualPitch=species==='sturgeon'?0:-THREE.MathUtils.degToRad(45);
         f.obj.quaternion.copy(camera.quaternion);
         f.obj.rotateZ(f.screenSide<0 ? f.visualPitch : -f.visualPitch);
         f.obj.scale.x=f.screenSide*f.obj.userData.baseFishWidth;
@@ -22213,7 +22215,7 @@ function updateFishActors(dt){
           // 4–7 Sekunden ruhig grundeln statt pro Frame zwischen Schwimmen und
           // 45°-Pose hin- und herzuschalten.
           f.feedBottomUntil=fishWorldTime+4.0+Math.random()*3.0;
-          f.visualPitch=-THREE.MathUtils.degToRad(45);
+          f.visualPitch=species==='sturgeon'?0:-THREE.MathUtils.degToRad(45);
           f.pause=0;
           f.feedSource='feedspot';
           f.feedDustAt=fishWorldTime+.9+Math.random()*1.1;
@@ -22231,7 +22233,7 @@ function updateFishActors(dt){
       // Futterplatz immer mal wieder kurz am Grund gründeln.
       if(ambientBottomGrazer&&ambientBottomReady&&Math.random()<.55){
         f.feedBottomUntil=fishWorldTime+3.2+Math.random()*3.0;
-        f.visualPitch=-THREE.MathUtils.degToRad(45);
+        f.visualPitch=species==='sturgeon'?0:-THREE.MathUtils.degToRad(45);
         f.pause=0;
         f.feedSource='ambient';
         f.feedDustAt=0; // erste Staubwolke sofort
