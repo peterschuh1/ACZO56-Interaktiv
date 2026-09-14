@@ -20862,6 +20862,15 @@ function keepFishAboveFloor(f){
   return true;
 }
 
+function initialFishFeedSeed(name,index){
+  // Ein junger Futterplatz beginnt mit einer kleinen, ausgewogenen Kerngruppe.
+  // Nur diese wenigen Tiere sind garantiert; alle weiteren bleiben zufaellig.
+  // So dominieren weder Schuppen- noch Spiegelkarpfen den Platz.
+  const guaranteed={roach:3,rudd:2,bream:2,tench:2,carp:1,mirrorcarp:1,sturgeon:1};
+  const count=guaranteed[name]||0;
+  return index<count ? index*.003 : Math.random();
+}
+
 function addFishPopulation(name,count,options={}){
   const schoolCount=options.schools||0;
   const lonerCount=Math.max(0,Math.min(count,Math.floor(options.loners||0)));
@@ -20903,10 +20912,7 @@ function addFishPopulation(name,count,options={}){
       phase:Math.random()*Math.PI*2,pause:Math.random()*2,
       schoolTarget,schoolOffset,index:fishActors.length,screenSide:1,shadowYaw:Math.random()*Math.PI*2,
       visualPitch:0,
-      // Je zwei Schuppen- und Spiegelkarpfen reagieren garantiert schon auf
-      // einen jungen Futterplatz. Die uebrigen Tiere behalten ihre zufaellige
-      // Auswahl, damit der Platz belebt wirkt, ohne die ganze Population anzuziehen.
-      feedSeed:((name==='carp'||name==='mirrorcarp')&&i<2?i*.008:Math.random()),
+      feedSeed:initialFishFeedSeed(name,i),
       feedOrbit:Math.random()*Math.PI*2,feedTargetVec:new THREE.Vector3()
     });
   }
@@ -21709,11 +21715,15 @@ function anglingLureDirectFishCollision(actor,sweepStart=anglingLureSweepStart,s
   // Die sichtbaren Fische sind kamerazugewandte Fotofische. Deshalb muss auch
   // ihr Kollisionskörper an genau DIESER sichtbaren Bildebene hängen und darf
   // nicht über shadowYaw in eine davon abweichende unsichtbare Richtung drehen.
-  const halfLength=Math.max(.035,fishW*.49)+lureRadius;
-  const halfHeight=Math.max(.025,fishH*.46)+lureRadius;
+  const halfLength=Math.max(.035,fishW*.52)+lureRadius;
+  const halfHeight=Math.max(.025,fishH*.52)+lureRadius;
   // Körperdicke in Blickrichtung. Das ist reale Körperausdehnung, kein
   // zusätzlicher Näherungsradius um den Fisch.
-  const halfDepth=Math.max(.030,fishH*.42)+lureRadius;
+  // Die Fotoflaeche selbst ist mathematisch duenn, der dargestellte Fisch aber
+  // nicht. Eine aus der sichtbaren Koerperhoehe abgeleitete Tiefe bildet seinen
+  // realen Leib ab. Das bleibt ein enger Koerper-Prisma-Test und ist ausdruecklich
+  // kein Fangradius um den Fisch.
+  const halfDepth=Math.max(.040,fishH*.62)+lureRadius;
 
   const q=actor.obj.quaternion;
   const axisX=anglingSnagLocalA.set(1,0,0).applyQuaternion(q).normalize();
@@ -21802,8 +21812,8 @@ function anglingFeedRuleForSpecies(species){
     case 'roach': return {group:'center',threshold:.035,radial:.70,spread:.64,zMin:.08,zMax:.28};
     case 'rudd': return {group:'center',threshold:.022,radial:.78,spread:.72,zMin:.14,zMax:.34};
     case 'bream': return {group:'center',threshold:.08,radial:.82,spread:.58,zMin:.06,zMax:.18};
-    case 'carp': return {group:'center',threshold:.10,radial:.92,spread:.50,zMin:.07,zMax:.16};
-    case 'mirrorcarp': return {group:'center',threshold:.10,radial:.92,spread:.50,zMin:.07,zMax:.16};
+    case 'carp': return {group:'center',threshold:.07,radial:.92,spread:.50,zMin:.07,zMax:.16};
+    case 'mirrorcarp': return {group:'center',threshold:.07,radial:.92,spread:.50,zMin:.07,zMax:.16};
     case 'tench': return {group:'center',threshold:.06,radial:.88,spread:.56,zMin:.04,zMax:.12};
     case 'sturgeon': return {group:'center',threshold:.20,radial:1.02,spread:.44,zMin:.03,zMax:.08};
     case 'perch': return {group:'edge',threshold:.012,radial:1.16,spread:.26,zMin:.22,zMax:.46};
