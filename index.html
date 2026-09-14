@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
-<title>ACZO56 · Beta-Test-Version</title>
+<title>ACZO56-Interaktiv-V1.1</title>
 <!-- ACZO56 BETA 1: optimierte Desktop-/Mobilversion fuer den offenen Betatest. -->
 <!-- V7.83: Kritische Viewer-Ressourcen früh anfordern. -->
 <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
@@ -4548,7 +4548,7 @@ html,body{
          <section><h3>📡 Deeper-Echolot</h3><p>Kaufe und montiere den Deeper in der Tacklebox, wähle einen Messpunkt und wirf ihn wie einen Köder aus. Das Sonar zeigt aktuelle Tiefe, Bodenverlauf, Messkegel und erkannte Fischsignale. Mit „Stelle speichern“ setzt du am Messpunkt eine Markierung. Ziehe den Deeper normal ein oder hole ihn am Desktop per Rechtsklick und mobil per Doppeltipp schnell zurück.</p></section>
          <section><h3>🌽 Naturköder</h3><p>Wurm, Made, Mais und Spezial-Naturköder werden beim erfolgreichen Anhieb verbraucht. Bei einem verpassten Anhieb besteht eine kleinere Chance auf Köderverlust. Einfaches Einholen verbraucht keinen Naturköder.</p></section>
          <section><h3>🐟 Köderfisch</h3><p>Geeignete gefangene Kleinfische erhöhen deinen Köderfischbestand. Ein Köderfisch wird bei einer Raubfischattacke verbraucht. Er kann nicht gekauft werden.</p></section>
-         <section><h3>🌀 Kunstköder</h3><p>Blinker und Gummifisch fangen nur in Bewegung. Klick oder Tipp holt etwa 0,5 m ein, Halten kurbelt kontinuierlich. Mobil holt ein Doppeltipp schnell komplett ein; am Desktop bleibt es der Rechtsklick. Maus- oder Fingerbewegung nach oben/unten verändert die Rutenhöhe und Lauftiefe; links/rechts gibt einen kleinen seitlichen Impuls. Die Schnur kollidiert mit Unterwasserholz und Stegstreben: läuft sie über ein Hindernis, bleibt sie brutal auf dessen Oberseite liegen, bildet dort einen klaren Knick/Winkel und zieht den Köder beim Einholen zuerst genau zu diesem Kontaktpunkt. Dadurch kann anschließend auch ein Hänger entstehen.</p></section>
+         <section><h3>🌀 Kunstköder</h3><p>Blinker und Gummifisch fangen nur in Bewegung. Klick oder Tipp holt etwa 0,5 m ein, Halten kurbelt kontinuierlich. Mobil holt ein Doppeltipp schnell komplett ein; am Desktop bleibt es der Rechtsklick. Maus- oder Fingerbewegung nach oben/unten verändert die Rutenhöhe und Lauftiefe; links/rechts gibt einen kleinen seitlichen Impuls. Ein Fisch kann nur dann gerissen werden, wenn der Kunstköder während des aktiven Einkurbelns den Fischkörper unmittelbar berührt. Beim freien Absinken oder wenn der Köder reglos am Grund liegt, kann kein Fisch gerissen werden. Die Schnur kollidiert weiterhin mit Unterwasserholz und Stegstreben: läuft sie über ein Hindernis, bleibt sie auf dessen Oberseite liegen, bildet dort einen klaren Knick/Winkel und zieht den Köder beim Einholen zuerst zu diesem Kontaktpunkt. Dadurch kann anschließend auch ein Hänger entstehen.</p></section>
          <section><h3>🐊 Spezialköder</h3><p>Premium- und artspezifische Köder erhöhen die Gewichtung bestimmter Fischarten, garantieren aber keinen Biss. Standort, Tiefe, Aktivität und Zufall bleiben relevant.</p></section>
          <section><h3>⚡ Biss & Anhieb</h3><p>Beim Posenangeln zeigt der Schwimmer zuerst den Biss. Danach läuft das Reaktions-QTE zweimal vollständig. Ein exakt mittiger Treffer gilt als perfekter Anhieb und bringt beim Fang +8 EP. Triff den grünen beziehungsweise besonders guten Bereich. Ein früher Fehlversuch beendet nicht sofort den gesamten Versuch.</p></section>
          <section><h3>🎣 Drill</h3><p>Beobachte Schnurspannung, Fisch-Ausdauer und Entfernung. Halte „Kurbeln“ gedrückt und führe die Rute immer auf die Gegenseite des Fisches: Fisch links bedeutet Rute rechts, Fisch rechts bedeutet Rute links. Kurbeln gewinnt Schnur, erhöht aber die Belastung. Bei zu hoher Spannung musst du kurz lösen, sonst droht Schnurbruch. Ein montierter Kunstköder geht bei Schnurbruch verloren.</p></section>
@@ -4796,7 +4796,7 @@ html,body{
        </div>
        <div class="help-note"><strong>Version</strong><br>
   <span id="helpVersion"></span><br>
-Beta-Test-Version · Live-Wetter · astronomisches Licht · Unterwasserwelt · Fischsammlung<br>
+Interaktive Tiefenkarte & Angelspiel · Live-Wetter · astronomisches Licht · Unterwasserwelt · Fischsammlung<br>
 Bitte gefundene Darstellungs-, Steuerungs- oder Spielfehler mit Gerät, Browser und betroffenem Modus melden.
 </div>
        <div class="help-note"><strong>Datenquellen & Hinweise</strong><br>
@@ -4828,7 +4828,9 @@ Wetterdaten: Open-Meteo · Astronomische Berechnungen: SunCalc<br>
 <script>
 // V7.75: Der Startlayer ist bereits durch HTML/CSS sichtbar, bevor dieser schwere
 // Three.js-Block ausgeführt wird. Er wird erst nach einem echten Renderbild freigegeben.
-const VIEWER_VERSION='ACZO56 · BETA 1.32';
+// Öffentliche Versionsbezeichnung. Interner Arbeitsstand: Build 1.34.
+const VIEWER_VERSION='ACZO56-Interaktiv-V1.1';
+const ACZO_INTERNAL_BUILD='1.34';
 const helpVersion=document.getElementById('helpVersion');
 if(helpVersion) helpVersion.textContent=VIEWER_VERSION;
 
@@ -15424,9 +15426,13 @@ function aczoSmallPierTube(a,b,r,material,name,collision=true){
   mesh.quaternion.setFromUnitVectors(new THREE.Vector3(0,1,0),delta.normalize());
   mesh.name=name;mesh.castShadow=true;mesh.receiveShadow=true;
   aczoSmallPierGroup.add(mesh);
-  if(collision)northWoodData.push({
-    start:{x:a.x,y:a.y,z:a.z},end:{x:b.x,y:b.y,z:b.z},r,kind:'small-pier'
-  });
+  if(collision){
+    const pierMatch=/KLEINSTEG_(\d+)_/.exec(String(name||''));
+    northWoodData.push({
+      start:{x:a.x,y:a.y,z:a.z},end:{x:b.x,y:b.y,z:b.z},r,kind:'small-pier',
+      pierNumber:pierMatch?Number(pierMatch[1]):null
+    });
+  }
   return mesh;
 }
 
@@ -21588,7 +21594,36 @@ let anglingVisibleStrikeActor=null;
 // damit der Rückflug zum Ufer den Übergang in den Drill nicht mehr verlieren kann.
 let anglingLockedStrikeCatch=null; // P49: echter sichtbarer Räuber bleibt bis zum Anhieb derselbe Fisch
 const anglingLurePrevWorldPos=new THREE.Vector3();
+const anglingLureSweepStart=new THREE.Vector3();
+const anglingSnagSweepVector=new THREE.Vector3();
+const anglingSnagSweepToFish=new THREE.Vector3();
+const anglingSnagSweepClosest=new THREE.Vector3();
 let anglingLurePrevValid=false,anglingLureWorldSpeed=0,anglingSnagCooldownUntil=0;
+
+function anglingLureDirectFishCollision(actor){
+  if(!actor?.obj||!anglingLurePrevValid)return false;
+  // Nur ein echter Einholzug darf einen Fisch reißen. Sinkbewegung, Taumeln
+  // und ein regloser Köder am Grund sind ausdrücklich ausgeschlossen.
+  if(anglingState!=='lure-retrieving'||anglingLureGrounded||anglingLureWorldSpeed<=.18)return false;
+  if(anglingRetrieveStart.distanceToSquared(anglingRetrieveEnd)<.0025)return false;
+
+  const a=anglingLureSweepStart,b=anglingLure.position,p=actor.obj.position;
+  anglingSnagSweepVector.copy(b).sub(a);
+  const len2=anglingSnagSweepVector.lengthSq();
+  let t=0;
+  if(len2>1e-8){
+    anglingSnagSweepToFish.copy(p).sub(a);
+    t=THREE.MathUtils.clamp(anglingSnagSweepToFish.dot(anglingSnagSweepVector)/len2,0,1);
+  }
+  anglingSnagSweepClosest.copy(a).addScaledVector(anglingSnagSweepVector,t);
+
+  const fishW=Math.abs(actor.obj.userData.baseFishWidth||actor.obj.scale.x||.22);
+  const fishH=Math.abs(actor.obj.userData.baseFishHeight||actor.obj.scale.y||fishW*.45);
+  // Deutlich engere Körperzone als bisher: Der Köder muss den Fisch wirklich
+  // treffen und nicht nur in seiner großzügigen Umgebung vorbeilaufen.
+  const hitRadius=THREE.MathUtils.clamp(Math.sqrt(fishW*fishH)*.22+.025,.05,.22);
+  return anglingSnagSweepClosest.distanceToSquared(p)<=hitRadius*hitRadius;
+}
 function anglingTriggerSnaggedFish(actor){
   if(!actor||!anglingMode||!anglingUsesArtificialLure()||anglingState==='drilling'||anglingState==='landing')return false;
   const species=actor.obj.userData.species;
@@ -21619,19 +21654,22 @@ function anglingTriggerSnaggedFish(actor){
 const anglingFeedFishTarget=new THREE.Vector3();
 const anglingFeedFishRelocate=new THREE.Vector3();
 function anglingFeedRuleForSpecies(species){
+  // BETA 1.33: Der Futterplatz bleibt sichtbar belebt, wirkt aber nicht mehr
+  // wie ein Magnet auf einen großen Teil der gesamten Fischpopulation.
+  // Bei voller Reife sammeln sich rechnerisch nur noch grob 15 statt ~58 Tiere.
   switch(species){
-    case 'goby': return {group:'center',threshold:.075,radial:.42,spread:.46,zMin:.02,zMax:.08};
-    case 'roach': return {group:'center',threshold:.12,radial:.70,spread:.64,zMin:.08,zMax:.28};
-    case 'rudd': return {group:'center',threshold:.085,radial:.78,spread:.72,zMin:.14,zMax:.34};
-    case 'bream': return {group:'center',threshold:.24,radial:.82,spread:.58,zMin:.06,zMax:.18};
-    case 'carp': return {group:'center',threshold:.26,radial:.92,spread:.50,zMin:.07,zMax:.16};
-    case 'mirrorcarp': return {group:'center',threshold:.26,radial:.92,spread:.50,zMin:.07,zMax:.16};
-    case 'tench': return {group:'center',threshold:.20,radial:.88,spread:.56,zMin:.04,zMax:.12};
-    case 'sturgeon': return {group:'center',threshold:.70,radial:1.02,spread:.44,zMin:.03,zMax:.08};
-    case 'perch': return {group:'edge',threshold:.08,radial:1.16,spread:.26,zMin:.22,zMax:.46};
-    case 'pike': return {group:'edge',threshold:.26,radial:1.42,spread:.26,zMin:.18,zMax:.38};
-    case 'zander': return {group:'edge',threshold:.52,radial:1.30,spread:.22,zMin:.06,zMax:.18};
-    case 'catfish': return {group:'edge',threshold:.24,radial:1.54,spread:.24,zMin:.04,zMax:.12};
+    case 'goby': return {group:'center',threshold:.015,radial:.42,spread:.46,zMin:.02,zMax:.08};
+    case 'roach': return {group:'center',threshold:.035,radial:.70,spread:.64,zMin:.08,zMax:.28};
+    case 'rudd': return {group:'center',threshold:.022,radial:.78,spread:.72,zMin:.14,zMax:.34};
+    case 'bream': return {group:'center',threshold:.08,radial:.82,spread:.58,zMin:.06,zMax:.18};
+    case 'carp': return {group:'center',threshold:.10,radial:.92,spread:.50,zMin:.07,zMax:.16};
+    case 'mirrorcarp': return {group:'center',threshold:.10,radial:.92,spread:.50,zMin:.07,zMax:.16};
+    case 'tench': return {group:'center',threshold:.06,radial:.88,spread:.56,zMin:.04,zMax:.12};
+    case 'sturgeon': return {group:'center',threshold:.20,radial:1.02,spread:.44,zMin:.03,zMax:.08};
+    case 'perch': return {group:'edge',threshold:.012,radial:1.16,spread:.26,zMin:.22,zMax:.46};
+    case 'pike': return {group:'edge',threshold:.035,radial:1.42,spread:.26,zMin:.18,zMax:.38};
+    case 'zander': return {group:'edge',threshold:.06,radial:1.30,spread:.22,zMin:.06,zMax:.18};
+    case 'catfish': return {group:'edge',threshold:.04,radial:1.54,spread:.24,zMin:.04,zMax:.12};
     default:return null;
   }
 }
@@ -21727,10 +21765,18 @@ function updateFishActors(dt){
     aczoFishBackgroundAccum=0;
   }
   if(lureUnderwaterActive){
-    if(anglingLurePrevValid&&dt>0)anglingLureWorldSpeed=anglingLure.position.distanceTo(anglingLurePrevWorldPos)/dt;
-    else anglingLureWorldSpeed=0;
+    if(anglingLurePrevValid&&dt>0){
+      anglingLureSweepStart.copy(anglingLurePrevWorldPos);
+      anglingLureWorldSpeed=anglingLure.position.distanceTo(anglingLurePrevWorldPos)/dt;
+    }else{
+      anglingLureSweepStart.copy(anglingLure.position);
+      anglingLureWorldSpeed=0;
+    }
     anglingLurePrevWorldPos.copy(anglingLure.position);anglingLurePrevValid=true;
-  }else{anglingLurePrevValid=false;anglingLureWorldSpeed=0;}
+  }else{
+    anglingLurePrevValid=false;anglingLureWorldSpeed=0;
+    anglingLureSweepStart.copy(anglingLure.position);
+  }
   updateAnglingFeedUnderwaterVisual(dt,lureUnderwaterActive);
   if(!fishVisualActive&&!feedWorldActive) return;
   fishWorldTime+=dt;
@@ -21819,18 +21865,17 @@ function updateFishActors(dt){
       // derselbe Kontakt der reguläre Biss mit anschließendem QTE.
       const aczoFishIsChasingLure=aczoVisiblePredator&&(f.lureChaseUntil||0)>fishWorldTime;
 
-      // "Fisch gerissen" bleibt nur für echte zufällige 3D-Berührungen mit
-      // NICHT jagenden Fischen bestehen.
+      // BETA 1.34 / Interaktiv V1.1:
+      // "Fisch gerissen" gibt es ausschließlich während eines echten
+      // Einholzuges. Freies Absinken, Taumeln und Grundliegen zählen nicht.
+      // Zusätzlich wird der reale Köderweg dieses Frames gegen eine bewusst
+      // enge Körperzone geprüft, statt nur einen großzügigen Abstandsradius
+      // um den Fisch zu verwenden.
       const aczoFishIsFleeing=(f.huntFleeUntil||0)>fishWorldTime;
-      if(!aczoFishIsChasingLure&&!aczoFishIsFleeing&&fishNow>=anglingSnagCooldownUntil&&
-         lureMoving&&anglingLureWorldSpeed>.22&&
-         ['lure-retrieving','lure-waiting'].includes(anglingState)){
-        const fishW=Math.abs(f.obj.userData.baseFishWidth||f.obj.scale.x||.22);
-        const fishH=Math.abs(f.obj.userData.baseFishHeight||f.obj.scale.y||fishW*.45);
-        const hitRadius=THREE.MathUtils.clamp(Math.sqrt(fishW*fishW+fishH*fishH)*.40+.05,.095,.54);
-        if(lureDist<=hitRadius){
-          if(anglingTriggerSnaggedFish(f))return;
-        }
+      if(!aczoFishIsChasingLure&&!aczoFishIsFleeing&&
+         fishNow>=anglingSnagCooldownUntil&&
+         anglingLureDirectFishCollision(f)){
+        if(anglingTriggerSnaggedFish(f))return;
       }
     }
     const nearEnough=f.obj.position.distanceToSquared(fishViewCamera.position)<1156;
@@ -21935,7 +21980,10 @@ function updateFishActors(dt){
     // Brassen, Schleien und Störe wirbeln dabei Sediment auf und setzen kleine
     // Luftblasen aus dem Boden frei.
     const feedBottomSpecies=['carp','mirrorcarp','tench','bream','sturgeon'];
-    const feedBottomGrazer=feedSeeking&&!['pike','zander','perch','catfish','goby'].includes(species);
+    // BETA 1.33: Staubwolken und Grundblasen nur noch bei den Arten, die hier
+    // tatsächlich als Grundfresser gedacht sind. Rotaugen/Rotfedern am
+    // Futterplatz bleiben horizontal und erzeugen keine künstlichen Sedimentwolken.
+    const feedBottomGrazer=feedSeeking&&feedBottomSpecies.includes(species);
     const ambientBottomGrazer=!feedSeeking&&!isHunter&&!isFleeing&&feedBottomSpecies.includes(species);
 
     let ambientBottomReady=false;
@@ -25118,6 +25166,26 @@ function clearAnglingLineObstacleContact(){
   anglingLineObstacleContact.segment=null;
   anglingLineObstacleContact.segmentT=0;
   anglingLineObstacleContact.kind='';
+}
+
+// BETA 1.33: Der Steg, auf dem der Angler selbst steht, darf die Schnur direkt
+// vor der Rute nicht als Hänger fangen. Weiter entfernte Teile desselben großen
+// Stegs bleiben dagegen echte Hindernisse. Andere Stege/Totholz bleiben unverändert.
+function anglingOwnPierContactIsHarmless(seg,x,y){
+  if(!seg||!anglingSelection||!anglingSelection.shore)return false;
+  const dx=x-anglingSelection.shore.x,dy=y-anglingSelection.shore.y;
+  const distance=Math.hypot(dx,dy);
+
+  if(seg.kind==='small-pier'&&anglingSelection.smallPierNumber){
+    return Number(seg.pierNumber)===Number(anglingSelection.smallPierNumber)&&distance<1.65;
+  }
+  if(seg.kind==='north-pier'&&['tip','middle-left','middle-right'].includes(anglingSelection.pierSpot)){
+    return distance<2.15;
+  }
+  if(seg.kind==='east-boat-pier'&&anglingSelection.boatPierSpot){
+    return distance<2.60;
+  }
+  return false;
 }
 const anglingLineColP1=new THREE.Vector3();
 const anglingLineColQ1=new THREE.Vector3();
@@ -30288,13 +30356,17 @@ function updateAnglingLineObstacleContact(start,end){
     const r=seg.r||.04;
     const x=THREE.MathUtils.lerp(seg.start.x,seg.end.x,t);
     const y=THREE.MathUtils.lerp(seg.start.y,seg.end.y,t);
-    const centerZ=THREE.MathUtils.lerp(seg.start.z,seg.end.z,t);
-    const topZ=Math.min(deadwoodSurfaceZ(x,y)-.008,centerZ+r+.055);
 
-    anglingLineObstacleContact.point.set(x,y,topZ);
-    anglingLineObstacleContact.woodPoint.copy(anglingLineObstacleContact.point);
-    anglingLineObstacleContact.active=true;
-    return anglingLineObstacleContact;
+    if(anglingOwnPierContactIsHarmless(seg,x,y)){
+      clearAnglingLineObstacleContact();
+    }else{
+      const centerZ=THREE.MathUtils.lerp(seg.start.z,seg.end.z,t);
+      const topZ=Math.min(deadwoodSurfaceZ(x,y)-.008,centerZ+r+.055);
+      anglingLineObstacleContact.point.set(x,y,topZ);
+      anglingLineObstacleContact.woodPoint.copy(anglingLineObstacleContact.point);
+      anglingLineObstacleContact.active=true;
+      return anglingLineObstacleContact;
+    }
   }
 
   anglingLineObstacleContact.active=false;
@@ -30327,6 +30399,12 @@ function updateAnglingLineObstacleContact(start,end){
     const supportX=THREE.MathUtils.lerp(seg.start.x,seg.end.x,t);
     const supportY=THREE.MathUtils.lerp(seg.start.y,seg.end.y,t);
     const supportCenterZ=THREE.MathUtils.lerp(seg.start.z,seg.end.z,t);
+
+    // Der eigene Standsteg wird im unmittelbaren Bereich unter/vor der Rute
+    // ausgeblendet. Damit bleibt die Schnur beim normalen Einkurbeln nicht
+    // am Steg hängen, auf dem der Spieler selbst steht.
+    if(anglingOwnPierContactIsHarmless(seg,supportX,supportY))continue;
+
     const supportTopZ=Math.min(
       deadwoodSurfaceZ(supportX,supportY)-.008,
       supportCenterZ+r+.055
@@ -33694,7 +33772,7 @@ function retrieveAnglingLine(){
       anglingRetrieveDuration=.42;
       anglingActionBtn.disabled=true;
       anglingActionBtn.textContent='Kurbeln …';
-      const atPier=lineContact.kind==='north-pier'||lineContact.kind==='small-pier';
+      const atPier=lineContact.kind==='north-pier'||lineContact.kind==='small-pier'||lineContact.kind==='east-boat-pier';
       setAnglingStatus(
         atPier?'Schnur am Steg':'Schnur am Hindernis',
         'Die Schnur wird umgelenkt – der Köder wird zum Kontaktpunkt gezogen.'
