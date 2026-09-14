@@ -20903,7 +20903,11 @@ function addFishPopulation(name,count,options={}){
       phase:Math.random()*Math.PI*2,pause:Math.random()*2,
       schoolTarget,schoolOffset,index:fishActors.length,screenSide:1,shadowYaw:Math.random()*Math.PI*2,
       visualPitch:0,
-      feedSeed:Math.random(),feedOrbit:Math.random()*Math.PI*2,feedTargetVec:new THREE.Vector3()
+      // Je zwei Schuppen- und Spiegelkarpfen reagieren garantiert schon auf
+      // einen jungen Futterplatz. Die uebrigen Tiere behalten ihre zufaellige
+      // Auswahl, damit der Platz belebt wirkt, ohne die ganze Population anzuziehen.
+      feedSeed:((name==='carp'||name==='mirrorcarp')&&i<2?i*.008:Math.random()),
+      feedOrbit:Math.random()*Math.PI*2,feedTargetVec:new THREE.Vector3()
     });
   }
 }
@@ -21678,36 +21682,45 @@ let anglingVisibleStrikeActor=null;
 let anglingLockedStrikeCatch=null; // P49: echter sichtbarer Räuber bleibt bis zum Anhieb derselbe Fisch
 const anglingLurePrevWorldPos=new THREE.Vector3();
 const anglingLureSweepStart=new THREE.Vector3();
+const anglingLureFrameSweepStart=new THREE.Vector3();
 const anglingSnagLocalA=new THREE.Vector3();
 const anglingSnagLocalB=new THREE.Vector3();
 const anglingSnagLocalD=new THREE.Vector3();
 let anglingLurePrevValid=false,anglingLureWorldSpeed=0,anglingSnagCooldownUntil=0;
 
-function anglingLureDirectFishCollision(actor){
-  if(!actor?.obj||!anglingLurePrevValid)return false;
+function anglingLureDirectFishCollision(actor,sweepStart=anglingLureSweepStart,sweepEnd=anglingLure.position){
+  if(!actor?.obj||!sweepStart||!sweepEnd)return false;
 
   // Fischreißen ausschließlich während einer echten, aktiven Einholbewegung.
-  if(anglingState!=='lure-retrieving'||anglingLureWorldSpeed<=.04)return false;
+  // Die Bewegung wird direkt aus dem in diesem Renderbild wirklich zurueckgelegten
+  // Koederweg bestimmt. Damit geht weder das erste noch das letzte Teilstueck eines
+  // Einholimpulses durch die bisher um ein Bild versetzte Abfrage verloren.
+  if(anglingState!=='lure-retrieving'||sweepStart.distanceToSquared(sweepEnd)<=1e-10)return false;
   if(anglingRetrieveStart.distanceToSquared(anglingRetrieveEnd)<.0016)return false;
 
   const fishW=Math.max(.08,Math.abs(actor.obj.userData.baseFishWidth||actor.obj.scale.x||.22));
   const fishH=Math.max(.035,Math.abs(actor.obj.userData.baseFishHeight||actor.obj.scale.y||fishW*.45));
 
+  // Reale Ausdehnung von Koeder und Haken, kein Fangradius: Beim Segmenttest
+  // wird der Fischkoerper nur um die physische Koederhuelle erweitert.
+  const lureProfile=ANGLING_LURE_APPEARANCE[anglingSelectedLureId]||ANGLING_LURE_APPEARANCE.spinner_basic;
+  const lureRadius=THREE.MathUtils.clamp((lureProfile.overall||.074)*.32,.018,.028);
+
   // Die sichtbaren Fische sind kamerazugewandte Fotofische. Deshalb muss auch
   // ihr Kollisionskörper an genau DIESER sichtbaren Bildebene hängen und darf
   // nicht über shadowYaw in eine davon abweichende unsichtbare Richtung drehen.
-  const halfLength=Math.max(.035,fishW*.49);
-  const halfHeight=Math.max(.025,fishH*.46);
+  const halfLength=Math.max(.035,fishW*.49)+lureRadius;
+  const halfHeight=Math.max(.025,fishH*.46)+lureRadius;
   // Körperdicke in Blickrichtung. Das ist reale Körperausdehnung, kein
   // zusätzlicher Näherungsradius um den Fisch.
-  const halfDepth=Math.max(.030,fishH*.42);
+  const halfDepth=Math.max(.030,fishH*.42)+lureRadius;
 
   const q=actor.obj.quaternion;
   const axisX=anglingSnagLocalA.set(1,0,0).applyQuaternion(q).normalize();
   const axisY=anglingSnagLocalB.set(0,1,0).applyQuaternion(q).normalize();
   const axisZ=anglingSnagLocalD.set(0,0,1).applyQuaternion(q).normalize();
   const c=actor.obj.position;
-  const a=anglingLureSweepStart,b=anglingLure.position;
+  const a=sweepStart,b=sweepEnd;
 
   const arx=a.x-c.x,ary=a.y-c.y,arz=a.z-c.z;
   const brx=b.x-c.x,bry=b.y-c.y,brz=b.z-c.z;
@@ -21731,6 +21744,25 @@ function anglingLureDirectFishCollision(actor){
   const root=Math.sqrt(disc);
   const t0=(-B-root)/(2*A),t1=(-B+root)/(2*A);
   return t1>=0&&t0<=1;
+}
+function anglingCheckCurrentRetrieveFishCollisions(sweepStart,sweepEnd){
+  if(anglingState!=='lure-retrieving'||performance.now()<anglingSnagCooldownUntil)return false;
+  if(!sweepStart||!sweepEnd||sweepStart.distanceToSquared(sweepEnd)<=1e-10)return false;
+
+  for(const actor of fishActors){
+    if(!actor?.obj||actor.obj.userData.hiddenByHunt||!actor.obj.visible)continue;
+    const species=actor.obj.userData.species;
+    // Ein bereits sichtbar jagender Raeuber behaelt seinen normalen Biss mit QTE.
+    // Alle anderen sichtbaren Fische koennen nur durch echten Koerperkontakt
+    // mit dem aktiv bewegten Kunstkoeder gerissen werden.
+    const chasing=['pike','zander','perch','catfish'].includes(species)&&
+      (actor.lureChaseUntil||0)>fishWorldTime;
+    if(chasing)continue;
+    if(anglingLureDirectFishCollision(actor,sweepStart,sweepEnd)){
+      return anglingTriggerSnaggedFish(actor);
+    }
+  }
+  return false;
 }
 function anglingTriggerSnaggedFish(actor){
   if(!actor||!anglingMode||!anglingUsesArtificialLure()||anglingState==='drilling'||anglingState==='landing')return false;
@@ -35591,6 +35623,9 @@ function updateAnglingMode(dt){
     anglingFloatCaption.textContent=anglingBaitLabels[anglingSelectedBait]+' · '+anglingLureDepth.toFixed(1).replace('.',',')+' m tief · '+anglingRodDepthLabel();
   }else if(anglingState==='lure-retrieving'){
     const u=anglingClamp01(anglingStateTime/Math.max(.1,anglingRetrieveDuration)),eased=anglingEase(u);
+    // Die Kollisionsstrecke beginnt exakt an der Position vor DER aktuellen
+    // Koederbewegung; updateFishActors laeuft absichtlich frueher im Hauptloop.
+    anglingLureFrameSweepStart.copy(anglingLure.position);
     anglingLure.position.lerpVectors(anglingRetrieveStart,anglingRetrieveEnd,eased);
     const lureTravel=anglingTmpC.set(anglingSelection.shore.x-anglingLure.position.x,anglingSelection.shore.y-anglingLure.position.y,0).normalize();
     anglingLure.rotation.z=Math.atan2(-lureTravel.x,lureTravel.y);
@@ -35617,6 +35652,9 @@ function updateAnglingMode(dt){
     const metres=Math.max(0,Math.hypot(anglingLure.position.x-anglingSelection.shore.x,anglingLure.position.y-anglingSelection.shore.y));
     anglingLineSummary.textContent='🌀 '+anglingBaitLabels[anglingSelectedBait]+' · '+metres.toFixed(1).replace('.',',')+' m';
     anglingFloatCaption.textContent=anglingBaitLabels[anglingSelectedBait]+' · '+anglingLureDepth.toFixed(1).replace('.',',')+' m tief · '+anglingRodDepthLabel();
+    // Exakt jetzt pruefen, nachdem der Koeder seine neue Position fuer dieses
+    // Bild erhalten hat. So entspricht die Kollision der sichtbaren Bewegung.
+    if(anglingCheckCurrentRetrieveFishCollisions(anglingLureFrameSweepStart,anglingLure.position))return;
     // Nur der bewegte Kunstköder erzeugt eine Bisschance. Jeder Zug ist ein
     // kurzes Fangfenster, wodurch aktives Führen wirklich notwendig ist.
     {
