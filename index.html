@@ -4548,7 +4548,7 @@ html,body{
          <section><h3>📡 Deeper-Echolot</h3><p>Kaufe und montiere den Deeper in der Tacklebox, wähle einen Messpunkt und wirf ihn wie einen Köder aus. Das Sonar zeigt aktuelle Tiefe, Bodenverlauf, Messkegel und erkannte Fischsignale. Mit „Stelle speichern“ setzt du am Messpunkt eine Markierung. Ziehe den Deeper normal ein oder hole ihn am Desktop per Rechtsklick und mobil per Doppeltipp schnell zurück.</p></section>
          <section><h3>🌽 Naturköder</h3><p>Wurm, Made, Mais und Spezial-Naturköder werden beim erfolgreichen Anhieb verbraucht. Bei einem verpassten Anhieb besteht eine kleinere Chance auf Köderverlust. Einfaches Einholen verbraucht keinen Naturköder.</p></section>
          <section><h3>🐟 Köderfisch</h3><p>Geeignete gefangene Kleinfische erhöhen deinen Köderfischbestand. Ein Köderfisch wird bei einer Raubfischattacke verbraucht. Er kann nicht gekauft werden.</p></section>
-         <section><h3>🌀 Kunstköder</h3><p>Blinker und Gummifisch fangen nur in Bewegung. Klick oder Tipp holt etwa 0,5 m ein, Halten kurbelt kontinuierlich. Mobil holt ein Doppeltipp schnell komplett ein; am Desktop bleibt es der Rechtsklick. Maus- oder Fingerbewegung nach oben/unten verändert die Rutenhöhe und Lauftiefe; links/rechts gibt einen kleinen seitlichen Impuls. Ein Fisch kann nur dann gerissen werden, wenn der Kunstköder während des aktiven Einkurbelns den Fischkörper unmittelbar berührt. Beim freien Absinken oder wenn der Köder reglos am Grund liegt, kann kein Fisch gerissen werden. Die Schnur kollidiert weiterhin mit Unterwasserholz, Bäumen und Stegen. Läuft sie über mehrere Hindernisse, kann sie nun auf mehreren Punkten gleichzeitig aufliegen und entsprechend mehrere Knicke bilden. Beim Einholen wird der Köder zuerst zum jeweils nächsten Kontaktpunkt gezogen; dort kann anschließend auch ein Hänger entstehen.</p></section>
+         <section><h3>🌀 Kunstköder</h3><p>Blinker und Gummifisch fangen nur in Bewegung. Klick oder Tipp holt etwa 0,5 m ein, Halten kurbelt kontinuierlich. Mobil holt ein Doppeltipp schnell komplett ein; am Desktop bleibt es der Rechtsklick. Maus- oder Fingerbewegung nach oben/unten verändert die Rutenhöhe und Lauftiefe; links/rechts gibt einen kleinen seitlichen Impuls. Ein Fisch kann nur dann gerissen werden, wenn der Kunstköder während des aktiven Einkurbelns den Fischkörper unmittelbar berührt. Beim freien Absinken oder wenn der Köder reglos am Grund liegt, kann kein Fisch gerissen werden. Wird der Köder dagegen aktiv über den Grund gezogen, zählt eine echte Körperberührung ebenfalls. Die Schnur kollidiert weiterhin mit Unterwasserholz, Bäumen und Stegen. Läuft sie über mehrere Hindernisse, kann sie nun auf mehreren Punkten gleichzeitig aufliegen und entsprechend mehrere Knicke bilden. Beim Einholen wird der Köder zuerst zum jeweils nächsten Kontaktpunkt gezogen; dort kann anschließend auch ein Hänger entstehen.</p></section>
          <section><h3>🐊 Spezialköder</h3><p>Premium- und artspezifische Köder erhöhen die Gewichtung bestimmter Fischarten, garantieren aber keinen Biss. Standort, Tiefe, Aktivität und Zufall bleiben relevant.</p></section>
          <section><h3>⚡ Biss & Anhieb</h3><p>Beim Posenangeln zeigt der Schwimmer zuerst den Biss. Danach läuft das Reaktions-QTE zweimal vollständig. Ein exakt mittiger Treffer gilt als perfekter Anhieb und bringt beim Fang +8 EP. Triff den grünen beziehungsweise besonders guten Bereich. Ein früher Fehlversuch beendet nicht sofort den gesamten Versuch.</p></section>
          <section><h3>🎣 Drill</h3><p>Beobachte Schnurspannung, Fisch-Ausdauer und Entfernung. Halte „Kurbeln“ gedrückt und führe die Rute immer auf die Gegenseite des Fisches: Fisch links bedeutet Rute rechts, Fisch rechts bedeutet Rute links. Kurbeln gewinnt Schnur, erhöht aber die Belastung. Bei zu hoher Spannung musst du kurz lösen, sonst droht Schnurbruch. Ein montierter Kunstköder geht bei Schnurbruch verloren.</p></section>
@@ -4830,7 +4830,7 @@ Wetterdaten: Open-Meteo · Astronomische Berechnungen: SunCalc<br>
 // Three.js-Block ausgeführt wird. Er wird erst nach einem echten Renderbild freigegeben.
 // Öffentliche Versionsbezeichnung. Interner Arbeitsstand: Build 1.34.
 const VIEWER_VERSION='ACZO56-Interaktiv-V1.1';
-const ACZO_INTERNAL_BUILD='1.35';
+const ACZO_INTERNAL_BUILD='1.36';
 const helpVersion=document.getElementById('helpVersion');
 if(helpVersion) helpVersion.textContent=VIEWER_VERSION;
 
@@ -21649,8 +21649,11 @@ let anglingLurePrevValid=false,anglingLureWorldSpeed=0,anglingSnagCooldownUntil=
 function anglingLureDirectFishCollision(actor){
   if(!actor?.obj||!anglingLurePrevValid)return false;
 
-  // Interaktiv V1.1 / Build 1.35: nur echtes Einkurbeln kann einen Fisch reißen.
-  if(anglingState!=='lure-retrieving'||anglingLureGrounded||anglingLureWorldSpeed<=.12)return false;
+  // Interaktiv V1.1 / Build 1.36:
+  // Nur echtes Einkurbeln kann einen Fisch reißen. Ein ruhender oder frei
+  // absinkender Köder bleibt ausgeschlossen. Wird der Köder dagegen bewusst
+  // über den Grund gezogen, darf eine echte Körperberührung sehr wohl haken.
+  if(anglingState!=='lure-retrieving'||anglingLureWorldSpeed<=.04)return false;
   if(anglingRetrieveStart.distanceToSquared(anglingRetrieveEnd)<.0016)return false;
 
   // Prüfe den realen Köderweg gegen die sichtbare Fisch-Bildebene.
@@ -21810,6 +21813,44 @@ function updateAnglingFeedUnderwaterVisual(dt,lureUnderwaterActive){
   }
   anglingFeedRiseParticleGeo.attributes.position.needsUpdate=true;
 }
+// Build 1.36: Scheuchwirkung eines aktiv geführten Kunstköders.
+// Rotauge/Rotfeder fliehen zuverlässig; größere Friedfische nur gelegentlich.
+// Räuber werden hier bewusst nicht behandelt, weil ihre vorhandene Köderjagd
+// weiterhin Vorrang hat. Der Stör bleibt neutral und flieht nicht automatisch.
+function anglingLureScareProfile(species){
+  switch(species){
+    case 'roach':      return {radius:1.35,chance:1.00,distance:[2.8,4.2],duration:[2.0,2.8]};
+    case 'rudd':       return {radius:1.35,chance:1.00,distance:[2.8,4.2],duration:[2.0,2.8]};
+    case 'bream':      return {radius:1.12,chance:.42,distance:[2.4,3.6],duration:[1.8,2.6]};
+    case 'carp':       return {radius:1.05,chance:.28,distance:[2.5,3.8],duration:[1.9,2.8]};
+    case 'mirrorcarp': return {radius:1.05,chance:.28,distance:[2.5,3.8],duration:[1.9,2.8]};
+    case 'grasscarp':  return {radius:1.08,chance:.30,distance:[2.6,4.0],duration:[1.9,2.8]};
+    case 'tench':      return {radius:.98,chance:.34,distance:[2.2,3.4],duration:[1.8,2.5]};
+    default:return null;
+  }
+}
+
+function triggerAnglingLureScare(f,cfg){
+  const away=f.obj.position.clone().sub(anglingLure.position);
+  if(away.lengthSq()<.0001)away.set(Math.random()-.5,Math.random()-.5,(Math.random()-.5)*.12);
+  away.normalize();
+
+  const fleeDistance=THREE.MathUtils.lerp(cfg.distance[0],cfg.distance[1],Math.random());
+  f.huntFleeTarget=f.obj.position.clone().addScaledVector(away,fleeDistance);
+
+  const fleeDepth=pondDepthAt(f.huntFleeTarget.x,f.huntFleeTarget.y);
+  if(fleeDepth==null||fleeDepth<.35){
+    randomSpeciesPoint(f.obj.userData.species,f.huntFleeTarget);
+  }else{
+    const floor=-fleeDepth*exaggeration;
+    f.huntFleeTarget.z=THREE.MathUtils.clamp(f.huntFleeTarget.z,floor+.18,-.14);
+  }
+
+  f.huntFleeUntil=fishWorldTime+THREE.MathUtils.lerp(cfg.duration[0],cfg.duration[1],Math.random());
+  f.lureChaseUntil=0;
+  f.pause=0;
+}
+
 function updateFishActors(dt){
   const fishNow=performance.now();
   // P30: Der Kunstkoederflug ueber Wasser braucht keine 516-koepfige Unterwasser-
@@ -21907,38 +21948,33 @@ function updateFishActors(dt){
         f.lureChaseUntil=0;
       }
 
-      // Nur Rotaugen und Rotfedern erschrecken aktiv vor einem sich nähernden Kunstköder.
-      // Andere Fischarten behalten ihre normale Schwimmlogik, sofern sie den Köder nicht wirklich berühren.
-      if(lureMoving&&(species==='roach'||species==='rudd')&&lureDist<1.15&&f.huntFleeUntil<=fishWorldTime){
-        const away=f.obj.position.clone().sub(anglingLure.position);
-        if(away.lengthSq()<.0001)away.set(Math.random()-.5,Math.random()-.5,(Math.random()-.5)*.15);
-        away.normalize();
-        f.huntFleeTarget=f.obj.position.clone().addScaledVector(away,2.4+Math.random()*1.8);
-        const fleeDepth=pondDepthAt(f.huntFleeTarget.x,f.huntFleeTarget.y);
-        if(fleeDepth==null||fleeDepth<.35)randomSpeciesPoint(species,f.huntFleeTarget);
-        else{
-          const floor=-fleeDepth*exaggeration;
-          f.huntFleeTarget.z=THREE.MathUtils.clamp(f.huntFleeTarget.z,floor+.22,-.16);
-        }
-        f.huntFleeUntil=fishWorldTime+1.7+Math.random()*.8;f.pause=0;
-      }
-
-      // P50: Ein Räuber, der den Kunstköder bereits aktiv verfolgt, kann beim
-      // Kontakt NICHT mehr als "Fisch gerissen" gewertet werden. Für ihn ist
-      // derselbe Kontakt der reguläre Biss mit anschließendem QTE.
+      // P50 / Build 1.36: Ein Räuber, der den Kunstköder aktiv verfolgt,
+      // bekommt bei Kontakt seinen regulären Biss mit QTE. Alle anderen Fische
+      // können bei einer wirklichen Körperkollision gerissen werden.
       const aczoFishIsChasingLure=aczoVisiblePredator&&(f.lureChaseUntil||0)>fishWorldTime;
 
-      // BETA 1.34 / Interaktiv V1.1:
-      // "Fisch gerissen" gibt es ausschließlich während eines echten
-      // Einholzuges. Freies Absinken, Taumeln und Grundliegen zählen nicht.
-      // Zusätzlich wird der reale Köderweg dieses Frames gegen eine bewusst
-      // enge Körperzone geprüft, statt nur einen großzügigen Abstandsradius
-      // um den Fisch zu verwenden.
-      const aczoFishIsFleeing=(f.huntFleeUntil||0)>fishWorldTime;
-      if(!aczoFishIsChasingLure&&!aczoFishIsFleeing&&
+      // Die echte Kollision wird VOR einer neuen Fluchtreaktion geprüft.
+      // Trifft der aktiv eingekurbelte Köder den Fischkörper wirklich, zählt
+      // dieser Treffer auch bei einem Friedfisch. Nur "in die Nähe kommen"
+      // reicht weiterhin nicht.
+      if(!aczoFishIsChasingLure&&
          fishNow>=anglingSnagCooldownUntil&&
          anglingLureDirectFishCollision(f)){
         if(anglingTriggerSnaggedFish(f))return;
+      }
+
+      // Scheuchverhalten nur, wenn der Köder den Fisch NICHT bereits getroffen hat.
+      // Bei Brasse/Karpfen/Schleie wird die Reaktion pro Annäherung genau einmal
+      // ausgewürfelt, nicht in jedem Frame. Dadurch bleibt "manchmal" auch wirklich manchmal.
+      const scareCfg=anglingLureScareProfile(species);
+      if(scareCfg){
+        if(lureDist>scareCfg.radius*1.38)f.lureScareInside=false;
+
+        const alreadyFleeing=(f.huntFleeUntil||0)>fishWorldTime;
+        if(lureMoving&&lureDist<scareCfg.radius&&!f.lureScareInside&&!alreadyFleeing){
+          f.lureScareInside=true;
+          if(Math.random()<scareCfg.chance)triggerAnglingLureScare(f,scareCfg);
+        }
       }
     }
     const nearEnough=f.obj.position.distanceToSquared(fishViewCamera.position)<1156;
@@ -30591,7 +30627,9 @@ function resolveAnglingObstacleSnag(){
   anglingStateTime=0;
   anglingObstacleSnag=null;
   clearAnglingLineObstacleContact();
-  anglingObstacleSnagCooldownUntil=performance.now()+4200;
+  // Build 1.36: Nach erfolgreichem Lösen bleibt die Montage länger geschützt.
+  // So hängt derselbe Baum/Steg beim Freikurbeln nicht zwei- oder dreimal direkt erneut.
+  anglingObstacleSnagCooldownUntil=performance.now()+7000;
   hideAnglingSnagPrompt();
   recalcAnglingAtCurrentTerminal();
   showAnglingMajorNotice('✅ HÄNGER GELÖST!','Du bist wieder frei und kannst weiterfischen.','success',1650);
