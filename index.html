@@ -20423,7 +20423,10 @@ const fishSpecies={
   koi:     {maxLength:.70,minFactor:1.00,aspect:.38},
   perch:   {maxLength:.15,minFactor:.62,aspect:.69},
   sunfish: {maxLength:.15,minFactor:.62,aspect:.65},
-  goby:    {maxLength:.10,minFactor:.50,aspect:.49}
+  // Grundeln bleiben klein, beginnen optisch aber nicht mehr bei nur 5 cm.
+  // Zusammen mit der dezenten Aufhellung unten verhindert das schwarze
+  // Ein-Pixel-Silhouetten, ohne daraus unnatürlich große Fische zu machen.
+  goby:    {maxLength:.10,minFactor:.70,aspect:.49}
 };
 
 const fishImageData={
@@ -20554,7 +20557,9 @@ function makeFin(s,color,points){
 const fishBillboardGeo=new THREE.PlaneGeometry(1,1,1,1);
 const fishBillboardMatCache={};
 function fishBillboardMaterial(name){
-  const tint=new THREE.Color(0xffffff);
+  // Die sehr kleinen, bodennahen Grundeln verlieren im Wassernebel sonst fast
+  // ihre gesamte Zeichnung. Nur ihre Darstellung wird leicht aufgehellt.
+  const tint=name==='goby'?new THREE.Color(1.16,1.13,1.06):new THREE.Color(0xffffff);
   const patternMode=0;
   if(!fishBillboardMatCache[name]) fishBillboardMatCache[name]=new THREE.ShaderMaterial({
     uniforms:{
@@ -20937,7 +20942,7 @@ function buildFishWorld(){
   addFishPopulation('bream',30,{schools:4});
   addFishPopulation('koi',1);
   addFishPopulation('perch',50,{schools:7,loners:6});
-  addFishPopulation('sunfish',50,{schools:7});
+  addFishPopulation('sunfish',70,{schools:9});
   // Sehr großer Bestand, aber durch Sichtweiten-Culling weiterhin leichtgewichtig.
   addFishPopulation('goby',160,{schools:18});
 }
@@ -21744,19 +21749,34 @@ function anglingLureDirectFishCollision(actor,sweepStart=anglingLureSweepStart,s
   const by=(brx*axisY.x+bry*axisY.y+brz*axisY.z)/halfHeight;
   const bz=(brx*axisZ.x+bry*axisZ.y+brz*axisZ.z)/halfDepth;
 
-  // Swept segment vs. ellipsoid: auch ein schneller Köder kann nicht zwischen
-  // zwei Frames durch einen sichtbaren Fisch springen.
+  // Swept segment vs. sichtbarer Fischsilhouette mit realer Körperdicke:
+  // Ein Ellipsoid verkleinerte die erlaubte Bildfläche fälschlich immer weiter,
+  // sobald Köder und Fisch in Blickrichtung leicht versetzt waren. Die sichtbare
+  // Foto-Silhouette bleibt jedoch gleich groß. Deshalb schneiden wir präzise
+  // die 2D-Körperellipse und die enge Tiefenschicht und verlangen, dass sich
+  // beide Trefferintervalle überschneiden. Das ist weiterhin kein Fangradius.
   const dx=bx-ax,dy=by-ay,dz=bz-az;
-  const A=dx*dx+dy*dy+dz*dz;
-  const B=2*(ax*dx+ay*dy+az*dz);
-  const C=ax*ax+ay*ay+az*az-1;
-  if(C<=0)return true;
-  if(A<=1e-12)return false;
+  let depthMin=0,depthMax=1;
+  if(Math.abs(dz)<=1e-12){
+    if(Math.abs(az)>1)return false;
+  }else{
+    const z0=(-1-az)/dz,z1=(1-az)/dz;
+    depthMin=Math.max(0,Math.min(z0,z1));
+    depthMax=Math.min(1,Math.max(z0,z1));
+    if(depthMin>depthMax)return false;
+  }
+
+  const A=dx*dx+dy*dy;
+  const B=2*(ax*dx+ay*dy);
+  const C=ax*ax+ay*ay-1;
+  if(A<=1e-12)return C<=0;
   const disc=B*B-4*A*C;
   if(disc<0)return false;
   const root=Math.sqrt(disc);
   const t0=(-B-root)/(2*A),t1=(-B+root)/(2*A);
-  return t1>=0&&t0<=1;
+  const bodyMin=Math.max(0,Math.min(t0,t1));
+  const bodyMax=Math.min(1,Math.max(t0,t1));
+  return bodyMin<=bodyMax&&Math.max(bodyMin,depthMin)<=Math.min(bodyMax,depthMax);
 }
 function anglingCheckCurrentRetrieveFishCollisions(sweepStart,sweepEnd){
   if(anglingState!=='lure-retrieving'||performance.now()<anglingSnagCooldownUntil)return false;
@@ -22369,11 +22389,18 @@ function updateFishActors(dt){
       f.obj.scale.x=f.screenSide*f.obj.userData.baseFishWidth;
       f.obj.scale.y=f.obj.userData.baseFishHeight;
       const horizontalSpeed=Math.hypot(fishMoveDelta.x,fishMoveDelta.y);
-      const pitchLimit=strictBottomFish.has(species)?THREE.MathUtils.degToRad(8):MAX_FISH_PITCH;
+      // Hechte ändern bei der Jagd ihre vertikale Bewegungsrichtung sehr häufig.
+      // Ihre Fotofläche folgt dem weiterhin, aber deutlich gedämpfter, damit der
+      // Kopf nicht mehr bei jedem kleinen Kurswechsel hysterisch nickt.
+      const pikePitchStable=species==='pike';
+      const pitchLimit=pikePitchStable
+        ?THREE.MathUtils.degToRad(7)
+        :(strictBottomFish.has(species)?THREE.MathUtils.degToRad(8):MAX_FISH_PITCH);
       let targetPitch=isLureHunter?0:THREE.MathUtils.clamp(
         Math.atan2(fishMoveDelta.z,Math.max(.0001,horizontalSpeed)),
         -pitchLimit,pitchLimit
       );
+      if(pikePitchStable)targetPitch*=.62;
       // P63: Grundeln bleiben optisch immer horizontal. Ihre Bodennähe wird
       // ausschließlich über die Z-Position geregelt, nicht über Kopfneigung.
       if(species==='goby')targetPitch=0;
@@ -22382,14 +22409,14 @@ function updateFishActors(dt){
       // aber nicht mehr jeden winzigen Richtungswechsel sofort sichtbar mitmachen.
       // Gerade bei Jagd und Bodenkorrekturen wechselte das Vorzeichen der Z-Richtung
       // zuvor frameweise und ließ den Kopf unnatürlich hoch/runter zittern.
-      const pitchDeadband=THREE.MathUtils.degToRad(strictBottomFish.has(species)?3.2:1.8);
+      const pitchDeadband=THREE.MathUtils.degToRad(pikePitchStable?3.4:(strictBottomFish.has(species)?3.2:1.8));
       if(Math.abs(targetPitch)<pitchDeadband)targetPitch=0;
       if(!Number.isFinite(f.visualPitch))f.visualPitch=0;
 
-      const pitchLambda=(isHunter||isLureHunter)?4.8:(isFleeing?4.0:2.2);
+      const pitchLambda=pikePitchStable?2.0:((isHunter||isLureHunter)?4.8:(isFleeing?4.0:2.2));
       const pitchBlend=1-Math.exp(-pitchLambda*Math.max(.001,step));
       const blendedPitch=THREE.MathUtils.lerp(f.visualPitch,targetPitch,pitchBlend);
-      const maxPitchRate=(isHunter||isLureHunter)?.66:(isFleeing?.56:.28); // P58: ruhiger, kein Kopf-Pumpen
+      const maxPitchRate=pikePitchStable?.15:((isHunter||isLureHunter)?.66:(isFleeing?.56:.28)); // P58: ruhiger, kein Kopf-Pumpen
       const maxPitchStep=maxPitchRate*Math.max(.001,step);
       f.visualPitch+=THREE.MathUtils.clamp(
         blendedPitch-f.visualPitch,
@@ -26144,7 +26171,7 @@ function anglingSafeLandCamera(shore,inward){
 
 const ANGLING_POPULATION={
   roach:100,rudd:70,pike:10,catfish:5,carp:10,mirrorcarp:10,grasscarp:3,
-  sturgeon:3,zander:4,eel:8,tench:20,bream:30,koi:1,perch:50,sunfish:50,goby:160
+  sturgeon:3,zander:4,eel:8,tench:20,bream:30,koi:1,perch:50,sunfish:70,goby:160
 };
 const ANGLING_LURE_CATALOG={
   spinner_basic:{name:'Blinker Standard',icon:'spinner_basic',type:'spinner',price:20,desc:'Solider Allrounder für Raubfische.',tag:'Standard',boost:{}},
@@ -36232,6 +36259,16 @@ renderer.domElement.addEventListener('pointerdown',e=>{
       // Kurzes Tippen und Doppeltippen müssen vor der Köderbewegung eindeutig
       // getrennt werden. Langes Halten startet weiterhin nach einer kurzen,
       // unauffälligen Halteschwelle das kontinuierliche Einholen.
+      // Beginnt ein plausibler zweiter Tipp noch innerhalb des Fensters, wird
+      // der wartende Einzelzug sofort gestoppt. So kann er nicht genau zwischen
+      // zweitem Pointer-down und Pointer-up doch noch den Köder bewegen.
+      const possibleSecondFastTap=anglingLastFastTapAt>0
+        &&performance.now()-anglingLastFastTapAt<=380
+        &&Math.hypot(e.clientX-anglingLastFastTapX,e.clientY-anglingLastFastTapY)<=34;
+      if(possibleSecondFastTap&&anglingPendingSingleRetrieveTimer){
+        window.clearTimeout(anglingPendingSingleRetrieveTimer);
+        anglingPendingSingleRetrieveTimer=0;
+      }
       anglingActionHeld=false;anglingActionHoldPointer=e.pointerId;anglingActionHoldStartedAt=performance.now();
       anglingTouchRetrieveHoldPointer=e.pointerId;
       anglingPointerStarts.set(e.pointerId,{x:e.clientX,y:e.clientY,lastX:e.clientX,lastY:e.clientY,dragX:0,moved:false,startedAt:performance.now(),manualRetrieveTouch:true,manualRetrieveHold:false});
