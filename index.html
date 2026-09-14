@@ -3,8 +3,8 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
-<title>ACZO56-Interaktiv-V1.3</title>
-<!-- ACZO56 BETA 1.3: Natürlicher Kiesgrubenboden auf bestehender, unveränderter Spielbasis. -->
+<title>ACZO56-Interaktiv-V1.2</title>
+<!-- ACZO56 BETA 1.2: Hänger-, Fischkontakt-, Touch- und Idle-Korrekturen auf bestehender Basis. -->
 <!-- V7.83: Kritische Viewer-Ressourcen früh anfordern. -->
 <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
 <link rel="preconnect" href="https://geo4.service24.rlp.de" crossorigin>
@@ -4828,9 +4828,9 @@ Wetterdaten: Open-Meteo · Astronomische Berechnungen: SunCalc<br>
 <script>
 // V7.75: Der Startlayer ist bereits durch HTML/CSS sichtbar, bevor dieser schwere
 // Three.js-Block ausgeführt wird. Er wird erst nach einem echten Renderbild freigegeben.
-// Öffentliche Versionsbezeichnung. Interner Arbeitsstand: Build 1.41.
-const VIEWER_VERSION='ACZO56-Interaktiv-V1.3';
-const ACZO_INTERNAL_BUILD='1.41';
+// Öffentliche Versionsbezeichnung. Interner Arbeitsstand: Build 1.34.
+const VIEWER_VERSION='ACZO56-Interaktiv-V1.2';
+const ACZO_INTERNAL_BUILD='1.38';
 const helpVersion=document.getElementById('helpVersion');
 if(helpVersion) helpVersion.textContent=VIEWER_VERSION;
 
@@ -5988,16 +5988,12 @@ pondNightLift.visible=false;
 // Nur für die Fischsicht: natürliche, weiterhin tiefenabhängige Bodenfarben.
 function underwaterGroundColor(d){
   const t=THREE.MathUtils.clamp(d/D.maxDepth,0,1);
-  // Eine ehemalige Kiesgrube ist nicht überall gleich: heller Kies und Sand
-  // im Flachwasser, ein gemischter Übergang und dunkler Feinschlamm in der Tiefe.
-  const shallow=new THREE.Color(0xc2aa73);
-  const middle=new THREE.Color(0x74785b);
-  // Etwas heller als zuvor, damit die Kieskörnung auch in der Gewässermitte
-  // durch Wassernebel und größere Entfernung nicht vollständig verschwindet.
-  const deep=new THREE.Color(0x3d4b43);
-  return t<.43
-    ? shallow.clone().lerp(middle,t/.43)
-    : middle.clone().lerp(deep,(t-.43)/.57);
+  const shallow=new THREE.Color(0xb6a06b);
+  const middle=new THREE.Color(0x61755e);
+  const deep=new THREE.Color(0x263f42);
+  return t<.48
+    ? shallow.clone().lerp(middle,t/.48)
+    : middle.clone().lerp(deep,(t-.48)/.52);
 }
 // BETA 3.5 PERFORMANCE: Unterwasser-Geometrie beim Seitenstart nur minimal anlegen.
 // Farben, UVs, Normalen und Kiestextur werden erst erzeugt, wenn eine echte
@@ -6088,47 +6084,43 @@ const fishBottomDetailMat=new THREE.ShaderMaterial({
       return .5+.25*sin(p.x+sin(p.y*.73))+.25*sin(p.y*.81-sin(p.x*.61));
     }
     void main(){
-      // BETA 1.3 Korrektur: Keine schwellenbasierten Großflächen mehr. Diese
-      // erzeugten auf den Uferhängen die unnatürlichen hellen "Kuhflecken".
-      // Alle Anteile werden jetzt kontinuierlich gemischt; feinere Körnung und
-      // dezente Abbauspuren bleiben zugleich bis in die Gewässermitte sichtbar.
+      // BETA 1.11:
+      // - flachere Zonen wirken kiesiger / sandiger
+      // - mit zunehmender Tiefe wird der Boden sichtbar schlammiger
+      // - keine harten Muster, sondern nur weiche natürliche Überlagerungen
       float depth=-vP.z;
       float broad=n2(vP.xy*.09+vec2(1.7,-2.1));
       float medium=n2(vP.xy*.28+vec2(-3.4,2.8));
       float fine=n2(vP.xy*.95+vec2(4.1,-1.6));
       float micro=n2(vP.xy*2.2+vec2(-6.2,3.7));
 
-      float shallow=1.0-smoothstep(1.15,2.35,depth);
-      float transition=smoothstep(.72,1.55,depth)*(1.0-smoothstep(2.75,3.75,depth));
-      float deep=smoothstep(2.20,4.35,depth);
+      float shallow=1.0-smoothstep(1.10,2.25,depth);
+      float deep=smoothstep(1.85,4.20,depth);
 
-      float gravelAmount=shallow*(.46+broad*.24+fine*.16)+transition*(.16+medium*.14);
-      float sandAmount=shallow*(.20+(1.0-broad)*.22)+transition*.07;
-      float siltAmount=transition*(.24+(1.0-medium)*.16)+deep*(.56+broad*.16);
-      float paleGrain=(fine*.60+micro*.40)*(shallow*.26+transition*.14+deep*.075);
+      float gravelBeds=smoothstep(.34,.88,broad)*shallow;
+      float gravelSpecks=smoothstep(.60,.92,fine)*shallow;
+      float shellDust=smoothstep(.70,.96,micro)*smoothstep(.20,1.90,depth)*shallow;
+      float silt=smoothstep(.54,.86,broad)*smoothstep(1.45,4.20,depth);
+      float organic=smoothstep(.62,.90,medium)*smoothstep(.80,4.20,depth);
 
-      // Sanfte, langgezogene Bagger-/Sedimentspuren statt abgegrenzter Inseln.
-      float sweepA=sin(vP.x*.18+vP.y*.065+sin(vP.y*.12)*1.6);
-      float sweepB=sin(vP.y*.14-vP.x*.045+sin(vP.x*.08)*1.2);
-      float broadVariation=(broad-.5)*.13+(medium-.5)*.09;
-      float grainVariation=(fine-.5)*.14+(micro-.5)*.07;
-      float bedVariation=broadVariation+grainVariation+(sweepA+sweepB)*.020;
+      vec3 mud=vec3(.20,.23,.19);
+      vec3 sand=vec3(.71,.68,.56);
+      vec3 gravel=vec3(.55,.54,.45);
+      vec3 organ=vec3(.13,.17,.14);
 
-      vec3 gravel=vec3(.53,.51,.42);
-      vec3 pale=vec3(.72,.68,.54);
-      vec3 sand=vec3(.65,.61,.48);
-      vec3 mixed=vec3(.38,.40,.31);
-      vec3 mud=vec3(.17,.22,.20);
+      vec3 c=mix(mud,sand,shallow*.55);
+      c=mix(c,gravel,gravelBeds*.58);
+      c=mix(c,vec3(.80,.77,.65),gravelSpecks*.20+shellDust*.12);
+      c=mix(c,vec3(.23,.25,.20),silt*(.16+.20*deep));
+      c=mix(c,organ,organic*.48);
 
-      vec3 c=mix(sand,mixed,smoothstep(1.10,2.75,depth));
-      c=mix(c,mud,clamp(siltAmount*.58,0.0,.72));
-      c=mix(c,gravel,clamp(gravelAmount*.54,0.0,.58));
-      c=mix(c,vec3(.59,.55,.43),clamp(sandAmount*.42,0.0,.30));
-      c=mix(c,pale,clamp(paleGrain*.30,0.0,.18));
-      c*=1.0+bedVariation;
-
-      float alpha=clamp((.21+shallow*.07+transition*.05+deep*.045+
-        abs(fine-.5)*.055+abs(micro-.5)*.035)*intensity,.18,.36);
+      float alpha=(
+        gravelBeds*.095+
+        gravelSpecks*.045+
+        shellDust*.025+
+        silt*.055+
+        organic*.038
+      )*intensity;
 
       gl_FragColor=vec4(c,alpha);
     }
@@ -6140,20 +6132,18 @@ fishBottomDetails.renderOrder=2.62;fishBottomDetails.visible=false;scene.add(fis
 // Die freien Außenkanten des Tiefenmeshs werden bis zur Wasserlinie geschlossen.
 // So bleibt die Kiesgrube auch beim Blick schräg zum Ufer eine geschlossene 3D-Form.
 const fishBoundaryEdges=POND_RENDER_BOUNDARY.map((_,i)=>[i,(i+1)%POND_RENDER_BOUNDARY.length]);
-// Die Uferböschung nutzt bewusst kein winkelabhängiges Lambert-Licht mehr.
-// Auf den langen Dreiecken der Böschung wurden sonst deren Kanten als große,
-// helle Flecken sichtbar. MeshBasic bleibt nebel- und texturfähig, zeigt aber
-// die Kieswand unabhängig von ihrer Triangulierung gleichmäßig.
-const fishBankWallMat=new THREE.MeshBasicMaterial({
-  color:0xa6a18b,vertexColors:true,map:null,side:THREE.DoubleSide,fog:true
+// Die senkrechten Uferflächen erhalten dieselbe Materialfamilie wie der Boden,
+// jedoch gröber und etwas dunkler. Die Textur wird geklont, damit die 54-fache
+// Wiederholung des Bodens nicht auf die Weltkoordinaten-UVs der Wand wirkt.
+const fishBankWallMat=new THREE.MeshLambertMaterial({
+  color:0xbdb59b,vertexColors:true,map:null,side:THREE.DoubleSide
 });
 
 function ensureUnderwaterStaticAssets(){
   if(underwaterStaticAssetsReady)return;
   ensureFishPondAttributes();
 
-  // Nahtlose, feinkörnige Kiesstruktur. Größere Weltzonen kommen aus dem
-  // Boden-Shader; dadurch wiederholt sich die Textur nicht als sichtbarer Teppich.
+  // Nahtlose Kiesstruktur exakt wie bisher, nur nicht mehr beim Seitenstart.
   const gravelCanvas=document.createElement('canvas');
   gravelCanvas.width=gravelCanvas.height=256;
   const gravelCtx=gravelCanvas.getContext('2d');
@@ -6174,7 +6164,7 @@ function ensureUnderwaterStaticAssets(){
   }
   gravelTexture=new THREE.CanvasTexture(gravelCanvas);
   gravelTexture.wrapS=gravelTexture.wrapT=THREE.RepeatWrapping;
-  gravelTexture.repeat.set(36,36);
+  gravelTexture.repeat.set(54,54);
   gravelTexture.encoding=THREE.sRGBEncoding;
   fishPondMat.map=gravelTexture;fishPondMat.needsUpdate=true;
 
@@ -6186,7 +6176,7 @@ function ensureUnderwaterStaticAssets(){
   underwaterStaticAssetsReady=true;
 }
 const fishBankWall=new THREE.Mesh(new THREE.BufferGeometry(),fishBankWallMat);
-fishBankWall.receiveShadow=false;
+fishBankWall.receiveShadow=true;
 fishBankWall.visible=false;fishBankWall.renderOrder=2.15;scene.add(fishBankWall);
 
 // Wenige vorstehende Steine brechen die glatte Silhouette der Wand. Auch hier
@@ -6280,10 +6270,8 @@ function rebuildFishBankWall(){
       const z=r===0 ? .205 : -Math.max(.02,p.d)*exaggeration+(r===1 ? .040 : .018); // V2.3.6k: Unterwasserwand ueberlappt die bewegte Wasserhaut stärker; der helle Randspalt verschwindet auch bei Wellen.
       pos.push(p.x,p.y,z);
       uv.push((i/cols)*(perimeter/5.5),v*2.2);
-      // Nur eine sanfte, kontinuierliche Tiefenabdunklung. Dadurch entstehen
-      // auch durch die Vertexfarben keine hellen, polygonalen Uferfelder.
-      const shade=.94-v*.09;
-      col.push(shade,shade*.985,shade*.94);
+      const shade=1.03-v*.20;
+      col.push(shade,shade*.97,shade*.86);
     }
   }
   for(let r=0;r<rows-1;r++){
@@ -14642,43 +14630,31 @@ function spawnPoolParticle(pool,x,y,z,size,life,vx,vy,vz,alpha){
   pool.vx[i]=vx;pool.vy[i]=vy;pool.vz[i]=vz;pool.alphas[i]=alpha;
 }
 
-// Kleine echte Kiesel für Parallaxe; die dichte Kieswirkung kommt weiterhin
-// aus Bodentextur und Zonen-Shader. Es gibt bewusst keine Felsbrocken.
+// Wenige echte Steine für Parallaxe; die dichte Kieswirkung kommt aus der Bodentextur.
 const underwaterStoneData=[];
 const stoneGeo=new THREE.IcosahedronGeometry(1,0);
 const stoneMat=new THREE.MeshLambertMaterial({color:0x8e8a78});
-const underwaterStoneCount=3000;
-const underwaterStones=new THREE.InstancedMesh(stoneGeo,stoneMat,underwaterStoneCount);
-underwaterStones.instanceMatrix.setUsage(THREE.StaticDrawUsage);
-underwaterStones.visible=false;underwaterStones.renderOrder=3;
-// Ein gemeinsamer Instanz-Durchlauf ohne eigenen Schattenpass hält die größere
-// Kieselmenge auch auf Mobilgeräten günstig.
-underwaterStones.castShadow=false;underwaterStones.receiveShadow=true;scene.add(underwaterStones);
-function aczoQuarryGravelDensity(x,y,d){
-  const broad=.5+.25*Math.sin(x*.09+Math.sin(y*.073))+.25*Math.sin(y*.081-Math.sin(x*.061));
-  const shallow=THREE.MathUtils.clamp(1-d/2.65,0,1);
-  const deep=THREE.MathUtils.clamp((d-2.15)/2.35,0,1);
-  // Auch tiefe Bereiche erhalten kleine Steine; die Verteilung bleibt dort nur
-  // lockerer als auf den ehemaligen flachen Kiesbänken.
-  return THREE.MathUtils.clamp(.25+shallow*.30+broad*.24-deep*.055,.18,.86);
-}
-for(let i=0;i<underwaterStoneCount;i++){
+const underwaterStones=new THREE.InstancedMesh(stoneGeo,stoneMat,360);
+underwaterStones.visible=false;underwaterStones.renderOrder=3;underwaterStones.castShadow=true;underwaterStones.receiveShadow=true;scene.add(underwaterStones);
+for(let i=0;i<1500;i++){
   for(let tries=0;tries<260;tries++){
     const x=pondRandomX(),y=pondRandomY(),d=pondDepthAt(x,y);
     if(d==null||d<.18) continue;
-    if(Math.random()>aczoQuarryGravelDensity(x,y,d))continue;
 
-    // BETA 1.3: Viele Kiesel und wenige kleinere Steine, bevorzugt in den
-    // flacheren Kiesfeldern. Selbst die größten Exemplare bleiben klar unter
-    // Felsbrockenmaß und werden zusätzlich flach in den Boden gelegt.
+    // BETA 1.13: alte Steinanmutung wieder zurückholen, aber deutlich dichter.
+    // Viele kleine Kiesel, dazu einige mittlere Steine – vor allem in flacheren
+    // Bereichen, aber nicht ausschließlich dort.
     const shallowBias=THREE.MathUtils.clamp(1-d/2.4,0,1);
     const r=Math.random();
-    const pebble=r<.82;
+    const pebble=r<.68;
+    const medium=!pebble && r<.93;
     underwaterStoneData.push({
       x,y,d,
       s:pebble
-        ? (.014+Math.random()*(.024+shallowBias*.018))
-        : (.038+Math.random()*(.036+shallowBias*.010)),
+        ? (.016+Math.random()*(.032+shallowBias*.026))
+        : medium
+          ? (.040+Math.random()*(.060+shallowBias*.040))
+          : (.070+Math.random()*(.070+shallowBias*.040)),
       a:Math.random()*Math.PI,
       algae:Math.random()<(d>1.9?.10:.20),
       tone:Math.random(),
@@ -20161,12 +20137,12 @@ function rebuildUnderwaterObjects(){
     const d=pondDepthAt(s.x,s.y);
     if(d==null||d<.30)return;
     s.d=d;
-    dummy.position.set(s.x,s.y,-d*exaggeration+s.s*.25);
+    dummy.position.set(s.x,s.y,-d*exaggeration+s.s*.36);
     dummy.rotation.set(s.rx*.48,s.a,s.rz*Math.PI);
     dummy.scale.set(
       s.s*(.86+s.tone*.50),
       s.s*(.74+s.rx*.36),
-      s.s*(.32+s.rz*.18)
+      s.s*(.50+s.rz*.24)
     );
     dummy.updateMatrix();underwaterStones.setMatrixAt(count,dummy.matrix);
     underwaterStones.setColorAt(
