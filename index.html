@@ -13078,6 +13078,15 @@ function movePersonToward(person,target,dt){
     const resolved=aczoResolveVisitorMotion(person.obj.position,nx,ny,person,target);
     if(resolved){nx=resolved.x;ny=resolved.y;}
   }
+  // HARD COLLISION: Auch das Ergebnis der Ausweichberechnung muss wirklich frei sein.
+  // Falls ein numerischer/seitlicher Ausweichschritt noch durch Gebäude oder Auto führt,
+  // bleibt die Figur für diesen Frame an ihrer letzten gültigen Position.
+  if(typeof aczoVisitorSegmentAllowed==='function' &&
+     !aczoVisitorSegmentAllowed(person.obj.position.x,person.obj.position.y,nx,ny)){
+    nx=person.obj.position.x;
+    ny=person.obj.position.y;
+    person.avoidSign=person.avoidSign?-person.avoidSign:(Math.random()<.5?-1:1);
+  }
   const moved=Math.hypot(nx-person.obj.position.x,ny-person.obj.position.y);
   person.blockedTime=moved<step*.12?(person.blockedTime||0)+dt:0;
   person.obj.position.x=nx;
