@@ -16250,7 +16250,7 @@ function aczoBuildGableHouse(parent,width,depth,wallH,ridgeH,prefix,wallMat=aczo
     const geo=new THREE.BufferGeometry();
     geo.setAttribute('position',new THREE.Float32BufferAttribute(triPos.map((v,i)=>i%3===1?side*depth*.5:v),3));
     geo.setAttribute('uv',new THREE.Float32BufferAttribute([0,0,1,0,.5,1],2));
-    geo.setIndex([0,1,2]);geo.computeVertexNormals();
+    geo.setIndex(side<0?[0,2,1]:[0,1,2]);geo.computeVertexNormals();
     aczoFacilityMesh(parent,new THREE.Mesh(geo,aczoBuildingSlateMat),prefix+'_SCHIEFERGIEBEL_'+(side<0?'VORN':'HINTEN'));
   }
   const overhang=.34,run=width*.5+overhang,rise=ridgeH-wallH;
@@ -16286,7 +16286,7 @@ function aczoBuildGableHouseRidgeX(parent,width,depth,wallH,ridgeH,prefix,wallMa
     const geo=new THREE.BufferGeometry();
     geo.setAttribute('position',new THREE.Float32BufferAttribute(triPos.map((v,i)=>i%3===0?side*width*.5:v),3));
     geo.setAttribute('uv',new THREE.Float32BufferAttribute([0,0,1,0,.5,1],2));
-    geo.setIndex([0,1,2]);geo.computeVertexNormals();
+    geo.setIndex(side<0?[0,2,1]:[0,1,2]);geo.computeVertexNormals();
     aczoFacilityMesh(parent,new THREE.Mesh(geo,aczoBuildingSlateMat),prefix+'_SCHIEFERGIEBEL_'+(side<0?'NORD':'SUED'));
   }
   const overhang=.34,run=depth*.5+overhang,rise=ridgeH-wallH;
