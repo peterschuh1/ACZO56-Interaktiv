@@ -12860,9 +12860,64 @@ function aczoSwingGateOpenProgress(){
   const gate=aczoConstructionGates.find(g=>g.type==='swing');
   return gate?gate.open:(aczoSwingGateCommandOpen?1:0);
 }
+// Besucher stehen beim Ein-/Aussteigen immer wirklich AUSSERHALB der
+// Fahrzeugkollision. Der alte Wert 1,38 m lag exakt auf deren Rand und wurde
+// deshalb je nach Rundung abwechselnd als frei oder als "im Auto" gewertet.
+function aczoGateCarLocalPosition(car,lx,ly,out=new THREE.Vector3()){
+  const yaw=car.rotation.z,c=Math.cos(yaw),s=Math.sin(yaw);
+  return out.set(
+    car.position.x+c*lx-s*ly,
+    car.position.y+s*lx+c*ly,
+    ACZO_VISITOR_GROUND_Z
+  );
+}
+function aczoGateCarDoorSide(car){
+  const yaw=car.rotation.z,c=Math.cos(yaw),s=Math.sin(yaw);
+  const dx=ACZO_SWING_GATE_HANDLE_OUTSIDE.x-car.position.x;
+  const dy=ACZO_SWING_GATE_HANDLE_OUTSIDE.y-car.position.y;
+  return c*dx+s*dy>=0?1:-1;
+}
 function aczoGateCarSidePosition(car,out=new THREE.Vector3()){
-  const yaw=car.rotation.z;
-  return out.set(car.position.x+Math.cos(yaw)*1.38,car.position.y+Math.sin(yaw)*1.38,ACZO_VISITOR_GROUND_Z);
+  return aczoGateCarLocalPosition(car,aczoGateCarDoorSide(car)*1.58,.18,out);
+}
+function aczoGateCarFrontCornerPosition(car,out=new THREE.Vector3()){
+  const yaw=car.rotation.z,c=Math.cos(yaw),s=Math.sin(yaw);
+  const dx=ACZO_SWING_GATE_HANDLE_OUTSIDE.x-car.position.x;
+  const dy=ACZO_SWING_GATE_HANDLE_OUTSIDE.y-car.position.y;
+  const localY=-s*dx+c*dy;
+  // Bei der Einfahrt liegt das Tor vor, bei der Ausfahrt wegen der gedrehten
+  // Fahrzeugausrichtung hinter dem Auto. Immer das jeweils nähere Ende nutzen.
+  return aczoGateCarLocalPosition(car,aczoGateCarDoorSide(car)*1.58,(localY>=0?1:-1)*2.96,out);
+}
+function aczoParkingPersonPosition(car,index,count,out=new THREE.Vector3()){
+  const side=index%2===0?1:-1;
+  const row=Math.floor(index/2);
+  const ly=.40-row*.90+(count>2?.22:0);
+  return aczoGateCarLocalPosition(car,side*1.58,ly,out);
+}
+function aczoSetPersonRoute(person,points){
+  person.navQueue.length=0;
+  const valid=points.filter(Boolean);
+  if(!valid.length)return false;
+  person.target.copy(valid[0]);
+  for(let i=1;i<valid.length;i++)person.navQueue.push({pos:valid[i].clone(),pause:0});
+  person.targetPause=0;person.avoidSign=0;person.blockedTime=0;
+  return true;
+}
+function aczoAdvanceImmediatePersonRoute(person){
+  if(!person.navQueue||!person.navQueue.length)return false;
+  const next=person.navQueue.shift();
+  person.target.copy(next.pos||next);person.targetPause=Number(next.pause)||0;
+  person.avoidSign=0;person.blockedTime=0;
+  return true;
+}
+function aczoSetGatePersonRoute(person,car,toHandle){
+  const door=aczoGateCarSidePosition(car,new THREE.Vector3());
+  const corner=aczoGateCarFrontCornerPosition(car,new THREE.Vector3());
+  if(toHandle){
+    person.obj.position.copy(door);
+    aczoSetPersonRoute(person,[corner,ACZO_SWING_GATE_HANDLE_OUTSIDE]);
+  }else aczoSetPersonRoute(person,[corner,door]);
 }
 
 function aczoVehicleShellGeometry(sections){
@@ -13037,9 +13092,8 @@ function aczoEnsureRegularGatePerson(visit){
 }
 function aczoBeginRegularGateWalk(visit,closing=false){
   const person=aczoEnsureRegularGatePerson(visit);
-  aczoGateCarSidePosition(visit.car,person.obj.position);
   person.obj.visible=true;person.pause=0;person.blockedTime=0;
-  person.target.copy(ACZO_SWING_GATE_HANDLE_OUTSIDE);
+  aczoSetGatePersonRoute(person,visit.car,true);
   visit.state=closing?'gate-closer-to-handle':'gate-opener-to-handle';
 }
 
@@ -13082,7 +13136,7 @@ function movePersonToward(person,target,dt){
   // Falls ein numerischer/seitlicher Ausweichschritt noch durch Gebäude oder Auto führt,
   // bleibt die Figur für diesen Frame an ihrer letzten gültigen Position.
   if(typeof aczoVisitorSegmentAllowed==='function' &&
-     !aczoVisitorSegmentAllowed(person.obj.position.x,person.obj.position.y,nx,ny)){
+     !aczoVisitorSegmentAllowed(person.obj.position.x,person.obj.position.y,nx,ny,person)){
     nx=person.obj.position.x;
     ny=person.obj.position.y;
     person.avoidSign=person.avoidSign?-person.avoidSign:(Math.random()<.5?-1:1);
@@ -13101,11 +13155,9 @@ function movePersonToward(person,target,dt){
 }
 
 function startPeopleRoaming(visit){
-  const stop=carRoute[carRoute.length-1];
   for(let i=0;i<visit.personCount;i++){
     const p=visit.people[i]||createVisitPerson(i);
-    if(typeof aczoPlaceVisitorOnOpenGround==='function')aczoPlaceVisitorOnOpenGround(p.obj.position,stop.x+(i-1)*.45,stop.y-.55);
-    else p.obj.position.set(stop.x+(i-1)*.45,stop.y-.55,ACZO_VISITOR_GROUND_Z);
+    aczoParkingPersonPosition(visit.car,i,visit.personCount,p.obj.position);
     p.obj.visible=true;p.returned=false;p.pause=0;p.blockedTime=0;
     if(typeof aczoAssignVisitPersonTarget==='function')aczoAssignVisitPersonTarget(p);
     else randomPersonAreaPoint(p.target);
@@ -13187,17 +13239,21 @@ function updateCarVisit(dt){
   }else if(v.state==='gate-opener-to-handle'){
     const person=aczoEnsureRegularGatePerson(v);
     if(movePersonToward(person,person.target,scaledDt)){
-      aczoSetSwingGateCommand(true);v.state='gate-opening';
+      if(!aczoAdvanceImmediatePersonRoute(person)){
+        aczoSetSwingGateCommand(true);v.state='gate-opening';
+      }
     }
   }else if(v.state==='gate-opening'){
     if(aczoSwingGateOpenProgress()>.96){
       const person=aczoEnsureRegularGatePerson(v);
-      aczoGateCarSidePosition(v.car,person.target);v.state='gate-opener-to-car';
+      aczoSetGatePersonRoute(person,v.car,false);v.state='gate-opener-to-car';
     }
   }else if(v.state==='gate-opener-to-car'){
     const person=aczoEnsureRegularGatePerson(v);
     if(movePersonToward(person,person.target,scaledDt)){
-      person.obj.visible=false;v.state='arriving-inside';
+      if(!aczoAdvanceImmediatePersonRoute(person)){
+        person.obj.visible=false;v.state='arriving-inside';
+      }
     }
   }else if(v.state==='arriving-inside'){
     aczoSetSwingGateCommand(true);
@@ -13211,9 +13267,14 @@ function updateCarVisit(dt){
     for(const p of v.people){
       if(p.pause>0){p.pause-=scaledDt;continue;}
       if(p.blockedTime>1.15){
-        p.blockedTime=0;p.navQueue.length=0;
-        if(typeof aczoAssignVisitPersonTarget==='function')aczoAssignVisitPersonTarget(p);
-        else randomPersonAreaPoint(p.target);
+        p.blockedTime=0;p.avoidSign=p.avoidSign?-p.avoidSign:1;
+        // Eine bereits geplante Tür-/Umgehungsroute bleibt erhalten. Zuvor
+        // wurde sie hier gelöscht; Besucher im Gebäude verloren dadurch den
+        // Ausgang und liefen anschließend erneut gegen irgendeine Wand.
+        if(!p.navQueue.length){
+          if(typeof aczoAssignVisitPersonTarget==='function')aczoAssignVisitPersonTarget(p);
+          else randomPersonAreaPoint(p.target);
+        }
         continue;
       }
       if(movePersonToward(p,p.target,scaledDt)){
@@ -13224,9 +13285,8 @@ function updateCarVisit(dt){
     }
     if(v.stay<=0){
       v.state='returning';
-      const stop=carRoute[carRoute.length-1];
       v.people.forEach((p,i)=>{
-        const target=new THREE.Vector3(stop.x+(i-1)*.34,stop.y-.25,ACZO_VISITOR_GROUND_Z);
+        const target=aczoParkingPersonPosition(v.car,i,v.personCount,new THREE.Vector3());
         p.navQueue.length=0;p.pause=0;p.returned=false;
         if(typeof aczoPrepareVisitorReturn==='function')aczoPrepareVisitorReturn(p,target);
         else p.target.copy(target);
@@ -13262,17 +13322,21 @@ function updateCarVisit(dt){
   }else if(v.state==='gate-closer-to-handle'){
     const person=aczoEnsureRegularGatePerson(v);
     if(movePersonToward(person,person.target,scaledDt)){
-      aczoSetSwingGateCommand(false);v.state='gate-closing';
+      if(!aczoAdvanceImmediatePersonRoute(person)){
+        aczoSetSwingGateCommand(false);v.state='gate-closing';
+      }
     }
   }else if(v.state==='gate-closing'){
     if(aczoSwingGateOpenProgress()<.04){
       const person=aczoEnsureRegularGatePerson(v);
-      aczoGateCarSidePosition(v.car,person.target);v.state='gate-closer-to-car';
+      aczoSetGatePersonRoute(person,v.car,false);v.state='gate-closer-to-car';
     }
   }else if(v.state==='gate-closer-to-car'){
     const person=aczoEnsureRegularGatePerson(v);
     if(movePersonToward(person,person.target,scaledDt)){
-      person.obj.visible=false;v.state='departing';
+      if(!aczoAdvanceImmediatePersonRoute(person)){
+        person.obj.visible=false;v.state='departing';
+      }
     }
   }else if(v.state==='departing'){
     v.distance=Math.max(0,v.distance-v.speed*scaledDt);
@@ -17728,19 +17792,34 @@ function aczoVisitorSegmentHitsCar(car,x0,y0,x1,y1,pad=.34){
   const hx=1.04+pad,hy=2.34+pad;
   const ai=Math.abs(a.x)<=hx&&Math.abs(a.y)<=hy;
   const bi=Math.abs(b.x)<=hx&&Math.abs(b.y)<=hy;
-  // Wer direkt neben/aus einem Fahrzeug startet, darf sich davon entfernen.
-  if(ai&&!bi)return false;
+  // Eine seltene numerische Überlappung darf nur auf derselben Seite nach
+  // außen verlassen werden. Die alte pauschale ai&&!bi-Freigabe erlaubte
+  // dagegen auch einen kompletten Weg quer durch das Fahrzeug.
+  if(ai){
+    const xDominant=Math.abs(a.x)/hx>=Math.abs(a.y)/hy;
+    const outward=xDominant
+      ?Math.sign(a.x||1)*(b.x-a.x)>0&&Math.abs(b.x)>=Math.abs(a.x)
+      :Math.sign(a.y||1)*(b.y-a.y)>0&&Math.abs(b.y)>=Math.abs(a.y);
+    return !outward;
+  }
   if(bi)return true;
   return aczoVisitorSegmentHitsRect(a,b,hx,hy);
 }
-function aczoVisitorSegmentAllowed(x0,y0,x1,y1){
+function aczoVisitorSegmentAllowed(x0,y0,x1,y1,person=null){
   for(const building of aczoVisitorBuildings){
     const a=aczoVisitorToLocal(building,x0,y0,{x:0,y:0});
     const b=aczoVisitorToLocal(building,x1,y1,{x:0,y:0});
     const hx=building.width*.5+.28,hy=building.depth*.5+.28;
     const ai=aczoVisitorLocalInside(building,a,.28);
     const bi=aczoVisitorLocalInside(building,b,.28);
-    if(ai&&bi)continue;
+    // Innerhalb des gepolsterten Grundrisses darf sich nur bewegen, wer über
+    // eine registrierte Türroute ausdrücklich diesem Gebäude zugeordnet ist.
+    // Das verhindert das frühere "beide Punkte liegen innen, also frei" an
+    // Fassaden, wenn eine Figur versehentlich in den Randstreifen geriet.
+    if(ai&&bi){
+      if(person&&person.insideBuilding===building)continue;
+      return false;
+    }
     if(!aczoVisitorSegmentHitsRect(a,b,hx,hy))continue;
     const crossings=aczoVisitorBuildingCrossings(building,a,b,.28);
     // Ein Gebäude darf ausschließlich an einem echten registrierten
@@ -17755,8 +17834,76 @@ function aczoVisitorSegmentAllowed(x0,y0,x1,y1){
      aczoVisitorSegmentHitsCar(bmwX3Visit.car,x0,y0,x1,y1,.34))return false;
   return true;
 }
+function aczoVisitorNavCorners(){
+  const points=[];
+  // Freie Punkte etwas außerhalb der bereits gepolsterten Gebäudekörper.
+  // Dadurch verlaufen geplante Wege sichtbar vor der Fassade und schneiden
+  // auch an gedrehten Hausecken keine Wand.
+  for(const building of aczoVisitorBuildings){
+    const hx=building.width*.5+.52,hy=building.depth*.5+.52;
+    for(const sx of [-1,1])for(const sy of [-1,1])
+      points.push(aczoVisitorToWorld(building,sx*hx,sy*hy,ACZO_VISITOR_GROUND_Z));
+  }
+  const addCarCorners=car=>{
+    if(!car||!car.visible)return;
+    const yaw=car.rotation.z,c=Math.cos(yaw),s=Math.sin(yaw);
+    const hx=1.60,hy=2.92;
+    for(const sx of [-1,1])for(const sy of [-1,1]){
+      const lx=sx*hx,ly=sy*hy;
+      points.push(new THREE.Vector3(
+        car.position.x+c*lx-s*ly,
+        car.position.y+s*lx+c*ly,
+        ACZO_VISITOR_GROUND_Z
+      ));
+    }
+  };
+  if(typeof currentVisit!=='undefined'&&currentVisit)addCarCorners(currentVisit.car);
+  if(typeof bmwX3Visit!=='undefined'&&bmwX3Visit)addCarCorners(bmwX3Visit.car);
+  return points.filter(p=>!aczoPointInsideVisitorBuilding(p.x,p.y,.32));
+}
+function aczoPlanVisitorOutdoorPath(from,destination){
+  const start=new THREE.Vector3(from.x,from.y,ACZO_VISITOR_GROUND_Z);
+  const finish=new THREE.Vector3(destination.x,destination.y,destination.z??ACZO_VISITOR_GROUND_Z);
+  if(aczoVisitorSegmentAllowed(start.x,start.y,finish.x,finish.y))return [finish];
+  const nodes=[start,finish,...aczoVisitorNavCorners()];
+  const count=nodes.length,dist=new Array(count).fill(Infinity),prev=new Array(count).fill(-1),used=new Array(count).fill(false);
+  dist[0]=0;
+  for(let pass=0;pass<count;pass++){
+    let u=-1,best=Infinity;
+    for(let i=0;i<count;i++)if(!used[i]&&dist[i]<best){best=dist[i];u=i;}
+    if(u<0||u===1)break;
+    used[u]=true;
+    for(let v=1;v<count;v++){
+      if(v===u||used[v])continue;
+      const a=nodes[u],b=nodes[v];
+      if(!aczoVisitorSegmentAllowed(a.x,a.y,b.x,b.y))continue;
+      const nd=dist[u]+Math.hypot(b.x-a.x,b.y-a.y);
+      if(nd<dist[v]){dist[v]=nd;prev[v]=u;}
+    }
+  }
+  if(!Number.isFinite(dist[1]))return [finish];
+  const indices=[];
+  for(let at=1;at>0;at=prev[at]){
+    indices.push(at);
+    if(prev[at]<0)return [finish];
+  }
+  indices.reverse();
+  return indices.map(i=>nodes[i].clone());
+}
+function aczoSetVisitorOutdoorRoute(person,destination,finalPause=0,tail=[]){
+  const path=aczoPlanVisitorOutdoorPath(person.obj.position,destination);
+  person.navQueue.length=0;
+  if(!path.length){person.target.copy(destination);person.targetPause=finalPause;return;}
+  person.target.copy(path[0]);
+  person.targetPause=path.length===1?finalPause:0;
+  for(let i=1;i<path.length;i++)person.navQueue.push({
+    pos:path[i].clone(),pause:i===path.length-1?finalPause:0,inside:null
+  });
+  for(const waypoint of tail)person.navQueue.push(waypoint);
+  person.insideBuilding=null;person.avoidSign=0;person.blockedTime=0;
+}
 function aczoResolveVisitorMotion(current,nx,ny,person,target){
-  if(aczoVisitorSegmentAllowed(current.x,current.y,nx,ny))return {x:nx,y:ny};
+  if(aczoVisitorSegmentAllowed(current.x,current.y,nx,ny,person))return {x:nx,y:ny};
   const dx=nx-current.x,dy=ny-current.y;
   if(!person.avoidSign)person.avoidSign=Math.random()<.5?-1:1;
   // Seitliches Ausweichen lässt die Figur an der Wand entlanglaufen, statt
@@ -17764,7 +17911,7 @@ function aczoResolveVisitorMotion(current,nx,ny,person,target){
   for(const angle of [person.avoidSign*Math.PI*.50,-person.avoidSign*Math.PI*.50,person.avoidSign*Math.PI*.72]){
     const c=Math.cos(angle),s=Math.sin(angle);
     const tx=current.x+dx*c-dy*s,ty=current.y+dx*s+dy*c;
-    if(aczoVisitorSegmentAllowed(current.x,current.y,tx,ty))return {x:tx,y:ty};
+    if(aczoVisitorSegmentAllowed(current.x,current.y,tx,ty,person))return {x:tx,y:ty};
   }
   return {x:current.x,y:current.y};
 }
@@ -17787,7 +17934,15 @@ function aczoAdvanceVisitorWaypoint(person){
   const waypoint=person.navQueue.shift();
   person.target.copy(waypoint.pos||waypoint);
   person.targetPause=Number(waypoint.pause)||0;
-  person.insideBuilding=waypoint.inside||null;
+  if(waypoint.inside)person.insideBuilding=waypoint.inside;
+  else{
+    // Beim Ansteuern des äußeren Türpunkts bleibt die Innenberechtigung bis
+    // die Schwelle vollständig verlassen ist. Erst der nächste Außenpunkt
+    // löscht sie. Sonst würde die Figur mitten im Türrahmen blockiert.
+    person.insideBuilding=aczoFindContainingVisitorBuilding(
+      person.obj.position.x,person.obj.position.y,.28
+    )||null;
+  }
   person.avoidSign=0;
   return true;
 }
@@ -17799,20 +17954,20 @@ function aczoPlanVisitorBuildingStop(person){
   const pedestrianDoors=building.doors.filter(d=>d.pedestrian!==false);
   const door=pedestrianDoors[Math.floor(Math.random()*pedestrianDoors.length)];
   const route=aczoVisitorDoorRoute(building,door);
-  person.navQueue=[
+  const interiorRoute=[
     {pos:route.inside,pause:.45,inside:building},
     {pos:route.room,pause:2.5+Math.random()*5,inside:building},
     {pos:route.inside,pause:.35,inside:building},
     {pos:route.outside,pause:1.0+Math.random()*2,inside:null}
   ];
-  person.target.copy(route.outside);person.targetPause=.6;person.insideBuilding=null;
+  aczoSetVisitorOutdoorRoute(person,route.outside,.6,interiorRoute);
   return true;
 }
 function aczoAssignVisitPersonTarget(person){
   if(aczoAdvanceVisitorWaypoint(person))return;
   if(Math.random()<.24&&aczoPlanVisitorBuildingStop(person))return;
-  randomPersonAreaPoint(person.target);
-  person.targetPause=1.5+Math.random()*5;
+  const destination=randomPersonAreaPoint(new THREE.Vector3());
+  aczoSetVisitorOutdoorRoute(person,destination,1.5+Math.random()*5);
   person.insideBuilding=null;person.avoidSign=0;
 }
 function aczoPrepareVisitorReturn(person,finalTarget){
@@ -17827,9 +17982,11 @@ function aczoPrepareVisitorReturn(person,finalTarget){
       if(d<bestDist){bestDist=d;best=door;bestRoute=route;}
     }
     const route=bestRoute||aczoVisitorDoorRoute(building,best);
+    const outsidePath=aczoPlanVisitorOutdoorPath(route.outside,finalTarget);
     person.target.copy(route.inside);
-    person.navQueue.push({pos:route.outside,pause:0},{pos:finalTarget,pause:0});
-  }else person.target.copy(finalTarget);
+    person.navQueue.push({pos:route.outside,pause:0,inside:null});
+    for(const pos of outsidePath)person.navQueue.push({pos:pos.clone(),pause:0,inside:null});
+  }else aczoSetVisitorOutdoorRoute(person,finalTarget,0);
   person.targetPause=0;person.insideBuilding=building;person.avoidSign=0;
 }
 
@@ -18000,8 +18157,13 @@ function aczoBuildBmwTourWaypoints(){
   const stop=carRoute[carRoute.length-1];
   const dockLand=eastBoatPierLocalToWorld(2.30,-.72,ACZO_VISITOR_GROUND_Z);
   const dockGrid=eastBoatPierLocalToWorld(2.30,.34,EAST_BOAT_PIER_GRID_TOP_Z+.025);
-  const parking={pos:new THREE.Vector3(stop.x-1.0,stop.y+.75,ACZO_VISITOR_GROUND_Z),pause:3.5,label:'Parkplatz'};
-  const hof={pos:new THREE.Vector3(61.2,31.0,ACZO_VISITOR_GROUND_Z),pause:4.0,label:'Hofblick'};
+  const parkingPos=(typeof bmwX3Visit!=='undefined'&&bmwX3Visit&&bmwX3Visit.car)
+    ?aczoParkingPersonPosition(bmwX3Visit.car,0,1,new THREE.Vector3())
+    :new THREE.Vector3(stop.x-1.35,stop.y+.95,ACZO_VISITOR_GROUND_Z);
+  const parking={pos:parkingPos,pause:3.5,label:'Parkplatz'};
+  // Der frühere Hofpunkt (61.2/31.0) lag mitten im gesperrten Grundriss des
+  // offenen Weinstands. Der neue Punkt bleibt im Hof, aber vor dessen Kante.
+  const hof={pos:new THREE.Vector3(65.2,32.0,ACZO_VISITOR_GROUND_Z),pause:4.0,label:'Hofblick'};
   const club={pos:new THREE.Vector3(58.2,26.0,ACZO_VISITOR_GROUND_Z),pause:4.5,label:'Vereinsgelände'};
   const shore={pos:new THREE.Vector3(54.8,21.4,ACZO_VISITOR_GROUND_Z),pause:3.5,label:'Uferweg'};
   const dockAccess={pos:new THREE.Vector3(49.3,18.4,ACZO_VISITOR_GROUND_Z),pause:2.0,label:'Bootssteg-Zugang'};
@@ -18022,7 +18184,7 @@ function aczoBuildBmwTourWaypoints(){
 function aczoBmwSetWaypoint(visit,index){
   visit.waypointIndex=index;
   const wp=visit.waypoints[index];
-  visit.person.target.copy(wp.pos);visit.person.targetPause=wp.pause||0;
+  aczoSetVisitorOutdoorRoute(visit.person,wp.pos,0);
   visit.person.blockedTime=0;visit.person.avoidSign=0;visit.person.bmwDetour=false;visit.person.stuckRecoveries=0;
 }
 function aczoBmwChooseDetour(visit){
@@ -18059,17 +18221,15 @@ function finishBmwX3Visit(){
   bmwX3Visit=null;bmwX3Wait=240+Math.random()*300;
 }
 function aczoBeginBmwGateWalk(visit,closing=false){
-  aczoGateCarSidePosition(visit.car,visit.person.obj.position);
   visit.person.obj.visible=true;visit.person.blockedTime=0;
-  visit.person.target.copy(ACZO_SWING_GATE_HANDLE_OUTSIDE);
+  aczoSetGatePersonRoute(visit.person,visit.car,true);
   visit.state=closing?'gate-closer-to-handle':'gate-opener-to-handle';
 }
 function aczoBeginBmwReturn(visit){
-  const stop=carRoute[carRoute.length-1];
   const outbound=visit.waypoints.slice(0,Math.max(0,visit.waypointIndex)).reverse();
   visit.returning=true;
   visit.waypoints=outbound.map(w=>({pos:w.pos.clone(),pause:.25,label:'Rückweg '+(w.label||''),water:false}));
-  visit.waypoints.push({pos:new THREE.Vector3(stop.x+.30,stop.y-.48,ACZO_VISITOR_GROUND_Z),pause:1.1,label:'Fahrzeug',final:true});
+  visit.waypoints.push({pos:aczoParkingPersonPosition(visit.car,0,1,new THREE.Vector3()),pause:1.1,label:'Fahrzeug',final:true});
   aczoBmwSetWaypoint(visit,0);visit.state='walking';
 }
 function updateBmwX3Visit(dt){
@@ -18093,15 +18253,19 @@ function updateBmwX3Visit(dt){
     visit.timer-=dt;if(visit.timer<=0)aczoBeginBmwGateWalk(visit,false);
   }else if(visit.state==='gate-opener-to-handle'){
     if(movePersonToward(person,person.target,dt)){
-      aczoSetSwingGateCommand(true);visit.state='gate-opening';
+      if(!aczoAdvanceImmediatePersonRoute(person)){
+        aczoSetSwingGateCommand(true);visit.state='gate-opening';
+      }
     }
   }else if(visit.state==='gate-opening'){
     if(aczoSwingGateOpenProgress()>.96){
-      aczoGateCarSidePosition(visit.car,person.target);visit.state='gate-opener-to-car';
+      aczoSetGatePersonRoute(person,visit.car,false);visit.state='gate-opener-to-car';
     }
   }else if(visit.state==='gate-opener-to-car'){
     if(movePersonToward(person,person.target,dt)){
-      person.obj.visible=false;visit.state='arriving-inside';
+      if(!aczoAdvanceImmediatePersonRoute(person)){
+        person.obj.visible=false;visit.state='arriving-inside';
+      }
     }
   }else if(visit.state==='arriving-inside'){
     aczoSetSwingGateCommand(true);
@@ -18113,8 +18277,7 @@ function updateBmwX3Visit(dt){
     aczoSetSwingGateCommand(true);
     visit.timer-=dt;
     if(visit.timer<=0){
-      const stop=carRoute[carRoute.length-1];
-      aczoPlaceVisitorOnOpenGround(person.obj.position,stop.x+.28,stop.y-.55);person.obj.visible=true;
+      aczoParkingPersonPosition(visit.car,0,1,person.obj.position);person.obj.visible=true;
       visit.waypoints=aczoBuildBmwTourWaypoints();visit.tourName=visit.waypoints.variantName||'Rundgang';aczoBmwSetWaypoint(visit,0);visit.state='walking';
     }
   }else if(visit.state==='walking'){
@@ -18123,6 +18286,7 @@ function updateBmwX3Visit(dt){
     const beforeZ=person.obj.position.z;
     if(movePersonToward(person,person.target,dt)){
       if(person.bmwDetour){person.bmwDetour=false;person.target.copy(wp.pos);person.blockedTime=0;return;}
+      if(aczoAdvanceImmediatePersonRoute(person))return;
       person.obj.position.z=wp.pos.z;
       visit.timer=wp.pause||1.5;
       if(wp.water){
@@ -18157,15 +18321,19 @@ function updateBmwX3Visit(dt){
     visit.timer-=dt;if(visit.timer<=0)aczoBeginBmwGateWalk(visit,true);
   }else if(visit.state==='gate-closer-to-handle'){
     if(movePersonToward(person,person.target,dt)){
-      aczoSetSwingGateCommand(false);visit.state='gate-closing';
+      if(!aczoAdvanceImmediatePersonRoute(person)){
+        aczoSetSwingGateCommand(false);visit.state='gate-closing';
+      }
     }
   }else if(visit.state==='gate-closing'){
     if(aczoSwingGateOpenProgress()<.04){
-      aczoGateCarSidePosition(visit.car,person.target);visit.state='gate-closer-to-car';
+      aczoSetGatePersonRoute(person,visit.car,false);visit.state='gate-closer-to-car';
     }
   }else if(visit.state==='gate-closer-to-car'){
     if(movePersonToward(person,person.target,dt)){
-      person.obj.visible=false;visit.state='departing';
+      if(!aczoAdvanceImmediatePersonRoute(person)){
+        person.obj.visible=false;visit.state='departing';
+      }
     }
   }else if(visit.state==='departing'){
     visit.distance=Math.max(0,visit.distance-visit.speed*dt);
