@@ -7477,7 +7477,14 @@ function aczoRequestAnimatedShadowRefresh(){
   if(typeof simulationEnabled!=='undefined'&&!simulationEnabled)return;
   const now=performance.now();
   if(now<aczoNextAnimatedShadowRefreshAt)return;
-  aczoNextAnimatedShadowRefreshAt=now+(ACZO_MOBILE_PERF?260:110);
+  // V1.2 ZEITRAFFER-SCHATTEN:
+  // Normalbetrieb bleibt exakt wie bisher. Nur im aktiven Zeitraffer
+  // wird die Shadowmap häufiger erneuert, damit die Schatten der
+  // kontinuierlich wandernden astronomischen Lichtquelle weich nachlaufen.
+  const aczoShadowRefreshMs=(typeof anglingTimeShiftActive!=='undefined'&&anglingTimeShiftActive)
+    ?(ACZO_MOBILE_PERF?70:50)
+    :(ACZO_MOBILE_PERF?260:110);
+  aczoNextAnimatedShadowRefreshAt=now+aczoShadowRefreshMs;
   requestViewerShadowUpdate();
 }
 // Feste, helle Tagesrichtung fuer die bewusst zeitunabhaengige NEUTRAL-
