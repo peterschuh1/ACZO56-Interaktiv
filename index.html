@@ -3,8 +3,8 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
-<title>ACZO56-Interaktiv-V1.3</title>
-<!-- ACZO56 BETA 1.3: Geländegebundener Kiesgrubenboden auf gesicherter Spielbasis. -->
+<title>ACZO56-Interaktiv-V1.2</title>
+<!-- ACZO56 BETA 1.2: Hänger-, Fischkontakt-, Touch- und Idle-Korrekturen auf bestehender Basis. -->
 <!-- V7.83: Kritische Viewer-Ressourcen früh anfordern. -->
 <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
 <link rel="preconnect" href="https://geo4.service24.rlp.de" crossorigin>
@@ -4828,9 +4828,9 @@ Wetterdaten: Open-Meteo · Astronomische Berechnungen: SunCalc<br>
 <script>
 // V7.75: Der Startlayer ist bereits durch HTML/CSS sichtbar, bevor dieser schwere
 // Three.js-Block ausgeführt wird. Er wird erst nach einem echten Renderbild freigegeben.
-// Öffentliche Versionsbezeichnung. Interner Arbeitsstand: Build 1.43.
-const VIEWER_VERSION='ACZO56-Interaktiv-V1.3';
-const ACZO_INTERNAL_BUILD='1.43';
+// Öffentliche Versionsbezeichnung. Interner Arbeitsstand: Build 1.34.
+const VIEWER_VERSION='ACZO56-Interaktiv-V1.2';
+const ACZO_INTERNAL_BUILD='1.38';
 const helpVersion=document.getElementById('helpVersion');
 if(helpVersion) helpVersion.textContent=VIEWER_VERSION;
 
@@ -5985,45 +5985,15 @@ const pondNightLiftMat={opacity:0};
 const pondNightLift=new THREE.Object3D();
 pondNightLift.visible=false;
 
-// Der Kiesgrubenboden wird nicht mit zufälligen Großflächen bemalt. Seine
-// Unterschiede folgen ausschließlich der vorhandenen Tiefe und Geländeform.
-function aczoQuarryDepthSample(x,y,fallback){
-  let d=aczoDisplayDepthAt(x,y);
-  if(!Number.isFinite(d)&&typeof pondDepthAt==='function')d=pondDepthAt(x,y);
-  return Number.isFinite(d)?d:fallback;
-}
-function aczoQuarryTerrainMetrics(x,y,d,eps=.62){
-  const dl=aczoQuarryDepthSample(x-eps,y,d),dr=aczoQuarryDepthSample(x+eps,y,d);
-  const dd=aczoQuarryDepthSample(x,y-eps,d),du=aczoQuarryDepthSample(x,y+eps,d);
-  const gx=(dr-dl)/(2*eps),gy=(du-dd)/(2*eps),grade=Math.hypot(gx,gy);
-  const face=THREE.MathUtils.clamp((grade-.055)/.52,0,1);
-  let lip=0,toe=0,basin=0;
-  if(grade>.012){
-    const nx=gx/grade,ny=gy/grade,reach=.82;
-    const up=aczoQuarryDepthSample(x-nx*reach,y-ny*reach,d);
-    const down=aczoQuarryDepthSample(x+nx*reach,y+ny*reach,d);
-    const curve=down+up-2*d;
-    lip=THREE.MathUtils.clamp((curve-.018)/.17,0,1)*(.28+.72*face);
-    toe=THREE.MathUtils.clamp((-curve-.018)/.17,0,1)*(.34+.66*face);
-    basin=THREE.MathUtils.clamp((-curve-.035)/.24,0,1)*(1-face*.42);
-  }
-  return {grade,face,lip,toe,basin};
-}
-function underwaterGroundColor(d,m={face:0,lip:0,toe:0,basin:0},x=0,y=0){
+// Nur für die Fischsicht: natürliche, weiterhin tiefenabhängige Bodenfarben.
+function underwaterGroundColor(d){
   const t=THREE.MathUtils.clamp(d/D.maxDepth,0,1);
-  const shallow=new THREE.Color(0xa8956e);
-  const middle=new THREE.Color(0x5c6858);
-  const deep=new THREE.Color(0x293d39);
-  const c=t<.46
-    ? shallow.clone().lerp(middle,t/.46)
-    : middle.clone().lerp(deep,(t-.46)/.54);
-  // Maximal wenige Prozent geologische Grundvariation: sichtbar lebendig,
-  // aber niemals als großflächiger heller Fleck.
-  const natural=(Math.sin(x*.137+Math.sin(y*.081))*0.5+
-    Math.sin(y*.119-Math.sin(x*.067))*0.5)*.030+
-    Math.sin(x*.34-y*.27)*.008;
-  c.offsetHSL(0,0,natural);
-  return c;
+  const shallow=new THREE.Color(0xb6a06b);
+  const middle=new THREE.Color(0x61755e);
+  const deep=new THREE.Color(0x263f42);
+  return t<.48
+    ? shallow.clone().lerp(middle,t/.48)
+    : middle.clone().lerp(deep,(t-.48)/.52);
 }
 // BETA 3.5 PERFORMANCE: Unterwasser-Geometrie beim Seitenstart nur minimal anlegen.
 // Farben, UVs, Normalen und Kiestextur werden erst erzeugt, wenn eine echte
@@ -6045,27 +6015,16 @@ function ensureFishPondAttributes(){
   const count=fishPondGeo.getAttribute('position').count;
   const colors=new Float32Array(count*3);
   const uv=new Float32Array(count*2);
-  const terrainSlope=new Float32Array(count);
-  const terrainLip=new Float32Array(count);
-  const terrainToe=new Float32Array(count);
-  const terrainBasin=new Float32Array(count);
   const p=fishPondGeo.getAttribute('position');
   for(let i=0;i<count;i++){
     const d=Math.max(0,-p.getZ(i)/Math.max(.0001,exaggeration));
-    const x=p.getX(i),y=p.getY(i),m=aczoQuarryTerrainMetrics(x,y,d);
-    const c=underwaterGroundColor(d,m,x,y);
+    const c=underwaterGroundColor(d);
     colors[i*3]=c.r;colors[i*3+1]=c.g;colors[i*3+2]=c.b;
-    uv[i*2]=pondGridUFromWorld(x);
-    uv[i*2+1]=pondGridVFromWorld(y);
-    terrainSlope[i]=m.face;terrainLip[i]=m.lip;
-    terrainToe[i]=m.toe;terrainBasin[i]=m.basin;
+    uv[i*2]=pondGridUFromWorld(p.getX(i));
+    uv[i*2+1]=pondGridVFromWorld(p.getY(i));
   }
   fishPondGeo.setAttribute('color',new THREE.BufferAttribute(colors,3));
   fishPondGeo.setAttribute('uv',new THREE.BufferAttribute(uv,2));
-  fishPondGeo.setAttribute('terrainSlope',new THREE.BufferAttribute(terrainSlope,1));
-  fishPondGeo.setAttribute('terrainLip',new THREE.BufferAttribute(terrainLip,1));
-  fishPondGeo.setAttribute('terrainToe',new THREE.BufferAttribute(terrainToe,1));
-  fishPondGeo.setAttribute('terrainBasin',new THREE.BufferAttribute(terrainBasin,1));
   fishPondAttributesReady=true;
 }
 
@@ -6107,46 +6066,62 @@ aczoPondStructureShadowReceiver.receiveShadow=true;
 aczoPondStructureShadowReceiver.visible=false;
 scene.add(aczoPondStructureShadowReceiver);
 
-// Rein optische Geologieschicht. Oberkante, Hangfläche und Fuß einer echten
-// Tiefenkante werden getrennt behandelt; zufällige Schwellenmasken entfallen.
+// Rein optische Bodenfeinheiten: weiche Schlammfelder in der Tiefe sowie
+// Kiesrippel und kleine Mulden im Flachwasser. Ein Shader-Pass ersetzt dabei
+// hunderte zusätzliche Einzelobjekte.
 const fishBottomDetailUniforms={time:{value:0},intensity:{value:1}};
 const fishBottomDetailMat=new THREE.ShaderMaterial({
   transparent:true,depthWrite:false,depthTest:true,side:THREE.DoubleSide,
   polygonOffset:true,polygonOffsetFactor:-1,polygonOffsetUnits:-1,
   uniforms:fishBottomDetailUniforms,
   vertexShader:`
-    varying vec3 vP;varying float vDistance;
-    void main(){
-      vP=position;
-      vec4 mv=modelViewMatrix*vec4(position,1.0);vDistance=length(mv.xyz);
-      gl_Position=projectionMatrix*mv;
-    }
+    varying vec3 vP;
+    void main(){vP=position;gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.0);}
   `,
   fragmentShader:`
     uniform float time;uniform float intensity;varying vec3 vP;
-    varying float vDistance;
     float n2(vec2 p){
       return .5+.25*sin(p.x+sin(p.y*.73))+.25*sin(p.y*.81-sin(p.x*.61));
     }
     void main(){
+      // BETA 1.11:
+      // - flachere Zonen wirken kiesiger / sandiger
+      // - mit zunehmender Tiefe wird der Boden sichtbar schlammiger
+      // - keine harten Muster, sondern nur weiche natürliche Überlagerungen
       float depth=-vP.z;
       float broad=n2(vP.xy*.09+vec2(1.7,-2.1));
       float medium=n2(vP.xy*.28+vec2(-3.4,2.8));
-      float fine=n2(vP.xy*1.18+vec2(4.1,-1.6));
-      float micro=n2(vP.xy*3.4+vec2(-6.2,3.7));
-      float shallow=1.0-smoothstep(1.15,2.55,depth);
-      float deep=smoothstep(2.15,4.45,depth);
-      float geological=(broad-.5)*.10+(medium-.5)*.065;
-      float grain=(fine-.5)*.075+(micro-.5)*.035;
+      float fine=n2(vP.xy*.95+vec2(4.1,-1.6));
+      float micro=n2(vP.xy*2.2+vec2(-6.2,3.7));
 
-      vec3 c=mix(vec3(.59,.55,.43),vec3(.20,.27,.24),deep);
-      c+=vec3(geological+grain,geological*.92+grain*.86,geological*.68+grain*.58);
-      c=mix(c,vec3(.64,.60,.49),shallow*.10);
+      float shallow=1.0-smoothstep(1.10,2.25,depth);
+      float deep=smoothstep(1.85,4.20,depth);
 
-      // Nur kontinuierliche Weltkoordinaten-Variation. Die früheren
-      // Vertex-Kantenmasken bildeten nachts sichtbare Dreiecksscherben.
-      float alpha=(.082+abs(geological)*.28+abs(grain)*.16)*intensity;
-      alpha*=1.0-smoothstep(28.0,52.0,vDistance)*.34;
+      float gravelBeds=smoothstep(.34,.88,broad)*shallow;
+      float gravelSpecks=smoothstep(.60,.92,fine)*shallow;
+      float shellDust=smoothstep(.70,.96,micro)*smoothstep(.20,1.90,depth)*shallow;
+      float silt=smoothstep(.54,.86,broad)*smoothstep(1.45,4.20,depth);
+      float organic=smoothstep(.62,.90,medium)*smoothstep(.80,4.20,depth);
+
+      vec3 mud=vec3(.20,.23,.19);
+      vec3 sand=vec3(.71,.68,.56);
+      vec3 gravel=vec3(.55,.54,.45);
+      vec3 organ=vec3(.13,.17,.14);
+
+      vec3 c=mix(mud,sand,shallow*.55);
+      c=mix(c,gravel,gravelBeds*.58);
+      c=mix(c,vec3(.80,.77,.65),gravelSpecks*.20+shellDust*.12);
+      c=mix(c,vec3(.23,.25,.20),silt*(.16+.20*deep));
+      c=mix(c,organ,organic*.48);
+
+      float alpha=(
+        gravelBeds*.095+
+        gravelSpecks*.045+
+        shellDust*.025+
+        silt*.055+
+        organic*.038
+      )*intensity;
+
       gl_FragColor=vec4(c,alpha);
     }
   `
@@ -6157,99 +6132,77 @@ fishBottomDetails.renderOrder=2.62;fishBottomDetails.visible=false;scene.add(fis
 // Die freien Außenkanten des Tiefenmeshs werden bis zur Wasserlinie geschlossen.
 // So bleibt die Kiesgrube auch beim Blick schräg zum Ufer eine geschlossene 3D-Form.
 const fishBoundaryEdges=POND_RENDER_BOUNDARY.map((_,i)=>[i,(i+1)%POND_RENDER_BOUNDARY.length]);
-// Der notwendige geometrische Uferabschluss darf nicht als aufgesetzte Mauer
-// erscheinen. Material und Beleuchtung entsprechen deshalb dem Weiherboden;
-// seine Vertexfarben werden weiter unten direkt aus Tiefe und Gefälle erzeugt.
-const fishBankWallMat=new THREE.MeshPhongMaterial({
-  color:0xffffff,vertexColors:true,map:null,side:THREE.DoubleSide,
-  shininess:2,specular:new THREE.Color(0x26372f),
-  emissive:new THREE.Color(0x17251f),emissiveIntensity:.12
+// Die senkrechten Uferflächen erhalten dieselbe Materialfamilie wie der Boden,
+// jedoch gröber und etwas dunkler. Die Textur wird geklont, damit die 54-fache
+// Wiederholung des Bodens nicht auf die Weltkoordinaten-UVs der Wand wirkt.
+const fishBankWallMat=new THREE.MeshLambertMaterial({
+  color:0xbdb59b,vertexColors:true,map:null,side:THREE.DoubleSide
 });
 
 function ensureUnderwaterStaticAssets(){
   if(underwaterStaticAssetsReady)return;
   ensureFishPondAttributes();
 
-  // Maßstäbliche, nahtlose Mikrostruktur. Nur einzelne Körner verändern sich;
-  // es gibt keine großflächigen Helligkeitsmasken in der Textur.
+  // Nahtlose Kiesstruktur exakt wie bisher, nur nicht mehr beim Seitenstart.
   const gravelCanvas=document.createElement('canvas');
   gravelCanvas.width=gravelCanvas.height=256;
   const gravelCtx=gravelCanvas.getContext('2d');
-  gravelCtx.fillStyle='#aaa48f';gravelCtx.fillRect(0,0,256,256);
-  const gravelPalette=[[104,103,91],[126,119,99],[148,139,113],[170,158,126],[91,96,87]];
-  for(let i=0;i<2850;i++){
-    const x=Math.random()*256,y=Math.random()*256;
-    const r=.35+Math.pow(Math.random(),1.7)*1.75;
-    const p=gravelPalette[(Math.random()*gravelPalette.length)|0];
-    const jitter=(Math.random()*18-9)|0;
-    gravelCtx.fillStyle=`rgba(${p[0]+jitter},${p[1]+jitter},${p[2]+jitter},${.13+Math.random()*.22})`;
-    gravelCtx.beginPath();gravelCtx.ellipse(x,y,r,r*(.52+Math.random()*.42),Math.random()*Math.PI,0,Math.PI*2);gravelCtx.fill();
-  }
+  gravelCtx.fillStyle='#c9c4ae';gravelCtx.fillRect(0,0,256,256);
   for(let i=0;i<1550;i++){
     const x=Math.random()*256,y=Math.random()*256;
-    const r=.18+Math.random()*.72;
-    const shade=92+Math.floor(Math.random()*72);
-    gravelCtx.fillStyle=`rgba(${shade},${Math.max(82,shade-7)},${Math.max(70,shade-16)},${.06+Math.random()*.14})`;
+    const r=.7+Math.random()*2.6;
+    const shade=118+Math.floor(Math.random()*88);
+    gravelCtx.fillStyle=`rgba(${shade},${Math.max(96,shade-10)},${Math.max(82,shade-24)},${.17+Math.random()*.24})`;
+    gravelCtx.beginPath();gravelCtx.ellipse(x,y,r,r*(.58+Math.random()*.52),Math.random()*Math.PI,0,Math.PI*2);gravelCtx.fill();
+  }
+  for(let i=0;i<1100;i++){
+    const x=Math.random()*256,y=Math.random()*256;
+    const r=.24+Math.random()*1.05;
+    const shade=102+Math.floor(Math.random()*70);
+    gravelCtx.fillStyle=`rgba(${shade},${Math.max(86,shade-9)},${Math.max(74,shade-18)},${.07+Math.random()*.15})`;
     gravelCtx.beginPath();gravelCtx.arc(x,y,r,0,Math.PI*2);gravelCtx.fill();
   }
   gravelTexture=new THREE.CanvasTexture(gravelCanvas);
   gravelTexture.wrapS=gravelTexture.wrapT=THREE.RepeatWrapping;
-  gravelTexture.repeat.set(50,50);
+  gravelTexture.repeat.set(54,54);
   gravelTexture.encoding=THREE.sRGBEncoding;
   fishPondMat.map=gravelTexture;fishPondMat.needsUpdate=true;
 
   fishBankTexture=gravelTexture.clone();
   fishBankTexture.wrapS=fishBankTexture.wrapT=THREE.RepeatWrapping;
-  fishBankTexture.repeat.set(1,2.6);fishBankTexture.needsUpdate=true;
+  fishBankTexture.repeat.set(1,1);fishBankTexture.needsUpdate=true;
   fishBankWallMat.map=fishBankTexture;fishBankWallMat.needsUpdate=true;
 
   underwaterStaticAssetsReady=true;
 }
 const fishBankWall=new THREE.Mesh(new THREE.BufferGeometry(),fishBankWallMat);
-fishBankWall.receiveShadow=false;
+fishBankWall.receiveShadow=true;
 fishBankWall.visible=false;fishBankWall.renderOrder=2.15;scene.add(fishBankWall);
 
-// Wiederverwendete, weich verformte Kieselgeometrie. Damit verschwinden die
-// sichtbaren grauen Pyramiden des bisherigen Icosahedron-Grundkörpers.
-function makeQuarryPebbleGeometry(seed){
-  const g=new THREE.SphereGeometry(1,7,4);
-  const p=g.getAttribute('position');
-  for(let i=0;i<p.count;i++){
-    const x=p.getX(i),y=p.getY(i),z=p.getZ(i);
-    const irregular=1+Math.sin(x*3.7+y*2.1+seed*1.9)*.075+Math.sin(y*4.3-z*2.8+seed*.73)*.045;
-    const shoulder=1+.055*Math.sin(z*5.1+x*1.8+seed);
-    p.setXYZ(i,x*irregular*(.92+.055*Math.sin(seed*2.3)),y*irregular*(.88+.075*Math.cos(seed*1.7)),z*irregular*shoulder);
-  }
-  p.needsUpdate=true;g.computeVertexNormals();return g;
-}
-const fishBankStoneGeo=makeQuarryPebbleGeometry(.37);
-const fishBankStoneMat=new THREE.MeshPhongMaterial({
-  color:0xffffff,vertexColors:true,shininess:1,specular:new THREE.Color(0x202820),
-  emissive:new THREE.Color(0x24291f),emissiveIntensity:.18
-});
-const fishBankStones=new THREE.InstancedMesh(fishBankStoneGeo,fishBankStoneMat,420);
-fishBankStones.visible=false;fishBankStones.renderOrder=2.2;fishBankStones.castShadow=false;fishBankStones.receiveShadow=false;scene.add(fishBankStones);
-const fishBankStoneData=Array.from({length:420},()=>({
+// Wenige vorstehende Steine brechen die glatte Silhouette der Wand. Auch hier
+// bleibt es bei nur einem InstancedMesh und damit einem zusätzlichen Draw-Call.
+const fishBankStoneGeo=new THREE.IcosahedronGeometry(1,0);
+const fishBankStoneMat=new THREE.MeshLambertMaterial({color:0x8b8878});
+const fishBankStones=new THREE.InstancedMesh(fishBankStoneGeo,fishBankStoneMat,260);
+fishBankStones.visible=false;fishBankStones.renderOrder=2.2;fishBankStones.castShadow=true;fishBankStones.receiveShadow=true;scene.add(fishBankStones);
+const fishBankStoneData=Array.from({length:260},()=>({
   edge:Math.floor(Math.random()*fishBoundaryEdges.length),
   along:Math.random(),height:.07+Math.random()*.86,
-  size:.025+Math.pow(Math.random(),1.6)*.055,twist:Math.random()*Math.PI,
+  size:.09+Math.random()*.20,twist:Math.random()*Math.PI,
   algae:Math.random()<.28,tone:Math.random()
 }));
 
 // Ein lockerer Geröllsaum verdeckt die geometrisch harte Naht zwischen
 // Uferwand und Boden. Sämtliche Steine bleiben in einem InstancedMesh.
-const fishShoreTalusData=Array.from({length:760},()=>({
+const fishShoreTalusData=Array.from({length:420},()=>({
   edge:Math.floor(Math.random()*fishBoundaryEdges.length),along:Math.random(),
-  inset:.05+Math.pow(Math.random(),1.6)*1.08,size:.016+Math.pow(Math.random(),1.7)*.042,
+  inset:.06+Math.pow(Math.random(),1.6)*.92,size:.045+Math.random()*.105,
   twist:Math.random()*Math.PI*2,algae:Math.random()<.34,tone:Math.random()
 }));
-const fishShoreTalusMat=new THREE.MeshPhongMaterial({
-  color:0xffffff,vertexColors:true,shininess:1,specular:new THREE.Color(0x1f271f),
-  emissive:new THREE.Color(0x22271f),emissiveIntensity:.16
-});
+const fishShoreTalusMat=new THREE.MeshLambertMaterial({color:0x817f6d});
 const fishShoreTalus=new THREE.InstancedMesh(fishBankStoneGeo,fishShoreTalusMat,fishShoreTalusData.length);
 fishShoreTalus.visible=false;fishShoreTalus.renderOrder=2.35;
-fishShoreTalus.castShadow=false;fishShoreTalus.receiveShadow=false;
+fishShoreTalus.castShadow=false;fishShoreTalus.receiveShadow=true;
 scene.add(fishShoreTalus);
 
 function aczoGroundNormalAt(x,y,eps=.22){
@@ -6317,11 +6270,8 @@ function rebuildFishBankWall(){
       const z=r===0 ? .205 : -Math.max(.02,p.d)*exaggeration+(r===1 ? .040 : .018); // V2.3.6k: Unterwasserwand ueberlappt die bewegte Wasserhaut stärker; der helle Randspalt verschwindet auch bei Wellen.
       pos.push(p.x,p.y,z);
       uv.push((i/cols)*(perimeter/5.5),v*2.2);
-      const c=underwaterGroundColor(p.d,undefined,p.x,p.y);
-      // Unterhalb der Wasserlinie nur ganz leicht kühler; dieselbe Tiefenfarbe
-      // wie der anschließende Boden verhindert den Eindruck einer Mauer.
-      c.lerp(new THREE.Color(0x43544a),v*.055);
-      col.push(c.r,c.g,c.b);
+      const shade=1.03-v*.20;
+      col.push(shade,shade*.97,shade*.86);
     }
   }
   for(let r=0;r<rows-1;r++){
@@ -6353,7 +6303,7 @@ function rebuildFishBankWall(){
     const z=-d*exaggeration;
     const normal=aczoGroundNormalAt(x,y,.22);
     dummy.position.set(x,y,z+s.size*.34);
-    dummy.quaternion.setFromUnitVectors(upAxis,normal);dummy.rotateZ(s.twist);
+    dummy.quaternion.setFromUnitVectors(upAxis,normal);dummy.rotateOnAxis(normal,s.twist);
     dummy.scale.set(s.size*(.98+s.tone*.30),s.size*(.68+s.tone*.24),s.size*.52);
     dummy.updateMatrix();fishBankStones.setMatrixAt(stoneCount,dummy.matrix);
     fishBankStones.setColorAt(stoneCount,new THREE.Color().setHSL(s.algae?.24:.105,s.algae?.20:.07,.37+s.tone*.18));
@@ -6374,7 +6324,7 @@ function rebuildFishBankWall(){
     if(!Number.isFinite(d)||d<.08)return;
     const z=-d*exaggeration,normal=aczoGroundNormalAt(x,y,.20);
     dummy.position.set(x,y,z+s.size*.32);
-    dummy.quaternion.setFromUnitVectors(upAxis,normal);dummy.rotateZ(s.twist);
+    dummy.quaternion.setFromUnitVectors(upAxis,normal);dummy.rotateOnAxis(normal,s.twist);
     dummy.scale.set(s.size*(1.05+s.tone*.55),s.size*(.72+s.tone*.38),s.size*(.48+s.tone*.18));
     dummy.updateMatrix();fishShoreTalus.setMatrixAt(talusCount,dummy.matrix);
     fishShoreTalus.setColorAt(talusCount,new THREE.Color().setHSL(s.algae?.245:.105,s.algae?.22:.075,.34+s.tone*.18));
@@ -14251,7 +14201,7 @@ function setFishSubmergedLayers(submerged){
   sedimentPool.points.visible=submerged;
   bloodPool.points.visible=submerged;
   underwaterStones.visible=submerged;
-  fishBottomClutterGroup.visible=submerged;
+  fishBottomClutterGroup.visible=false;
   // V8.57: Unter Wasser im Vereinsweiher darf die separate Mosel-Wasserwelt
   // nicht mitgerendert werden. Ihre obere Polygonkante liegt räumlich teilweise
   // im Weiherbereich und erschien deshalb perspektivisch als wandernde blaue
@@ -14680,53 +14630,38 @@ function spawnPoolParticle(pool,x,y,z,size,life,vx,vy,vz,alpha){
   pool.vx[i]=vx;pool.vy[i]=vy;pool.vz[i]=vz;pool.alphas[i]=alpha;
 }
 
-const quarryPebbleShapeCount=4;
-const quarryPebblePerShape=430;
-const stoneMat=new THREE.MeshPhongMaterial({
-  color:0xffffff,vertexColors:true,shininess:1,specular:new THREE.Color(0x202820),
-  emissive:new THREE.Color(0x24291f),emissiveIntensity:.17
-});
-const underwaterStones=new THREE.Group();
-underwaterStones.name='ACZO_KIESGRUBEN_KIESEL';
-const underwaterStoneMeshes=[];
-for(let shape=0;shape<quarryPebbleShapeCount;shape++){
-  const mesh=new THREE.InstancedMesh(makeQuarryPebbleGeometry(shape+1),stoneMat,quarryPebblePerShape);
-  mesh.instanceMatrix.setUsage(THREE.StaticDrawUsage);
-  mesh.castShadow=false;mesh.receiveShadow=false;mesh.renderOrder=3;mesh.count=0;
-  underwaterStoneMeshes.push(mesh);underwaterStones.add(mesh);
-}
-underwaterStones.visible=false;scene.add(underwaterStones);
-
+// Wenige echte Steine für Parallaxe; die dichte Kieswirkung kommt aus der Bodentextur.
 const underwaterStoneData=[];
-const underwaterStoneTarget=quarryPebbleShapeCount*quarryPebblePerShape;
-let underwaterStoneAttempts=0;
-while(underwaterStoneData.length<underwaterStoneTarget&&underwaterStoneAttempts++<underwaterStoneTarget*420){
-  const x=pondRandomX(),y=pondRandomY(),d=pondDepthAt(x,y);
-  if(d==null||d<.18)continue;
-  const m=aczoQuarryTerrainMetrics(x,y,d,.58);
-  const shallow=THREE.MathUtils.clamp(1-d/2.65,0,1);
-  const edge=Math.max(m.face*.78,m.lip,m.toe);
-  const geological=.5+.25*Math.sin(x*.19+Math.sin(y*.11))+.25*Math.sin(y*.16-Math.sin(x*.09));
-  // Dichte statt Helligkeitsflecken: Kies sammelt sich an Schultern und
-  // Hangfüßen, bleibt auf tiefen Schlammflächen aber nur vereinzelt erhalten.
-  const density=THREE.MathUtils.clamp(.10+shallow*.26+edge*.38+geological*.13,0,1);
-  if(Math.random()>density)continue;
-  const r=Math.random(),toeBias=Math.max(m.toe,m.basin*.55);
-  let s=r<.79
-    ? .013+Math.random()*.030
-    : r<.965
-      ? .034+Math.random()*.028
-      : .058+Math.random()*.030;
-  s=Math.min(.09,s*(1+toeBias*.18));
-  underwaterStoneData.push({
-    x,y,d,m,shape:underwaterStoneData.length%quarryPebbleShapeCount,s,
-    a:Math.random()*Math.PI*2,
-    aspectX:.82+Math.random()*.48,aspectY:.68+Math.random()*.46,
-    height:.26+Math.random()*.25,
-    sink:.16+Math.random()*.30,
-    algae:Math.random()<(d>2.25?.07:.17),
-    tone:Math.random()
-  });
+const stoneGeo=new THREE.IcosahedronGeometry(1,0);
+const stoneMat=new THREE.MeshLambertMaterial({color:0x8e8a78});
+const underwaterStones=new THREE.InstancedMesh(stoneGeo,stoneMat,360);
+underwaterStones.visible=false;underwaterStones.renderOrder=3;underwaterStones.castShadow=true;underwaterStones.receiveShadow=true;scene.add(underwaterStones);
+for(let i=0;i<1500;i++){
+  for(let tries=0;tries<260;tries++){
+    const x=pondRandomX(),y=pondRandomY(),d=pondDepthAt(x,y);
+    if(d==null||d<.18) continue;
+
+    // BETA 1.13: alte Steinanmutung wieder zurückholen, aber deutlich dichter.
+    // Viele kleine Kiesel, dazu einige mittlere Steine – vor allem in flacheren
+    // Bereichen, aber nicht ausschließlich dort.
+    const shallowBias=THREE.MathUtils.clamp(1-d/2.4,0,1);
+    const r=Math.random();
+    const pebble=r<.68;
+    const medium=!pebble && r<.93;
+    underwaterStoneData.push({
+      x,y,d,
+      s:pebble
+        ? (.016+Math.random()*(.032+shallowBias*.026))
+        : medium
+          ? (.040+Math.random()*(.060+shallowBias*.040))
+          : (.070+Math.random()*(.070+shallowBias*.040)),
+      a:Math.random()*Math.PI,
+      algae:Math.random()<(d>1.9?.10:.20),
+      tone:Math.random(),
+      rx:Math.random(),
+      rz:Math.random()
+    });break;
+  }
 }
 
 // BETA 1.10: Der Weiherboden war trotz Textur und einzelner Steine optisch zu
@@ -14738,103 +14673,32 @@ fishBottomClutterGroup.visible=false;
 scene.add(fishBottomClutterGroup);
 
 const fishBottomLeafCount=220;
-// Spitz zulaufende, leicht geknickte Blattform statt runder Bodenscheiben.
-const fishBottomLeafGeo=new THREE.BufferGeometry();
-fishBottomLeafGeo.setAttribute('position',new THREE.Float32BufferAttribute([
-  0,-1,0, -.62,-.30,.015, -.76,.22,.008, 0,1,.025,
-  .76,.22,.008, .62,-.30,.015, 0,0,.040
-],3));
-fishBottomLeafGeo.setIndex([
-  0,1,6,0,6,5,1,2,6,2,3,6,3,4,6,4,5,6
-]);
-fishBottomLeafGeo.computeVertexNormals();
-const fishBottomLeafMat=new THREE.MeshBasicMaterial({
-  color:0xffffff,side:THREE.DoubleSide,vertexColors:true,fog:true
+const fishBottomLeafGeo=new THREE.CircleGeometry(1,10);
+const fishBottomLeafMat=new THREE.MeshLambertMaterial({
+  color:0x8a815a,side:THREE.DoubleSide,vertexColors:true
 });
 const fishBottomLeaves=new THREE.InstancedMesh(
   fishBottomLeafGeo,fishBottomLeafMat,fishBottomLeafCount
 );
 fishBottomLeaves.instanceMatrix.setUsage(THREE.StaticDrawUsage);
 fishBottomLeaves.castShadow=false;
-fishBottomLeaves.receiveShadow=false;
+fishBottomLeaves.receiveShadow=true;
 fishBottomLeaves.renderOrder=2.86;
 fishBottomClutterGroup.add(fishBottomLeaves);
 
 const fishBottomTwigCount=70;
 const fishBottomTwigGeo=new THREE.CylinderGeometry(1,1,1,6,1,false);
-const fishBottomTwigMat=new THREE.MeshBasicMaterial({
-  color:0xffffff,vertexColors:true,fog:true
+const fishBottomTwigMat=new THREE.MeshLambertMaterial({
+  color:0x6c5439,vertexColors:true
 });
 const fishBottomTwigs=new THREE.InstancedMesh(
   fishBottomTwigGeo,fishBottomTwigMat,fishBottomTwigCount
 );
 fishBottomTwigs.instanceMatrix.setUsage(THREE.StaticDrawUsage);
 fishBottomTwigs.castShadow=false;
-fishBottomTwigs.receiveShadow=false;
+fishBottomTwigs.receiveShadow=true;
 fishBottomTwigs.renderOrder=2.88;
 fishBottomClutterGroup.add(fishBottomTwigs);
-
-// Niedrige Algenbüschel zwischen den Kieseln. Mehrere schmale, gekreuzte
-// Blätter bilden eine Instanz und benötigen deshalb nur einen Draw-Call.
-function makeQuarryAlgaeTuftGeometry(){
-  const pos=[],idx=[];let base=0;
-  for(let blade=0;blade<5;blade++){
-    const a=blade*Math.PI/2.5,ca=Math.cos(a),sa=Math.sin(a);
-    const ox=(blade%2-.5)*.10,oy=((blade*3)%4-1.5)*.055;
-    const w=.055-(blade%2)*.008,h=.62+(blade%3)*.16,bend=(blade-2)*.055;
-    pos.push(
-      ox-ca*w,oy-sa*w,0,
-      ox+ca*w,oy+sa*w,0,
-      ox+ca*w*.34-sa*bend,oy+sa*w*.34+ca*bend,h,
-      ox-ca*w*.34-sa*bend,oy-sa*w*.34+ca*bend,h
-    );
-    idx.push(base,base+1,base+2,base,base+2,base+3);base+=4;
-  }
-  const g=new THREE.BufferGeometry();
-  g.setAttribute('position',new THREE.Float32BufferAttribute(pos,3));g.setIndex(idx);g.computeVertexNormals();return g;
-}
-const fishBottomAlgaeCount=96;
-const fishBottomAlgaeMat=new THREE.MeshBasicMaterial({color:0xffffff,vertexColors:true,side:THREE.DoubleSide,fog:true});
-const fishBottomAlgae=new THREE.InstancedMesh(makeQuarryAlgaeTuftGeometry(),fishBottomAlgaeMat,fishBottomAlgaeCount);
-fishBottomAlgae.instanceMatrix.setUsage(THREE.StaticDrawUsage);
-fishBottomAlgae.castShadow=false;fishBottomAlgae.receiveShadow=false;fishBottomAlgae.renderOrder=2.91;
-fishBottomClutterGroup.add(fishBottomAlgae);
-
-// Aus normaler Kameradistanz verschwinden echte 1–4-cm-Kiesel zwangsläufig.
-// Transparente Kiesnester zeigen deshalb ausschließlich einzelne Körner ohne
-// gefüllte Grundfläche. Sie folgen den Tiefenkanten und wirken nicht wie
-// aufgemalte Farbkleckse.
-function makeQuarryGravelPatchTexture(seed){
-  const canvas=document.createElement('canvas');canvas.width=canvas.height=128;
-  const ctx=canvas.getContext('2d');let state=(seed*1664525+1013904223)>>>0;
-  const rand=()=>{state=(state*1664525+1013904223)>>>0;return state/4294967296;};
-  const palette=[[126,121,103],[151,141,113],[101,105,94],[174,158,122],[86,94,87]];
-  for(let i=0;i<78;i++){
-    const a=rand()*Math.PI*2,r=Math.sqrt(rand())*53;
-    const x=64+Math.cos(a)*r,y=64+Math.sin(a)*r*.72;
-    const size=.75+Math.pow(rand(),1.7)*2.25,fade=Math.max(.12,1-r/58);
-    const p=palette[(rand()*palette.length)|0];
-    ctx.fillStyle=`rgba(38,43,39,${(.08+.10*rand())*fade})`;
-    ctx.beginPath();ctx.ellipse(x+1.0,y+1.2,size*1.05,size*(.54+.28*rand()),a,0,Math.PI*2);ctx.fill();
-    ctx.fillStyle=`rgba(${p[0]},${p[1]},${p[2]},${(.34+.34*rand())*fade})`;
-    ctx.beginPath();ctx.ellipse(x,y,size,size*(.48+.36*rand()),a,0,Math.PI*2);ctx.fill();
-  }
-  const tex=new THREE.CanvasTexture(canvas);tex.encoding=THREE.sRGBEncoding;return tex;
-}
-const fishGravelPatchPerShape=60;
-const fishGravelPatchMeshes=[];
-const fishGravelPatches=new THREE.Group();fishGravelPatches.name='ACZO_KIESNESTER';
-for(let shape=0;shape<3;shape++){
-  const mat=new THREE.MeshBasicMaterial({
-    map:makeQuarryGravelPatchTexture(shape+11),color:0xffffff,vertexColors:true,
-    transparent:true,opacity:.64,alphaTest:.035,depthWrite:false,depthTest:true,
-    side:THREE.DoubleSide,fog:true,polygonOffset:true,polygonOffsetFactor:-2,polygonOffsetUnits:-2
-  });
-  const mesh=new THREE.InstancedMesh(new THREE.PlaneGeometry(1,1),mat,fishGravelPatchPerShape);
-  mesh.instanceMatrix.setUsage(THREE.StaticDrawUsage);mesh.castShadow=false;mesh.receiveShadow=false;
-  mesh.renderOrder=2.82;mesh.count=0;fishGravelPatchMeshes.push(mesh);fishGravelPatches.add(mesh);
-}
-fishBottomClutterGroup.add(fishGravelPatches);
 
 const fishBottomLeafData=[];
 for(let i=0;i<fishBottomLeafCount;i++){
@@ -14870,102 +14734,6 @@ for(let i=0;i<fishBottomTwigCount;i++){
     break;
   }
 }
-
-const fishBottomAlgaeData=[];
-for(let i=0;i<fishBottomAlgaeCount;i++){
-  for(let tries=0;tries<260;tries++){
-    const x=pondRandomX(),y=pondRandomY(),d=pondDepthAt(x,y);
-    if(d==null||d<.30||d>2.25)continue;
-    const m=aczoQuarryTerrainMetrics(x,y,d,.54);
-    const chance=.30+(1-d/2.35)*.28+Math.max(m.toe,m.basin)*.24;
-    if(Math.random()>chance)continue;
-    fishBottomAlgaeData.push({
-      x,y,d,a:Math.random()*Math.PI*2,
-      size:.075+Math.random()*.095,
-      tone:Math.random()
-    });
-    break;
-  }
-}
-
-const fishGravelPatchData=[];
-const fishGravelPatchTarget=fishGravelPatchPerShape*fishGravelPatchMeshes.length;
-let fishGravelPatchAttempts=0;
-while(fishGravelPatchData.length<fishGravelPatchTarget&&fishGravelPatchAttempts++<fishGravelPatchTarget*650){
-  const x=pondRandomX(),y=pondRandomY(),d=pondDepthAt(x,y);
-  if(d==null||d<.24||d>4.65)continue;
-  const m=aczoQuarryTerrainMetrics(x,y,d,.56);
-  const edge=Math.max(m.face*.72,m.lip,m.toe);
-  const edgeNest=fishGravelPatchData.length<126;
-  if(edgeNest&&edge<.17)continue;
-  if(!edgeNest&&(m.face>.34||Math.random()>.30+THREE.MathUtils.clamp(1-d/3.2,0,1)*.42))continue;
-  const s=edgeNest?.34+Math.random()*.32:.42+Math.random()*.48;
-  fishGravelPatchData.push({
-    x,y,d,shape:fishGravelPatchData.length%3,a:Math.random()*Math.PI*2,
-    sx:s*(.78+Math.random()*.46),sy:s*(.54+Math.random()*.40),
-    tone:Math.random(),edgeNest
-  });
-}
-
-// Zwei sehr seltene, maßstäbliche Entdeckungen. Beide sind detaillierte,
-// bodenparallele Illustrationen statt grober 3D-Klötze und kosten zusammen nur
-// zwei zusätzliche Flächen. Sie bleiben rein optisch und kollisionsfrei.
-function makeBottomDiscoveryTexture(draw){
-  const canvas=document.createElement('canvas');canvas.width=canvas.height=128;
-  const ctx=canvas.getContext('2d');ctx.clearRect(0,0,128,128);draw(ctx);
-  const tex=new THREE.CanvasTexture(canvas);tex.encoding=THREE.sRGBEncoding;return tex;
-}
-const fishBottomCrayfishTexture=makeBottomDiscoveryTexture(ctx=>{
-  ctx.save();ctx.translate(64,64);ctx.lineCap='round';ctx.lineJoin='round';
-  ctx.strokeStyle='rgba(70,42,24,.92)';ctx.lineWidth=4;
-  for(const side of [-1,1])for(let i=-2;i<=2;i++){
-    const y=8+i*10;ctx.beginPath();ctx.moveTo(side*12,y);ctx.lineTo(side*(25+Math.abs(i)*2),y+side*i*1.8);ctx.lineTo(side*31,y+7);ctx.stroke();
-  }
-  ctx.fillStyle='#8b4f2c';ctx.strokeStyle='#4d2e1e';ctx.lineWidth=2.5;
-  for(let i=0;i<4;i++){ctx.beginPath();ctx.ellipse(0,33+i*8,15-i*2.4,8,0,0,Math.PI*2);ctx.fill();ctx.stroke();}
-  ctx.fillStyle='#9b5a31';ctx.beginPath();ctx.ellipse(0,2,17,29,0,0,Math.PI*2);ctx.fill();ctx.stroke();
-  ctx.fillStyle='#6d3d27';ctx.beginPath();ctx.ellipse(0,-22,19,15,0,0,Math.PI*2);ctx.fill();ctx.stroke();
-  for(const side of [-1,1]){
-    ctx.beginPath();ctx.moveTo(side*13,-28);ctx.quadraticCurveTo(side*28,-42,side*35,-30);ctx.quadraticCurveTo(side*29,-22,side*21,-27);ctx.closePath();ctx.fill();ctx.stroke();
-    ctx.beginPath();ctx.moveTo(side*10,-35);ctx.lineTo(side*18,-50);ctx.stroke();
-  }
-  ctx.fillStyle='#17110d';ctx.beginPath();ctx.arc(-7,-29,2.2,0,Math.PI*2);ctx.arc(7,-29,2.2,0,Math.PI*2);ctx.fill();ctx.restore();
-});
-const fishBottomSpinnerTexture=makeBottomDiscoveryTexture(ctx=>{
-  ctx.save();ctx.translate(64,64);ctx.rotate(-.42);ctx.lineCap='round';
-  ctx.strokeStyle='rgba(66,70,66,.95)';ctx.lineWidth=3;ctx.beginPath();ctx.moveTo(0,-45);ctx.lineTo(0,38);ctx.stroke();
-  const grad=ctx.createLinearGradient(-18,-35,18,-5);grad.addColorStop(0,'#626a68');grad.addColorStop(.48,'#d9ddd2');grad.addColorStop(1,'#777c73');
-  ctx.fillStyle=grad;ctx.strokeStyle='#4f5551';ctx.lineWidth=2;ctx.beginPath();ctx.ellipse(0,-23,16,27,.16,0,Math.PI*2);ctx.fill();ctx.stroke();
-  ctx.fillStyle='#a05b2e';ctx.beginPath();ctx.ellipse(0,18,8,14,0,0,Math.PI*2);ctx.fill();ctx.stroke();
-  ctx.strokeStyle='#3d403c';ctx.lineWidth=2.4;
-  for(const side of [-1,1]){ctx.beginPath();ctx.moveTo(0,35);ctx.quadraticCurveTo(side*13,42,side*8,52);ctx.stroke();}
-  ctx.restore();
-});
-function makeBottomDiscoveryMesh(texture,w,h){
-  const mat=new THREE.MeshBasicMaterial({
-    map:texture,transparent:true,alphaTest:.08,depthWrite:false,depthTest:true,
-    side:THREE.DoubleSide,polygonOffset:true,polygonOffsetFactor:-2,polygonOffsetUnits:-2
-  });
-  const mesh=new THREE.Mesh(new THREE.PlaneGeometry(w,h),mat);mesh.renderOrder=3.04;return mesh;
-}
-function findQuarryDiscoveryPoint(minDepth,maxDepth,maxFace=.48){
-  for(let tries=0;tries<1200;tries++){
-    const x=pondRandomX(),y=pondRandomY(),d=pondDepthAt(x,y);
-    if(d==null||d<minDepth||d>maxDepth)continue;
-    const m=aczoQuarryTerrainMetrics(x,y,d,.62);
-    if(m.face>maxFace)continue;
-    return {x,y,d,a:Math.random()*Math.PI*2};
-  }
-  const d=pondDepthAt(0,0)||Math.max(minDepth,1.2);return {x:0,y:0,d,a:0};
-}
-const fishBottomDiscoveryGroup=new THREE.Group();
-fishBottomDiscoveryGroup.name='ACZO_SELTENE_BODENFUNDE';
-const fishBottomCrayfish=makeBottomDiscoveryMesh(fishBottomCrayfishTexture,.30,.34);
-const fishBottomSpinner=makeBottomDiscoveryMesh(fishBottomSpinnerTexture,.13,.25);
-fishBottomDiscoveryGroup.add(fishBottomCrayfish,fishBottomSpinner);
-fishBottomClutterGroup.add(fishBottomDiscoveryGroup);
-const fishBottomCrayfishData=findQuarryDiscoveryPoint(.62,2.15,.36);
-const fishBottomSpinnerData=findQuarryDiscoveryPoint(.85,3.20,.44);
 
 
 // V8.16: Fest übernommener Totholzplan aus dem Testlabor V3.
@@ -20365,38 +20133,32 @@ function northPierSelectionFromPoint(point){
 
 function rebuildUnderwaterObjects(){
   const dummy=new THREE.Object3D();let count=0;
-  const zAxis=new THREE.Vector3(0,0,1);
-  const stoneCounts=new Array(quarryPebbleShapeCount).fill(0);
   underwaterStoneData.forEach(s=>{
     const d=pondDepthAt(s.x,s.y);
     if(d==null||d<.30)return;
     s.d=d;
-    const mesh=underwaterStoneMeshes[s.shape],slot=stoneCounts[s.shape];
-    if(!mesh||slot>=quarryPebblePerShape)return;
-    const normal=aczoGroundNormalAt(s.x,s.y,.18);
-    dummy.position.set(s.x,s.y,-d*exaggeration+s.s*s.height*(1-s.sink));
-    dummy.quaternion.setFromUnitVectors(zAxis,normal);dummy.rotateZ(s.a);
+    dummy.position.set(s.x,s.y,-d*exaggeration+s.s*.36);
+    dummy.rotation.set(s.rx*.48,s.a,s.rz*Math.PI);
     dummy.scale.set(
-      s.s*s.aspectX,
-      s.s*s.aspectY,
-      s.s*s.height
+      s.s*(.86+s.tone*.50),
+      s.s*(.74+s.rx*.36),
+      s.s*(.50+s.rz*.24)
     );
-    dummy.updateMatrix();mesh.setMatrixAt(slot,dummy.matrix);
-    mesh.setColorAt(
-      slot,
+    dummy.updateMatrix();underwaterStones.setMatrixAt(count,dummy.matrix);
+    underwaterStones.setColorAt(
+      count,
       new THREE.Color().setHSL(
-        s.algae?.23:.095,
-        s.algae?.20:.075,
-        .36+s.tone*.20
+        s.algae?.22:.095,
+        s.algae?.20:.09,
+        .44+s.tone*.22
       )
     );
-    stoneCounts[s.shape]++;
+    count++;
   });
-  underwaterStoneMeshes.forEach((mesh,shape)=>{
-    mesh.count=stoneCounts[shape];mesh.instanceMatrix.needsUpdate=true;
-    if(mesh.instanceColor)mesh.instanceColor.needsUpdate=true;
-  });
+  underwaterStones.count=count;underwaterStones.instanceMatrix.needsUpdate=true;
+  if(underwaterStones.instanceColor)underwaterStones.instanceColor.needsUpdate=true;
 
+  const zAxis=new THREE.Vector3(0,0,1);
   count=0;
   for(const l of fishBottomLeafData){
     const d=pondDepthAt(l.x,l.y);
@@ -20411,7 +20173,7 @@ function rebuildUnderwaterObjects(){
     fishBottomLeaves.setMatrixAt(count,dummy.matrix);
     fishBottomLeaves.setColorAt(
       count,
-      new THREE.Color().setHSL(.078+l.tone*.040,.20+l.tone*.09,.34+l.tone*.12)
+      new THREE.Color().setHSL(.080+l.tone*.045,.26+l.tone*.10,.26+l.tone*.16)
     );
     count++;
   }
@@ -20423,69 +20185,21 @@ function rebuildUnderwaterObjects(){
   for(const t of fishBottomTwigData){
     const d=pondDepthAt(t.x,t.y);
     if(d==null)continue;
-    const floor=-d*exaggeration,normal=aczoGroundNormalAt(t.x,t.y,.18);
-    // CylinderGeometry verläuft entlang seiner lokalen Y-Achse. Diese Achse
-    // wird in eine Tangente der Bodenfläche gelegt, statt senkrecht als
-    // schwarzer Stab aus dem Grund zu ragen.
-    const tangent=new THREE.Vector3(Math.cos(t.a),Math.sin(t.a),0);
-    tangent.addScaledVector(normal,-tangent.dot(normal)).normalize();
-    dummy.position.set(t.x,t.y,floor+t.radius*.42+.007);
-    dummy.quaternion.setFromUnitVectors(new THREE.Vector3(0,1,0),tangent);
+    const floor=-d*exaggeration;
+    dummy.position.set(t.x,t.y,floor+t.radius*.55+.006);
+    dummy.rotation.set(0,0,t.a);
     dummy.scale.set(t.radius,t.length,t.radius*.92);
     dummy.updateMatrix();
     fishBottomTwigs.setMatrixAt(count,dummy.matrix);
     fishBottomTwigs.setColorAt(
       count,
-      new THREE.Color().setHSL(.078+.018*t.tone,.30,.30+t.tone*.12)
+      new THREE.Color().setHSL(.082,.34,.24+t.tone*.14)
     );
     count++;
   }
   fishBottomTwigs.count=count;
   fishBottomTwigs.instanceMatrix.needsUpdate=true;
   if(fishBottomTwigs.instanceColor)fishBottomTwigs.instanceColor.needsUpdate=true;
-
-  count=0;
-  for(const a of fishBottomAlgaeData){
-    const d=pondDepthAt(a.x,a.y);if(d==null)continue;
-    const normal=aczoGroundNormalAt(a.x,a.y,.18);
-    dummy.position.set(a.x,a.y,-d*exaggeration+.006);
-    dummy.quaternion.setFromUnitVectors(zAxis,normal);dummy.rotateZ(a.a);
-    dummy.scale.set(a.size*(.78+a.tone*.32),a.size*(.72+a.tone*.26),a.size*(.88+a.tone*.24));
-    dummy.updateMatrix();fishBottomAlgae.setMatrixAt(count,dummy.matrix);
-    fishBottomAlgae.setColorAt(count,new THREE.Color().setHSL(.205+a.tone*.035,.32+a.tone*.12,.31+a.tone*.12));
-    count++;
-  }
-  fishBottomAlgae.count=count;fishBottomAlgae.instanceMatrix.needsUpdate=true;
-  if(fishBottomAlgae.instanceColor)fishBottomAlgae.instanceColor.needsUpdate=true;
-
-  const patchCounts=new Array(fishGravelPatchMeshes.length).fill(0);
-  for(const p of fishGravelPatchData){
-    const d=pondDepthAt(p.x,p.y);if(d==null)continue;
-    const mesh=fishGravelPatchMeshes[p.shape],slot=patchCounts[p.shape];
-    if(!mesh||slot>=fishGravelPatchPerShape)continue;
-    const normal=aczoGroundNormalAt(p.x,p.y,.22);
-    dummy.position.set(p.x,p.y,-d*exaggeration+.010);
-    dummy.quaternion.setFromUnitVectors(zAxis,normal);dummy.rotateZ(p.a);
-    dummy.scale.set(p.sx,p.sy,1);dummy.updateMatrix();mesh.setMatrixAt(slot,dummy.matrix);
-    const depthBlend=THREE.MathUtils.clamp(d/4.6,0,1);
-    mesh.setColorAt(slot,new THREE.Color().setHSL(
-      .095+.025*p.tone,.075+.055*p.tone,.62-depthBlend*.18+p.tone*.055
-    ));
-    patchCounts[p.shape]++;
-  }
-  fishGravelPatchMeshes.forEach((mesh,shape)=>{
-    mesh.count=patchCounts[shape];mesh.instanceMatrix.needsUpdate=true;
-    if(mesh.instanceColor)mesh.instanceColor.needsUpdate=true;
-  });
-
-  const placeDiscovery=(mesh,data,lift)=>{
-    const d=pondDepthAt(data.x,data.y);if(d==null){mesh.visible=false;return;}
-    mesh.visible=true;mesh.position.set(data.x,data.y,-d*exaggeration+lift);
-    mesh.quaternion.setFromUnitVectors(zAxis,aczoGroundNormalAt(data.x,data.y,.18));
-    mesh.rotateZ(data.a);
-  };
-  placeDiscovery(fishBottomCrayfish,fishBottomCrayfishData,.010);
-  placeDiscovery(fishBottomSpinner,fishBottomSpinnerData,.008);
 
   northWood.updateMatrixWorld(true);
 }
@@ -24759,7 +24473,7 @@ function aczoCompileUnderwaterShaders(){
   // ausschließlich die Unterwasser-Layer für die Dauer des Compile-Passes
   // sichtbar gesetzt und danach exakt wiederhergestellt. Kein Bild wird dabei
   // ausgegeben; der Auftreff-Frame muss später keine Shader mehr übersetzen.
-  const objects=[fishPond,fishBottomDetails,fishBankWall,fishBankStones,fishShoreTalus,fishPlantMesh,fishCaustics,fishLightGlow,fishShadows,suspendedWater,bubblePool.points,sedimentPool.points,underwaterStones,fishBottomClutterGroup,northWood,deadwoodContactShadow,fishGroup].filter(Boolean);
+  const objects=[fishPond,fishBottomDetails,fishBankWall,fishBankStones,fishShoreTalus,fishPlantMesh,fishCaustics,fishLightGlow,fishShadows,suspendedWater,bubblePool.points,sedimentPool.points,underwaterStones,northWood,deadwoodContactShadow,fishGroup].filter(Boolean);
   const visibility=objects.map(o=>o.visible),oldFog=scene.fog;
   try{
     objects.forEach(o=>o.visible=true);scene.fog=fishUnderwaterFog;
@@ -24807,7 +24521,7 @@ function aczoPerf24ForceUnderwaterRenderWarmup(){
   aczoPerf24UwRenderWarmBusy=true;
   const warmObjects=[fishPond,fishBottomDetails,fishBankWall,fishBankStones,fishShoreTalus,fishPlantMesh,
     fishCaustics,fishLightGlow,suspendedWater,bubblePool.points,sedimentPool.points,underwaterStones,
-    fishBottomClutterGroup,northWood,deadwoodContactShadow,fishGroup].filter(Boolean);
+    northWood,deadwoodContactShadow,fishGroup].filter(Boolean);
   const oldVis=warmObjects.map(o=>o.visible),oldFog=scene.fog;
   const oldUnder=waterUniforms.underwaterView.value;
   const oldTarget=renderer.getRenderTarget();
