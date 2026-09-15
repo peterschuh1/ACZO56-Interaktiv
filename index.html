@@ -11069,6 +11069,39 @@ function pointInPondWaterMask(x,y){
 
 }
 
+// V8.106: Offene Gitterroste und der offene Bootsrumpf lassen den Blick bis
+// auf die Wasseroberfläche frei. Punktförmige Sternhalos unter diesen schmalen
+// Konstruktionen würden dadurch optisch auf Metall und Boot übergreifen.
+// Nur die exakten Wasserflächen unter den Bauwerken werden ausgespart.
+function pointInWaterStarStructureMask(x,y){
+  const northDx=x-NORTH_PIER_SHORE.x,northDy=y-NORTH_PIER_SHORE.y;
+  const northAlong=northDx*NORTH_PIER_AXIS.x+northDy*NORTH_PIER_AXIS.y;
+  const northSide=northDx*NORTH_PIER_SIDE.x+northDy*NORTH_PIER_SIDE.y;
+  if(northAlong>=-.16&&northAlong<=NORTH_PIER_LENGTH+.16&&
+     Math.abs(northSide)<=NORTH_PIER_WIDTH*.5+.16)return true;
+
+  for(const pier of aczoSmallPierData){
+    const dx=x-pier.shore.x,dy=y-pier.shore.y;
+    const along=dx*pier.inward.x+dy*pier.inward.y;
+    const side=dx*pier.tangent.x+dy*pier.tangent.y;
+    if(along>=-.14&&along<=1.14&&Math.abs(side)<=.64)return true;
+  }
+
+  const dockDx=x-EAST_BOAT_PIER_SHORE.x,dockDy=y-EAST_BOAT_PIER_SHORE.y;
+  const dockX=dockDx*EAST_BOAT_PIER_TANGENT.x+dockDy*EAST_BOAT_PIER_TANGENT.y;
+  const dockY=dockDx*EAST_BOAT_PIER_INWARD.x+dockDy*EAST_BOAT_PIER_INWARD.y;
+  if(dockX>=-2.16&&dockX<=2.76&&dockY>=-.16&&dockY<=2.16)return true;
+
+  if(typeof eastBoatModel!=='undefined'&&eastBoatModel){
+    const boatDx=x-eastBoatModel.position.x,boatDy=y-eastBoatModel.position.y;
+    const c=Math.cos(eastBoatModel.rotation.z),s=Math.sin(eastBoatModel.rotation.z);
+    const boatX=boatDx*c+boatDy*s;
+    const boatY=-boatDx*s+boatDy*c;
+    if(boatX>=-2.55&&boatX<=2.45&&Math.abs(boatY)<=.82)return true;
+  }
+  return false;
+}
+
 function updateWaterStarReflectionPoints(dt){
   waterStarPhase+=dt;
   const cloud=(typeof liveWeather!=='undefined'?(liveWeather.cloud||0):0)/100;
@@ -11092,6 +11125,7 @@ function updateWaterStarReflectionPoints(dt){
     const x=camera.position.x+t*lx;
     const y=camera.position.y+t*ly;
     if(!pointInPondWaterMask(x,y)&&!pointInMosel(x,y))continue;
+    if(pointInWaterStarStructureMask(x,y))continue;
     waterStarPositions[count*3]=x;
     waterStarPositions[count*3+1]=y;
     waterStarPositions[count*3+2]=waterZ;
