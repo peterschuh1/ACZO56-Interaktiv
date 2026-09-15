@@ -16634,7 +16634,9 @@ function aczoBuildStorageShed(){
     geo.setAttribute('position',new THREE.Float32BufferAttribute(triPos.map((v,i)=>i%3===0?side*width*.5:v),3));
     geo.setAttribute('uv',new THREE.Float32BufferAttribute([0,0,1,0,.5,1],2));
     geo.setIndex([0,1,2]);geo.computeVertexNormals();
-    aczoFacilityMesh(shed,new THREE.Mesh(geo,aczoBuildingSlateMat),'LAGER_SCHIEFERGIEBEL_'+(side<0?'NORD':'SUED'));
+    const garageGableMat=aczoBuildingSlateMat.clone();
+    garageGableMat.side=THREE.DoubleSide;
+    aczoFacilityMesh(shed,new THREE.Mesh(geo,garageGableMat),'LAGER_SCHIEFERGIEBEL_'+(side<0?'NORD':'SUED'));
   }
   const overhang=.38,run=depth*.5+overhang,rise=ridgeH-wallH;
   const slope=Math.hypot(run,rise),angle=Math.atan2(rise,run);
