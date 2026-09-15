@@ -17664,14 +17664,86 @@ function aczoDoorPermitsBoundaryCrossing(building,a,b,pad=.28){
     door.side===cross.side&&Math.abs(cross.coord-door.center)<=door.half+.10
   ));
 }
+// V1.2 BESUCHER-KOLLISION:
+function aczoVisitorSegmentHitsRect(a,b,hx,hy){
+  // Liang-Barsky: prüft auch den bisher übersehenen Fall "außen -> durch
+  // komplettes Hindernis -> außen". Genau dadurch konnten Besucher bisher
+  // quer durch Gebäude laufen, obwohl Start UND Ziel außerhalb lagen.
+  let t0=0,t1=1;
+  const dx=b.x-a.x,dy=b.y-a.y;
+  const clip=(p,q)=>{
+    if(Math.abs(p)<1e-9)return q>=0;
+    const r=q/p;
+    if(p<0){if(r>t1)return false;if(r>t0)t0=r;}
+    else{if(r<t0)return false;if(r<t1)t1=r;}
+    return true;
+  };
+  return clip(-dx,a.x+hx)&&clip(dx,hx-a.x)&&clip(-dy,a.y+hy)&&clip(dy,hy-a.y)&&t1>=t0;
+}
+function aczoVisitorBuildingCrossings(building,a,b,pad=.28){
+  const hx=building.width*.5+pad,hy=building.depth*.5+pad;
+  const out=[],dx=b.x-a.x,dy=b.y-a.y;
+  const push=(side,t,coord)=>{
+    if(t>=-.001&&t<=1.001)out.push({side,t,coord});
+  };
+  if(Math.abs(dy)>1e-7){
+    let t=(-hy-a.y)/dy;push('yMin',t,a.x+dx*t);
+    t=(hy-a.y)/dy;push('yMax',t,a.x+dx*t);
+  }
+  if(Math.abs(dx)>1e-7){
+    let t=(-hx-a.x)/dx;push('xMin',t,a.y+dy*t);
+    t=(hx-a.x)/dx;push('xMax',t,a.y+dy*t);
+  }
+  return out.sort((u,v)=>u.t-v.t).filter(c=>
+    c.t>=0&&c.t<=1&&
+    (c.side[0]==='y'?Math.abs(c.coord)<=hx+.001:Math.abs(c.coord)<=hy+.001)
+  );
+}
+function aczoVisitorCrossingIsDoor(building,cross){
+  return building.doors.some(door=>
+    door.side===cross.side&&door.pedestrian!==false&&
+    Math.abs(cross.coord-door.center)<=door.half+.10
+  );
+}
+function aczoVisitorCarLocal(car,x,y,out={x:0,y:0}){
+  const dx=x-car.position.x,dy=y-car.position.y;
+  const c=Math.cos(car.rotation.z),s=Math.sin(car.rotation.z);
+  out.x=c*dx+s*dy;out.y=-s*dx+c*dy;return out;
+}
+function aczoVisitorSegmentHitsCar(car,x0,y0,x1,y1,pad=.34){
+  if(!car||!car.visible)return false;
+  const a=aczoVisitorCarLocal(car,x0,y0,{x:0,y:0});
+  const b=aczoVisitorCarLocal(car,x1,y1,{x:0,y:0});
+  // Fahrzeuge sind etwa 2 m breit und 4.5 m lang. Die Personen bekommen
+  // zusätzlich Körperabstand, damit Arme/Schultern nicht optisch hineinragen.
+  const hx=1.04+pad,hy=2.34+pad;
+  const ai=Math.abs(a.x)<=hx&&Math.abs(a.y)<=hy;
+  const bi=Math.abs(b.x)<=hx&&Math.abs(b.y)<=hy;
+  // Wer direkt neben/aus einem Fahrzeug startet, darf sich davon entfernen.
+  if(ai&&!bi)return false;
+  if(bi)return true;
+  return aczoVisitorSegmentHitsRect(a,b,hx,hy);
+}
 function aczoVisitorSegmentAllowed(x0,y0,x1,y1){
   for(const building of aczoVisitorBuildings){
-    const a=aczoVisitorToLocal(building,x0,y0,aczoVisitorLocalA);
-    const b=aczoVisitorToLocal(building,x1,y1,aczoVisitorLocalB);
+    const a=aczoVisitorToLocal(building,x0,y0,{x:0,y:0});
+    const b=aczoVisitorToLocal(building,x1,y1,{x:0,y:0});
+    const hx=building.width*.5+.28,hy=building.depth*.5+.28;
     const ai=aczoVisitorLocalInside(building,a,.28);
     const bi=aczoVisitorLocalInside(building,b,.28);
-    if(ai!==bi&&!aczoDoorPermitsBoundaryCrossing(building,a,b,.28))return false;
+    if(ai&&bi)continue;
+    if(!aczoVisitorSegmentHitsRect(a,b,hx,hy))continue;
+    const crossings=aczoVisitorBuildingCrossings(building,a,b,.28);
+    // Ein Gebäude darf ausschließlich an einem echten registrierten
+    // Fußgänger-Türportal betreten/verlassen werden. Außen-außen-Abkürzungen
+    // durch zwei Wände sind damit ebenfalls ausgeschlossen.
+    if(!crossings.length||crossings.some(c=>!aczoVisitorCrossingIsDoor(building,c)))return false;
   }
+  // Auch parkende/aktive Besucherfahrzeuge sind echte Hindernisse.
+  if(typeof currentVisit!=='undefined'&&currentVisit&&
+     aczoVisitorSegmentHitsCar(currentVisit.car,x0,y0,x1,y1,.34))return false;
+  if(typeof bmwX3Visit!=='undefined'&&bmwX3Visit&&
+     aczoVisitorSegmentHitsCar(bmwX3Visit.car,x0,y0,x1,y1,.34))return false;
   return true;
 }
 function aczoResolveVisitorMotion(current,nx,ny,person,target){
