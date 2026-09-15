@@ -11047,12 +11047,15 @@ const waterStarTexture=new THREE.CanvasTexture(waterStarCanvas);
 const waterStarHaloMat=new THREE.PointsMaterial({
   size:6.2,sizeAttenuation:false,vertexColors:true,transparent:true,opacity:0,
   map:waterStarTexture,alphaMap:waterStarTexture,
-  depthTest:false,depthWrite:false,blending:THREE.AdditiveBlending
+  // V8.105: Sternreflexe liegen weiterhin auf der Wasseroberfläche, müssen
+  // aber von Stegen, Bäumen, Gebäuden und allen anderen Vordergrundobjekten
+  // sauber verdeckt werden.
+  depthTest:true,depthWrite:false,blending:THREE.AdditiveBlending
 });
 const waterStarCoreMat=new THREE.PointsMaterial({
   size:3.2,sizeAttenuation:false,vertexColors:true,transparent:true,opacity:0,
   map:waterStarTexture,alphaMap:waterStarTexture,
-  depthTest:false,depthWrite:false,blending:THREE.AdditiveBlending
+  depthTest:true,depthWrite:false,blending:THREE.AdditiveBlending
 });
 const waterStarHalos=new THREE.Points(waterStarGeo,waterStarHaloMat);
 const waterStarCores=new THREE.Points(waterStarGeo,waterStarCoreMat);
