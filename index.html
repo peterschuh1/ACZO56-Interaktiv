@@ -7482,7 +7482,7 @@ function aczoRequestAnimatedShadowRefresh(){
   // wird die Shadowmap häufiger erneuert, damit die Schatten der
   // kontinuierlich wandernden astronomischen Lichtquelle weich nachlaufen.
   const aczoShadowRefreshMs=(typeof anglingTimeShiftActive!=='undefined'&&anglingTimeShiftActive)
-    ?(ACZO_MOBILE_PERF?70:50)
+    ?0
     :(ACZO_MOBILE_PERF?260:110);
   aczoNextAnimatedShadowRefreshAt=now+aczoShadowRefreshMs;
   requestViewerShadowUpdate();
@@ -7645,7 +7645,13 @@ function updateUnderwaterObstacleShadows(submerged){
   // nur noch bei einer quantisierten Licht-/Wetteraenderung neu berechnet.
   // Bewegte Tueren und Tore fordern unten gezielt und gedrosselt ein Update an;
   // Tiere und Verkehr besitzen leichte optische Kontaktschatten.
-  const lightChanged=key!==aczoUnderwaterShadowKey;
+  // V1.2 ZEITRAFFER-SCHATTEN V2:
+  // Normalbetrieb behält den quantisierten Schatten-Cache unverändert.
+  // Im Zeitraffer darf die echte Sonnen-/Mondposition dagegen in jedem
+  // Astronomie-Schritt eine neue Shadowmap auslösen, sonst entstehen trotz
+  // flüssiger Himmelskörper sichtbare Winkelsprünge.
+  const aczoTimeLapseShadowLive=(typeof anglingTimeShiftActive!=='undefined'&&!!anglingTimeShiftActive);
+  const lightChanged=aczoTimeLapseShadowLive||(key!==aczoUnderwaterShadowKey);
   if(!lightChanged)return;
   aczoUnderwaterShadowKey=key;
   aczoLastShadowRefreshAt=performance.now();
@@ -25992,7 +25998,7 @@ function requestAnglingTimeShift(){
   if(anglingProgress.xp<cost){showAnglingToast('Nicht genug EP.',1200);updateAnglingTimeUi();return;}
   beginAnglingTimeShift(hours);
 }
-function updateAnglingTimeShift(dt){const tr=anglingTimeShiftActive;if(!tr)return false;tr.elapsed=Math.min(tr.duration,tr.elapsed+dt);const u=tr.duration>0?tr.elapsed/tr.duration:1;setSeasonTimeFromAbsoluteHours(THREE.MathUtils.lerp(tr.start,tr.target,u));anglingTimeAstroAccumulator+=dt;if(anglingTimeAstroAccumulator>=.033||u>=1){anglingTimeAstroAccumulator=0;updateAstronomy();}const uiNow=performance.now();if(uiNow-tr.lastUiAt>=160||u>=1){tr.lastUiAt=uiNow;updateWeatherText();const now=viewerNow();anglingTimeOverlayClock.textContent=now.toLocaleTimeString('de-DE',{hour:'2-digit',minute:'2-digit'})+' · '+now.toLocaleDateString('de-DE',{day:'2-digit',month:'2-digit'});}if(u>=1){const hours=tr.hours;anglingTimeShiftActive=null;anglingUi.classList.remove('time-shifting');anglingTimeOverlay.classList.remove('show');anglingTimeOverlay.setAttribute('aria-hidden','true');anglingState='ready';anglingStateTime=0;applyAnglingStraightShoreCamera(true);updateAnglingTimeUi();showAnglingToast('Zeitwechsel abgeschlossen: '+(hours>0?'+':'−')+Math.abs(hours)+' h',1200);}return true;}
+function updateAnglingTimeShift(dt){const tr=anglingTimeShiftActive;if(!tr)return false;tr.elapsed=Math.min(tr.duration,tr.elapsed+dt);const u=tr.duration>0?tr.elapsed/tr.duration:1;setSeasonTimeFromAbsoluteHours(THREE.MathUtils.lerp(tr.start,tr.target,u));anglingTimeAstroAccumulator+=dt;if(anglingTimeAstroAccumulator>=.033||u>=1){anglingTimeAstroAccumulator=0;updateAstronomy();if(typeof updateUnderwaterObstacleShadows==='function')updateUnderwaterObstacleShadows(!!window.__aczoUnderwaterSceneActive);}const uiNow=performance.now();if(uiNow-tr.lastUiAt>=160||u>=1){tr.lastUiAt=uiNow;updateWeatherText();const now=viewerNow();anglingTimeOverlayClock.textContent=now.toLocaleTimeString('de-DE',{hour:'2-digit',minute:'2-digit'})+' · '+now.toLocaleDateString('de-DE',{day:'2-digit',month:'2-digit'});}if(u>=1){const hours=tr.hours;anglingTimeShiftActive=null;anglingUi.classList.remove('time-shifting');anglingTimeOverlay.classList.remove('show');anglingTimeOverlay.setAttribute('aria-hidden','true');anglingState='ready';anglingStateTime=0;applyAnglingStraightShoreCamera(true);updateAnglingTimeUi();showAnglingToast('Zeitwechsel abgeschlossen: '+(hours>0?'+':'−')+Math.abs(hours)+' h',1200);}return true;}
 
 // V7.63: Während des Zeitraffers läuft nicht nur die Uhr schneller, sondern die komplette sichtbare Umwelt.
 // Der reale astronomische Sprung entspricht tausendfacher Geschwindigkeit; visuell wird bewusst auf Faktor 6
