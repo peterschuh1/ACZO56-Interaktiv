@@ -14747,17 +14747,17 @@ bubblePool.points.material=new THREE.ShaderMaterial({
       vec2 q=gl_PointCoord-.5;
       float d=length(q);
       if(d>.5)discard;
-      float outer=smoothstep(.50,.482,d)*smoothstep(.445,.478,d);
-      float rim=smoothstep(.485,.458,d)*smoothstep(.400,.452,d);
-      float highlight=1.0-smoothstep(.018,.060,length(q-vec2(-.16,.16)));
-      float body=(1.0-smoothstep(.47,.33,d))*.018;
-      float alpha=(outer*.22+rim*.27+highlight*.15+body)*vAlpha;
-      if(alpha<.020)discard;
-      // Zweifarbiger Blasenrand: der sehr dünne dunklere Außenrand hält die
-      // Blase auch vor der hellen Wasseroberfläche sichtbar; der helle Innenrand
-      // erhält den bisherigen transparenten Eindruck vor dunklem Grund.
-      vec3 edgeColor=mix(vec3(.20,.48,.58),bubbleColor,
-                         clamp((rim*.90+highlight*.65+body*2.0)/(outer+rim+.001),0.0,1.0));
+      float outer=smoothstep(.50,.480,d)*smoothstep(.440,.476,d);
+      float rim=smoothstep(.486,.454,d)*smoothstep(.395,.449,d);
+      float highlight=1.0-smoothstep(.018,.062,length(q-vec2(-.16,.16)));
+      float body=(1.0-smoothstep(.47,.33,d))*.022;
+      // Kontrast etwas anheben, ohne Größe oder Randbreite sichtbar aufzublasen.
+      float alpha=(outer*.40+rim*.43+highlight*.22+body)*vAlpha;
+      if(alpha<.016)discard;
+      // Kräftigerer blau-grauer Außenkontrast gegen die helle Oberfläche,
+      // heller Innenrand gegen dunklen Boden.
+      vec3 edgeColor=mix(vec3(.10,.32,.40),bubbleColor,
+                         clamp((rim*.98+highlight*.72+body*2.0)/(outer*.78+rim+.001),0.0,1.0));
       gl_FragColor=vec4(edgeColor,alpha);
     }
   `
@@ -20985,7 +20985,7 @@ function updateParticlePool(pool,dt,isBubble){
         pool.life[i]=0;pool.alphas[i]=0;pool.positions[k]=-999;continue;
       }
       const age=1-pool.life[i]/Math.max(.01,pool.maxLife[i]);
-      pool.alphas[i]=.44*Math.min(1,age*5)*Math.min(1,pool.life[i]/.90);
+      pool.alphas[i]=.54*Math.min(1,age*5)*Math.min(1,pool.life[i]/.90);
     }else{
       const q=pool.life[i]/Math.max(.01,pool.maxLife[i]);
       const fadeIn=Math.min(1,(1-q)*8),fadeOut=Math.min(1,q*3);
