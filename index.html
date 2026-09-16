@@ -35097,7 +35097,7 @@ function spawnGroundFeedingBubbles(x,y,z,strength=1,surfaceHint=true,mode='ambie
   // wenigen Sekunden starb und die Oberfläche aus 3–5 m Tiefe nie erreichen konnte.
   // Futterplatz bewusst zurückhaltend: wenige einzelne Blasen pro Gründelimpuls.
   const count=feedspot
-    ? 2+Math.round(2*s)
+    ? (Math.random()<.62 ? 1 : 2)
     : 4+Math.round(4*s);
   const surface=anglingSurfaceZ(x,y);
   for(let i=0;i<count;i++){
