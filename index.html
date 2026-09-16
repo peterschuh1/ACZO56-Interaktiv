@@ -24733,12 +24733,23 @@ function updateAnglingBobGlowStick(){
   const x=anglingBobber.position.x,y=anglingBobber.position.y;
   const surface=anglingSurfaceZ(x,y);
   const flightHeight=Math.max(0,anglingBobber.position.z-surface);
+  const submersion=Math.max(0,surface-anglingBobber.position.z);
+  const underwater=THREE.MathUtils.smoothstep(submersion,.05,1.05);
   // In der Luft wird der Lichtfleck groesser und etwas diffuser, bleibt aber
   // waehrend des kompletten Posenwurfs eindeutig auf dem Wasser erkennbar.
   const flight=THREE.MathUtils.clamp(flightHeight/5.2,0,1);
-  const strength=THREE.MathUtils.lerp(1,.42,flight);
+  // Zieht ein Fisch die Pose tief, bleibt das Knicklicht an der Antenne. Sein
+  // Licht wird unter Wasser kleiner, diffuser und die Oberflaechenreflexion
+  // nimmt mit der optischen Wassertiefe glaubhaft ab.
+  const depthStrength=THREE.MathUtils.lerp(1,.10,underwater);
+  const strength=THREE.MathUtils.lerp(1,.42,flight)*depthStrength;
   const towardCamera=Math.atan2(camera.position.y-y,camera.position.x-x)-Math.PI/2;
   const shimmer=.92+Math.sin(waterUniforms.time.value*5.1)*.08;
+
+  anglingBobGlowStick.material.opacity=THREE.MathUtils.lerp(1,.42,underwater);
+  anglingBobGlowHalo.material.opacity=THREE.MathUtils.lerp(.78,.19,underwater);
+  const haloSize=THREE.MathUtils.lerp(.34,.58,underwater);
+  anglingBobGlowHalo.scale.set(haloSize,haloSize,1);
 
   anglingBobGlowReflection.position.set(x,y,surface+.032);
   anglingBobGlowReflection.rotation.z=towardCamera;
@@ -24747,7 +24758,7 @@ function updateAnglingBobGlowStick(){
     THREE.MathUtils.lerp(.54,1.18,flight),1
   );
   anglingBobGlowReflection.material.opacity=.68*strength*shimmer;
-  anglingBobGlowReflection.visible=true;
+  anglingBobGlowReflection.visible=strength>.035;
 
   anglingBobGlowReflectionSoft.position.set(x,y,surface+.026);
   anglingBobGlowReflectionSoft.rotation.z=towardCamera;
@@ -24756,7 +24767,7 @@ function updateAnglingBobGlowStick(){
     THREE.MathUtils.lerp(.92,1.72,flight),1
   );
   anglingBobGlowReflectionSoft.material.opacity=.24*strength*shimmer;
-  anglingBobGlowReflectionSoft.visible=true;
+  anglingBobGlowReflectionSoft.visible=strength>.035;
 }
 
 
@@ -26308,6 +26319,10 @@ let anglingQteInputLockUntil=0;
 let anglingQteLastAttemptAt=0;
 let anglingBiteDuration=2.4;
 let anglingBiteVariant=0;
+// Die sichtbare Vorbissphase variiert von Biss zu Biss. Der Hinweis "BISS!"
+// beginnt exakt an diesem Schwellwert; dieselbe Grenze nutzt die Futterleiste.
+let anglingBiteAlertPhase=.68;
+let anglingBiteDeepFactor=1;
 let anglingStrikeQuality='normal';
 let anglingCastStart=new THREE.Vector3();
 let anglingCastEnd=new THREE.Vector3();
@@ -33064,7 +33079,22 @@ function updateAnglingBobberWaterTint(surface){
   });
 }
 
-function setAnglingBobberRestPose(biteDip=0,biteWobble=0,biteSlide=0,biteLean=0,biteSideLean=0){
+const anglingBobberDeepWaterColor=new THREE.Color(0x426b70);
+function updateAnglingBobberDepthLook(depth=0){
+  const underwater=THREE.MathUtils.smoothstep(Math.max(0,depth),.06,1.05);
+  // Mit zunehmender Tiefe wirkt die Pose perspektivisch kleiner. Weniger
+  // Kontrast und Deckkraft simulieren die optische Unschärfe im Wasser ohne
+  // einen teuren Postprocessing-Blur (wichtig für iPhone und Livefenster).
+  anglingBobber.scale.setScalar(THREE.MathUtils.lerp(1,.62,underwater));
+  anglingBobber.traverse(o=>{
+    if(!o.isMesh||!o.material||!o.userData.anglingBobBaseColor)return;
+    o.material.color.lerp(anglingBobberDeepWaterColor,.36*underwater);
+    o.material.opacity*=THREE.MathUtils.lerp(1,.58,underwater);
+  });
+  anglingBobHalo.material.opacity=THREE.MathUtils.lerp(.30,.035,underwater);
+}
+
+function setAnglingBobberRestPose(biteDip=0,biteWobble=0,biteSlide=0,biteLean=0,biteSideLean=0,visualDepth=biteDip){
   if(!anglingSelection)return;
   // Jeder Frame startet wieder am echten Wurfpunkt. Nur der aktuelle Biss darf
   // den Schwimmer seitlich verschieben; dadurch gibt es kein Aufsummieren.
@@ -33074,6 +33104,12 @@ function setAnglingBobberRestPose(biteDip=0,biteWobble=0,biteSlide=0,biteLean=0,
   anglingBobber.position.x=anglingCastEnd.x+biteSide.x*(biteSlide+steerSlide);
   anglingBobber.position.y=anglingCastEnd.y+biteSide.y*(biteSlide+steerSlide);
   const info=getAnglingRigInfo(anglingBobber.position.x,anglingBobber.position.y);
+  // Auch ein sehr kräftiger Biss darf die Pose optisch nicht unter den lokal
+  // vorhandenen Gewässerboden ziehen. In tiefem Wasser bleibt rund ein Meter
+  // Abtauchen möglich, in flachen Zonen wird der Weg automatisch begrenzt.
+  const maxVisibleDip=Math.min(1.15,Math.max(.30,info.waterDepth*.68));
+  biteDip=Math.min(biteDip,maxVisibleDip);
+  visualDepth=Math.min(visualDepth,maxVisibleDip);
   const rigChanged=anglingRigState!==info.state||Math.abs(anglingLocalWaterDepth-info.waterDepth)>.05;
   anglingLocalWaterDepth=info.waterDepth;anglingRigState=info.state;
   if(rigChanged){
@@ -33104,6 +33140,7 @@ function setAnglingBobberRestPose(biteDip=0,biteWobble=0,biteSlide=0,biteLean=0,
   anglingBobber.rotation.y=THREE.MathUtils.clamp(-slopeX*1.35,-.14,.14)+Math.cos(t*1.55)*.018+biteSideLean;
   anglingBobber.rotation.z=Math.sin(t*2.6)*.055+biteWobble;
   updateAnglingBobberWaterTint(surface);
+  updateAnglingBobberDepthLook(Math.max(0,visualDepth));
 }
 
 function updateAnglingUpperLayerLureVisibility(){
@@ -33761,7 +33798,7 @@ function updateAnglingFeedUi(){
  // V8.107: Der intern bereits laufende, aber noch nicht sichtbare Biss darf
  // die Futterleiste nicht verräterisch vorab ausblenden. Sie verschwindet nun
  // exakt in demselben Moment, in dem der sichtbare BISS-Impuls beginnt.
- const biteStillHidden=anglingState==='bite'&&anglingStateTime<anglingBiteDuration*.16;
+ const biteStillHidden=anglingState==='bite'&&anglingStateTime<anglingBiteDuration*anglingBiteAlertPhase;
  const poseActive=anglingMode&&!artificial&&anglingUi.classList.contains('line-active')&&
    (['waiting','approach'].includes(anglingState)||biteStillHidden);
  if(artificial){
@@ -34196,19 +34233,20 @@ function beginAnglingBite(){
   anglingState='bite';anglingStateTime=0;
   const biteSpecies=anglingPendingCatch?.species;
   anglingCurrentBiteProfile=ANGLING_BITE_PROFILE[biteSpecies]||'twitch';
-  // V8.40: Jede Art besitzt eine eigene Grunddauer. Eine kleine Zufallsabweichung
-  // verhindert, dass zwei Bisse derselben Art exakt wie eine Aufnahme wirken.
+  // Jede Art behaelt ihre eigene Handschrift, aber Vorbissdauer, sichtbarer
+  // BISS-Moment und Endtiefe werden pro Ereignis neu kombiniert. Dadurch kann
+  // dieselbe Fischart kurz entschlossen oder laenger pruefend beissen.
   anglingBiteVariant=Math.random()*2-1;
-  // V8.107: Artspezifische Bewegung bleibt erhalten, wird aber kompakt und
-  // überraschend abgespielt. QTE, Fanglogik und Drill beginnen unverändert danach.
-  anglingBiteDuration=(ANGLING_BITE_DURATION_BY_SPECIES[biteSpecies]||.90)+Math.random()*.10;
+  const biteBase=ANGLING_BITE_DURATION_BY_SPECIES[biteSpecies]||.90;
+  anglingBiteDuration=THREE.MathUtils.clamp(biteBase*(1.38+Math.random()*1.02),1.12,2.55);
+  anglingBiteAlertPhase=.57+Math.random()*.23;
+  anglingBiteDeepFactor=.96+Math.random()*.64;
   if(anglingSelectedBait==='baitfish'&&anglingPendingCatch&&!anglingPendingCatch.baitConsumed){
     anglingProgress.baitfish=Math.max(0,anglingProgress.baitfish-1);
     anglingPendingCatch.baitConsumed=true;saveAnglingProgress();updateAnglingSetupUi();
   }
   anglingQte.classList.remove('show','now');anglingStrikeMeter.classList.remove('show','now');
   anglingUi.classList.remove('bite-alert','bite-focus','perfect-hit');
-  if(navigator.vibrate)navigator.vibrate([45,35,75]);
   anglingActionBtn.disabled=true;anglingActionBtn.textContent='•••';
   // Keine Statusänderung: Die letzte neutrale/atmosphärische Meldung bleibt
   // stehen, bis der Biss tatsächlich sichtbar wird.
@@ -34234,7 +34272,6 @@ function beginAnglingStrikeQte(){
   anglingQte.style.pointerEvents='auto';
   anglingActionBtn.disabled=false;anglingActionBtn.textContent='⚡';
   setAnglingStatus('','');
-  if(navigator.vibrate)navigator.vibrate(35);
 }
 
 const ANGLING_STRENGTH={
@@ -36758,18 +36795,21 @@ function updateAnglingMode(dt){
     const phase=anglingClamp01(anglingStateTime/anglingBiteDuration);
     const biteVisibility=anglingRigState==='over'?.55:1;
     const biteMotion=getAnglingSpeciesBiteMotion(anglingPendingCatch?.species,phase);
-    const biteDip=biteMotion.dip*biteVisibility;
+    const deepStart=Math.max(.32,anglingBiteAlertPhase-.19);
+    const deepCommit=THREE.MathUtils.smoothstep(phase,deepStart,.98);
+    const deepPull=(.10+.22*Math.abs(anglingBiteVariant))*deepCommit;
+    const biteDip=(biteMotion.dip*anglingBiteDeepFactor+deepPull)*biteVisibility;
     const biteWobble=biteMotion.wobble;
     const biteSlide=biteMotion.slide*biteVisibility;
     const biteLean=biteMotion.lean*biteVisibility;
     const biteSideLean=biteMotion.sideLean*biteVisibility;
     setAnglingBobberRestPose(biteDip,biteWobble,biteSlide,biteLean,biteSideLean);
-    if(phase>.43&&phase<.49&&anglingLastSurfaceEffect<=0){
+    if(phase>anglingBiteAlertPhase-.09&&phase<anglingBiteAlertPhase-.03&&anglingLastSurfaceEffect<=0){
       spawnAnglingSurfaceEffect(anglingBobber.position,.65,1.15);anglingLastSurfaceEffect=.9;
     }
     // Derselbe Schwellwert wird von updateAnglingFeedUi() verwendet: Es gibt
     // keinen unsichtbaren UI-Vorlauf mehr, der den Biss ankündigen könnte.
-    anglingUi.classList.toggle('bite-alert',phase>=.16&&phase<.78);
+    anglingUi.classList.toggle('bite-alert',phase>=anglingBiteAlertPhase&&phase<1);
     if(phase>=1){
       anglingState='bite-focus';anglingStateTime=0;
       anglingUi.classList.remove('bite-alert');anglingUi.classList.add('bite-focus');
@@ -36777,7 +36817,8 @@ function updateAnglingMode(dt){
   }else if(anglingState==='bite-focus'){
     if(anglingReturnToShorePendingReset)return false;
     // Nur ein sehr kurzer Nachdruck vor dem unveränderten Anhieb-QTE.
-    setAnglingBobberRestPose(.54+Math.sin(anglingStateTime*15)*.018,Math.sin(anglingStateTime*11)*.035);
+    const focusDepth=THREE.MathUtils.clamp(.62*anglingBiteDeepFactor,.58,1.02);
+    setAnglingBobberRestPose(focusDepth+Math.sin(anglingStateTime*15)*.018,Math.sin(anglingStateTime*11)*.035,0,0,0,focusDepth);
     if(anglingStateTime>=.14)beginAnglingStrikeQte();
   }else if(anglingState==='strike'){
     anglingQteLapTime+=dt;
@@ -36800,7 +36841,8 @@ function updateAnglingMode(dt){
       // Leuchten muss exakt dem sichtbaren Treffersegment entsprechen.
       const visiblePhase=(phase+.25)%1;
       const now=visiblePhase>=.22&&visiblePhase<=.78;
-      setAnglingBobberRestPose(.56+Math.sin(anglingStateTime*18)*.014,Math.sin(anglingStateTime*13)*.025);
+      const strikeDepth=THREE.MathUtils.clamp(.64*anglingBiteDeepFactor,.60,1.04);
+      setAnglingBobberRestPose(strikeDepth+Math.sin(anglingStateTime*18)*.014,Math.sin(anglingStateTime*13)*.025,0,0,0,strikeDepth);
       anglingQte.style.setProperty('--qte-angle',(phase*360).toFixed(1)+'deg');
       anglingQte.classList.toggle('now',now);projectAnglingQte();
     }
