@@ -7495,10 +7495,7 @@ const sunDisc=new THREE.Sprite(
  })
 );
 sunDisc.position.copy(sun.position);
-// SONNENFIX 2: Die alte 48-m-Scheibe wirkte in der Kartenperspektive wie ein
-// sehr grosser, am Bildschirm befestigter Lichtball. Deutlich kleiner, aber
-// auf Mobil weiterhin klar erkennbar.
-sunDisc.scale.set(22,22,1);
+sunDisc.scale.set(48,48,1);
 sunDisc.renderOrder=CELESTIAL_DISC_RENDER_ORDER;
 scene.add(sunDisc);
 
@@ -7849,7 +7846,7 @@ const moonDisc=new THREE.Sprite(new THREE.SpriteMaterial({
   depthTest:true
 }));
 moonDisc.renderOrder=CELESTIAL_DISC_RENDER_ORDER;
-moonDisc.scale.set(16,16,1);
+moonDisc.scale.set(25,25,1);
 moonDisc.userData.visualOpacity=1;
 
 scene.add(moonDisc);
@@ -7916,7 +7913,7 @@ const moonGlow=new THREE.Sprite(new THREE.SpriteMaterial({
   blending:THREE.AdditiveBlending
 }));
 moonGlow.renderOrder=CELESTIAL_GLOW_RENDER_ORDER;
-moonGlow.scale.set(36,36,1);
+moonGlow.scale.set(50,50,1);
 moonGlow.userData.visualOpacity=.82;
 scene.add(moonGlow);
 
@@ -8730,7 +8727,7 @@ function applyNeutralDayScene(){
   sunDisc.position.copy(sun.position);
   sunDisc.userData.astronomicallyVisible=true;
   sunDisc.visible=!is2D&&celestialDiscAllowedForView();
-  sunDisc.scale.set(22,22,1);
+  sunDisc.scale.set(48,48,1);
   if(sunDisc.material){
     sunDisc.material.opacity=1.0;
     sunDisc.material.depthTest=true;
@@ -11220,14 +11217,12 @@ function celestialVector(pos,radius){
   ).multiplyScalar(radius);
 }
 
-// V8.92 / SONNENFIX 2: Die Lichtquellen bleiben unverändert am Kartenursprung
-// ausgerichtet. Die sichtbaren Scheiben folgen der normalen Kartenkamera nur
-// zu 90 Prozent. Die kleine verbleibende Parallaxe bindet Sonne und Mond beim
-// Zoomen sichtbar an den fernen Himmel, ohne den grossen Positionssprung der
-// frueheren reinen Weltposition zurueckzubringen. In Fisch-/Angelansichten
-// bleibt die bewaehrte vollstaendige Kameranachfuehrung erhalten.
+// V8.92: Die Lichtquellen bleiben unverändert am Kartenursprung ausgerichtet.
+// Nur ihre sichtbaren Scheiben werden für das Hauptbild relativ zur Kamera auf
+// denselben Richtungsvektor gesetzt. So entsteht bei Kamerafahrten keine
+// künstliche Parallaxe, während Licht, Schatten und Wasser-Richtungen identisch
+// zu V8.91 bleiben.
 const celestialDiscCameraDirection=new THREE.Vector3();
-const celestialDiscCameraAnchor=new THREE.Vector3();
 function positionCelestialDiscsForMainCamera(){
   const span=Math.max(D.sceneW,D.sceneH);
   const place=(disc,light,distance)=>{
@@ -11235,9 +11230,7 @@ function positionCelestialDiscsForMainCamera(){
     celestialDiscCameraDirection.copy(light.position).sub(light.target.position);
     if(celestialDiscCameraDirection.lengthSq()<1e-8)return;
     celestialDiscCameraDirection.normalize();
-    const cameraFollow=(fishMode||anglingMode)?1:.90;
-    celestialDiscCameraAnchor.copy(light.target.position).lerp(camera.position,cameraFollow);
-    disc.position.copy(celestialDiscCameraAnchor).addScaledVector(celestialDiscCameraDirection,distance);
+    disc.position.copy(camera.position).addScaledVector(celestialDiscCameraDirection,distance);
   };
   place(sunDisc,sun,span*2.1);
   place(moonDisc,moonLight,span*1.9);
@@ -11329,11 +11322,11 @@ function updateAstronomy(){
         0,1
       )
     : 0;
-  const moonVisualScale=THREE.MathUtils.lerp(16,14,moonDaylight);
+  const moonVisualScale=THREE.MathUtils.lerp(25,20,moonDaylight);
   moonDisc.userData.visualOpacity=moonVisualOpacity;
   moonDisc.scale.set(moonVisualScale,moonVisualScale,1);
   if(typeof moonGlow!=='undefined'){
-    const moonGlowScale=THREE.MathUtils.lerp(36,28,moonDaylight);
+    const moonGlowScale=THREE.MathUtils.lerp(50,35,moonDaylight);
     moonGlow.userData.visualOpacity=moonVisualOpacity*THREE.MathUtils.lerp(.82,.12,moonDaylight);
     moonGlow.scale.set(moonGlowScale,moonGlowScale,1);
   }
@@ -14723,8 +14716,8 @@ function makeParticlePool(count,color,fadeAlpha=.22,useFog=false){
   points.visible=false;points.renderOrder=4.5;scene.add(points);
   return {count,positions,sizes,alphas,life,maxLife,vx,vy,vz,geo,points,cursor:0,fadeAlpha};
 }
-const bubblePool=makeParticlePool(42,0xdaf7ff);
-const sedimentPool=makeParticlePool(84,0x9b8766,.18);
+const bubblePool=makeParticlePool(120,0xdaf7ff);
+const sedimentPool=makeParticlePool(180,0x9b8766);
 
 // V6.29: sichtbare Grundwolken. Maximal drei Wolken bleiben gleichzeitig aktiv;
 // bei einer vierten wird die älteste sofort wiederverwendet.
@@ -14740,7 +14733,7 @@ anglingSedimentCtx.fillStyle=anglingSedimentGrad;anglingSedimentCtx.fillRect(0,0
 const anglingSedimentTexture=new THREE.CanvasTexture(anglingSedimentCanvas);
 anglingSedimentTexture.encoding=THREE.sRGBEncoding;
 const anglingSedimentClouds=[];
-for(let i=0;i<9;i++){
+for(let i=0;i<24;i++){
   const mat=new THREE.SpriteMaterial({map:anglingSedimentTexture,transparent:true,opacity:0,depthWrite:false,depthTest:true,fog:true});
   const sp=new THREE.Sprite(mat);sp.visible=false;sp.renderOrder=5.15;scene.add(sp);
   sp.userData.life=0;sp.userData.maxLife=0;anglingSedimentClouds.push(sp);
@@ -14749,11 +14742,12 @@ let anglingSedimentCloudCursor=0;
 const anglingFeedingFxPos=new THREE.Vector3();
 function spawnAnglingSedimentCloud(x,y,z,strength=1){
   const cloud=anglingSedimentClouds[anglingSedimentCloudCursor++%anglingSedimentClouds.length];
-  cloud.position.set(x+(Math.random()-.5)*.05,y+(Math.random()-.5)*.05,z+.045);
-  // Unter Wasser baut sich eine aufgewirbelte Grundwolke langsam auf und
-  // bleibt mehrere Sekunden weich stehen, statt kurz aufzublitzen.
-  cloud.userData.life=cloud.userData.maxLife=7.5+Math.random()*2.8;
-  cloud.userData.startSize=.18+.045*strength;cloud.userData.endSize=1.04+.30*strength;
+  cloud.position.set(x+(Math.random()-.5)*.08,y+(Math.random()-.5)*.08,z+.035);
+  // V1.2: Eine echte Gründelwolke baut sich unter Wasser langsam auf, bleibt
+  // einige Sekunden stehen und fällt ebenso weich wieder zusammen.
+  cloud.userData.life=cloud.userData.maxLife=7.6+Math.random()*2.4;
+  cloud.userData.startSize=.22+.05*strength;cloud.userData.endSize=1.00+.28*strength;
+  cloud.userData.rise=.030+Math.random()*.014; // insgesamt ca. 25–40 cm über Grund
   cloud.material.rotation=Math.random()*Math.PI;cloud.material.opacity=0;cloud.scale.setScalar(cloud.userData.startSize);cloud.visible=true;
 }
 function updateAnglingSedimentClouds(dt){
@@ -14762,12 +14756,12 @@ function updateAnglingSedimentClouds(dt){
     cloud.userData.life-=dt;
     if(cloud.userData.life<=0){cloud.visible=false;cloud.material.opacity=0;continue;}
     const p=1-cloud.userData.life/cloud.userData.maxLife;
-    const expansion=THREE.MathUtils.smoothstep(p,0,1);
+    const grow=THREE.MathUtils.smoothstep(p,0,.58);
+    cloud.scale.setScalar(THREE.MathUtils.lerp(cloud.userData.startSize,cloud.userData.endSize,grow));
+    cloud.position.z+=dt*(cloud.userData.rise||.034);cloud.material.rotation+=dt*.028;
     const fadeIn=THREE.MathUtils.smoothstep(p,0,.24);
-    const fadeOut=1-THREE.MathUtils.smoothstep(p,.58,1);
-    cloud.scale.setScalar(THREE.MathUtils.lerp(cloud.userData.startSize,cloud.userData.endSize,expansion));
-    cloud.position.z+=dt*.006;cloud.material.rotation+=dt*.025;
-    cloud.material.opacity=.43*fadeIn*fadeOut;
+    const fadeOut=1-THREE.MathUtils.smoothstep(p,.64,1);
+    cloud.material.opacity=.70*fadeIn*fadeOut;
   }
 }
 // Große, kräftige Blutwolke: weiterhin nur ein einziges Partikelsystem.
@@ -20926,23 +20920,25 @@ function updateParticlePool(pool,dt,isBubble){
     if(pool.life[i]<=0) continue;
     const k=i*3;
     pool.life[i]-=dt;
-    const reachedSurface=isBubble&&pool.positions[k+2]>-.07;
-    if(pool.life[i]<=0||reachedSurface){
-      // Die Blase platzt erst an der Oberfläche und hinterlässt dort einen
-      // sehr kleinen, schnell auslaufenden Ring.
-      if(reachedSurface&&anglingMode&&Math.random()<.62){
-        anglingFeedingFxPos.set(pool.positions[k],pool.positions[k+1],anglingSurfaceZ(pool.positions[k],pool.positions[k+1]));
-        spawnAnglingSurfaceEffect(anglingFeedingFxPos,.055+Math.random()*.035,.58+Math.random()*.20,1.05+Math.random()*.42,.055+Math.random()*.035,.18+Math.random()*.09);
-      }
+    if(pool.life[i]<=0){
       pool.life[i]=0;pool.alphas[i]=0;pool.positions[k]=-999;continue;
     }
     pool.positions[k]+=pool.vx[i]*dt;
     pool.positions[k+1]+=pool.vy[i]*dt;
     pool.positions[k+2]+=pool.vz[i]*dt;
     if(isBubble){
-      pool.positions[k]+=.004*Math.sin(underwaterFxTime*2.1+i)*dt;
-      pool.positions[k+1]+=.004*Math.cos(underwaterFxTime*1.7+i)*dt;
-      pool.alphas[i]=.48*Math.min(1,pool.life[i]/Math.max(.01,pool.maxLife[i]*.24));
+      pool.positions[k]+=.016*Math.sin(underwaterFxTime*2.1+i)*dt;
+      pool.positions[k+1]+=.016*Math.cos(underwaterFxTime*1.7+i)*dt;
+      const surface=anglingSurfaceZ(pool.positions[k],pool.positions[k+1]);
+      if(pool.positions[k+2]>=surface-.025){
+        if(anglingMode&&Math.random()<.62){
+          anglingFeedingFxPos.set(pool.positions[k],pool.positions[k+1],surface+.004);
+          spawnAnglingSurfaceEffect(anglingFeedingFxPos,.075+Math.random()*.055,.72+Math.random()*.16,1.25+Math.random()*.45,.09+Math.random()*.035,.28+Math.random()*.10);
+        }
+        pool.life[i]=0;pool.alphas[i]=0;pool.positions[k]=-999;continue;
+      }
+      const age=1-pool.life[i]/Math.max(.01,pool.maxLife[i]);
+      pool.alphas[i]=.62*Math.min(1,age*5)*Math.min(1,pool.life[i]/1.2);
     }else{
       const q=pool.life[i]/Math.max(.01,pool.maxLife[i]);
       const fadeIn=Math.min(1,(1-q)*8),fadeOut=Math.min(1,q*3);
@@ -21021,13 +21017,13 @@ function updateUnderwaterEffects(dt){
     });
     if(bottomFish.length){
       const f=bottomFish[Math.floor(Math.random()*bottomFish.length)],d=pondDepthAt(f.obj.position.x,f.obj.position.y);
-      const z=-d*exaggeration+.07,n=6+Math.floor(Math.random()*4);
+      const z=-d*exaggeration+.07,n=9+Math.floor(Math.random()*6);
       for(let i=0;i<n;i++){
         const a=Math.random()*Math.PI*2,s=.025+Math.random()*.10;
         spawnPoolParticle(
           sedimentPool,f.obj.position.x+(Math.random()-.5)*.36,f.obj.position.y+(Math.random()-.5)*.36,z+Math.random()*.12,
-          .62+Math.random()*.72,6.0+Math.random()*3.0,
-          Math.cos(a)*s*.55,Math.sin(a)*s*.55,.006+Math.random()*.018,.18
+          .75+Math.random()*1.0,2.8+Math.random()*2.4,
+          Math.cos(a)*s,Math.sin(a)*s,.012+Math.random()*.035,.22
         );
       }
     }
@@ -21603,9 +21599,7 @@ function initialFishFeedSeed(name,index){
   // Ein junger Futterplatz beginnt mit einer kleinen, ausgewogenen Kerngruppe.
   // Nur diese wenigen Tiere sind garantiert; alle weiteren bleiben zufaellig.
   // So dominieren weder Schuppen- noch Spiegelkarpfen den Platz.
-  // Ein Hecht bleibt als einzelner, vorsichtiger Randräuber verfügbar. Er
-  // greift nur über den bestehenden Jagd-Timer an und löst keinen Dauerstress aus.
-  const guaranteed={roach:3,rudd:2,bream:2,tench:2,carp:1,mirrorcarp:1,sturgeon:1,pike:1};
+  const guaranteed={roach:3,rudd:2,bream:2,tench:2,carp:1,mirrorcarp:1,sturgeon:1};
   const count=guaranteed[name]||0;
   return index<count ? index*.003 : Math.random();
 }
@@ -22353,7 +22347,6 @@ const huntRules={
   zander:['goby'],
   eel:['goby']
 };
-const smallHuntPreySpecies=new Set(['goby','sunfish','roach','rudd','perch']);
 let fishWorldTime=0,nextHuntAt=12+Math.random()*8,activeHunt=null,lastHuntPredatorSpecies=null;
 
 function huntSpeciesIsActive(species){
@@ -22365,10 +22358,6 @@ function huntSpeciesIsActive(species){
 
 function startHuntEvent(){
   const pairs=[];
-  const feedRaidActive=!!(anglingFeedActive&&performance.now()<anglingFeedActive.expires);
-  const feedRaidRadius=feedRaidActive
-    ? Math.pow(((ANGLING_FEED_CATALOG[anglingFeedActive.type]||ANGLING_FEED_CATALOG.normal).radius*1.85),2)
-    : 0;
   for(const predator of fishActors){
     const predatorSpecies=predator.obj.userData.species;
     const allowedPrey=huntRules[predatorSpecies];
@@ -22388,11 +22377,7 @@ function startHuntEvent(){
         const ndc=nearest.obj.position.clone().project(camera);
         const onScreen=ndc.z>-1&&ndc.z<1&&Math.abs(ndc.x)<.82&&Math.abs(ndc.y)<.82;
         const repeatPenalty=predatorSpecies===lastHuntPredatorSpecies?12:0;
-        const preyAtFeed=feedRaidActive&&smallHuntPreySpecies.has(selectedPreySpecies)&&
-          Math.pow(nearest.obj.position.x-anglingFeedActive.x,2)+Math.pow(nearest.obj.position.y-anglingFeedActive.y,2)<feedRaidRadius;
-        // Bei einem aktiven Futterplatz bevorzugt die vorhandene Jagdlogik
-        // gelegentlich dessen Rand. Es entsteht kein zusätzlicher Dauer-Timer.
-        const score=pairD+cameraD*.48+(onScreen?-55:28)+(pairD>16?35:0)+repeatPenalty+(preyAtFeed?-42:0);
+        const score=pairD+cameraD*.48+(onScreen?-55:28)+(pairD>16?35:0)+repeatPenalty;
         pairs.push({predator,prey:nearest,score,pairD,onScreen,cameraD});
       }
     }
@@ -22408,9 +22393,8 @@ function startHuntEvent(){
   const predatorPos=pair.predator.obj.position;
   const preyName=pair.prey.obj.userData.species;
   const fleeing=fishActors.filter(f=>
-    (f===pair.prey||smallHuntPreySpecies.has(f.obj.userData.species))&&
-    !f.obj.userData.hiddenByHunt&&
-    f.obj.position.distanceToSquared(pair.prey.obj.position)<49
+    f.obj.userData.species===preyName&&!f.obj.userData.hiddenByHunt&&
+    f.obj.position.distanceToSquared(pair.prey.obj.position)<42
   );
   for(const f of fleeing){
     const away=f.obj.position.clone().sub(predatorPos);
@@ -22418,7 +22402,7 @@ function startHuntEvent(){
     away.z*=.22;away.normalize();
     f.huntFleeTarget=f.obj.position.clone().addScaledVector(away,4.8+Math.random()*3.6);
     let d=pondDepthAt(f.huntFleeTarget.x,f.huntFleeTarget.y);
-    if(d==null||d<.38) randomSpeciesPoint(f.obj.userData.species,f.huntFleeTarget);
+    if(d==null||d<.38) randomSpeciesPoint(preyName,f.huntFleeTarget);
     else{
       const bottom=-d*exaggeration;
       if(preyName==='goby') f.huntFleeTarget.z=bottom+.065;
@@ -22626,14 +22610,14 @@ function anglingFeedRuleForSpecies(species){
     case 'roach': return {group:'center',threshold:.035,radial:.70,spread:.64,zMin:.08,zMax:.28};
     case 'rudd': return {group:'center',threshold:.022,radial:.78,spread:.72,zMin:.14,zMax:.34};
     case 'bream': return {group:'center',threshold:.08,radial:.82,spread:.58,zMin:.06,zMax:.18};
-    case 'carp': return {group:'center',threshold:.026,radial:.92,spread:.50,zMin:.07,zMax:.16};
-    case 'mirrorcarp': return {group:'center',threshold:.026,radial:.92,spread:.50,zMin:.07,zMax:.16};
+    case 'carp': return {group:'center',threshold:.07,radial:.92,spread:.50,zMin:.07,zMax:.16};
+    case 'mirrorcarp': return {group:'center',threshold:.07,radial:.92,spread:.50,zMin:.07,zMax:.16};
     case 'tench': return {group:'center',threshold:.06,radial:.88,spread:.56,zMin:.04,zMax:.12};
     case 'sturgeon': return {group:'center',threshold:.20,radial:1.02,spread:.44,zMin:.03,zMax:.08};
     case 'perch': return {group:'edge',threshold:.012,radial:1.16,spread:.26,zMin:.22,zMax:.46};
-    case 'pike': return {group:'edge',threshold:.012,radial:1.42,spread:.26,zMin:.18,zMax:.38};
-    case 'zander': return {group:'edge',threshold:.014,radial:1.30,spread:.22,zMin:.06,zMax:.18};
-    case 'catfish': return {group:'edge',threshold:.010,radial:1.54,spread:.24,zMin:.04,zMax:.12};
+    case 'pike': return {group:'edge',threshold:.035,radial:1.42,spread:.26,zMin:.18,zMax:.38};
+    case 'zander': return {group:'edge',threshold:.06,radial:1.30,spread:.22,zMin:.06,zMax:.18};
+    case 'catfish': return {group:'edge',threshold:.04,radial:1.54,spread:.24,zMin:.04,zMax:.12};
     default:return null;
   }
 }
@@ -22691,7 +22675,7 @@ function updateAnglingFeedUnderwaterVisual(dt,lureUnderwaterActive){
   }
   bedPos.needsUpdate=true;
   anglingFeedBed.material.opacity=.14+maturity*.08+.026*Math.sin(anglingFeedUnderwaterTime*1.4);
-  anglingFeedBottomCrumbGeo.setDrawRange(0,Math.max(18,Math.round(FEED_BOTTOM_CRUMB_COUNT*(.28+.72*maturity))));
+  anglingFeedBottomCrumbGeo.setDrawRange(0,Math.max(120,Math.round(FEED_BOTTOM_CRUMB_COUNT*(.55+.45*maturity))));
   anglingFeedRiseParticleGeo.setDrawRange(0,Math.max(9,Math.round(FEED_RISE_PARTICLE_COUNT*(.20+.80*maturity))));
   for(let i=0;i<FEED_BOTTOM_CRUMB_COUNT;i++){
     const s=anglingFeedBottomSeeds[i],j=i*3;
@@ -22717,15 +22701,13 @@ function updateAnglingFeedUnderwaterVisual(dt,lureUnderwaterActive){
 // weiterhin Vorrang hat. Der Stör bleibt neutral und flieht nicht automatisch.
 function anglingLureScareProfile(species){
   switch(species){
-    case 'goby':       return {radius:3.00,chance:.80,distance:[2.5,3.8],duration:[1.8,2.5]};
-    case 'sunfish':    return {radius:3.00,chance:.92,distance:[2.8,4.2],duration:[2.0,2.8]};
-    case 'roach':      return {radius:3.00,chance:1.00,distance:[3.0,4.5],duration:[2.0,2.8]};
-    case 'rudd':       return {radius:3.00,chance:1.00,distance:[3.0,4.5],duration:[2.0,2.8]};
-    case 'bream':      return {radius:3.00,chance:.46,distance:[2.6,3.9],duration:[1.8,2.6]};
-    case 'carp':       return {radius:3.00,chance:.30,distance:[2.7,4.0],duration:[1.9,2.8]};
-    case 'mirrorcarp': return {radius:3.00,chance:.30,distance:[2.7,4.0],duration:[1.9,2.8]};
-    case 'grasscarp':  return {radius:3.00,chance:.32,distance:[2.8,4.2],duration:[1.9,2.8]};
-    case 'tench':      return {radius:3.00,chance:.38,distance:[2.4,3.7],duration:[1.8,2.5]};
+    case 'roach':      return {radius:2.00,chance:1.00,distance:[2.8,4.2],duration:[2.0,2.8]};
+    case 'rudd':       return {radius:2.00,chance:1.00,distance:[2.8,4.2],duration:[2.0,2.8]};
+    case 'bream':      return {radius:2.00,chance:.42,distance:[2.4,3.6],duration:[1.8,2.6]};
+    case 'carp':       return {radius:1.05,chance:.28,distance:[2.5,3.8],duration:[1.9,2.8]};
+    case 'mirrorcarp': return {radius:1.05,chance:.28,distance:[2.5,3.8],duration:[1.9,2.8]};
+    case 'grasscarp':  return {radius:1.08,chance:.30,distance:[2.6,4.0],duration:[1.9,2.8]};
+    case 'tench':      return {radius:.98,chance:.34,distance:[2.2,3.4],duration:[1.8,2.5]};
     default:return null;
   }
 }
@@ -22753,7 +22735,6 @@ function triggerAnglingLureScare(f,cfg){
 
 function updateFishActors(dt){
   const fishNow=performance.now();
-  updateGroundFeedingSurfaceBubbles(fishNow);
   // P30: Der Kunstkoederflug ueber Wasser braucht keine 516-koepfige Unterwasser-
   // Population zu simulieren. Erst die echte Unterwasseransicht aktiviert sie.
   const lureUnderwaterActive=anglingMode&&anglingUsesArtificialLure()&&anglingLure.visible&&anglingCinematicView==='underwater';
@@ -22785,11 +22766,7 @@ function updateFishActors(dt){
   updateAnglingFeedUnderwaterVisual(dt,lureUnderwaterActive);
   if(!fishVisualActive&&!feedWorldActive) return;
   fishWorldTime+=dt;
-  // Jagden starten nur, wenn die Unterwasserwelt tatsächlich zu sehen ist.
-  // Dadurch wird der seltene Futterplatz-Überfall nicht unbemerkt während der
-  // Uferansicht verbraucht und beim Eintauchen ist er weiterhin erlebbar.
-  if(fishVisualActive)updateHuntSchedule();
-  else if(activeHunt)cancelHuntEvent();
+  updateHuntSchedule();
   fishActorFrame++;
   fishPlantTime+=dt;
   fishPlantMat.uniforms.time.value=fishPlantTime;
@@ -23063,23 +23040,19 @@ function updateFishActors(dt){
           const shoreBubbleHint=anglingMode&&anglingCinematicView==='shore';
 
           if(fishWorldTime>=f.feedDustAt){
+            const fxX=f.obj.position.x+(Math.random()-.5)*.10;
+            const fxY=f.obj.position.y+(Math.random()-.5)*.10;
             spawnAnglingBottomDust(
-              f.obj.position.x+(Math.random()-.5)*.10,
-              f.obj.position.y+(Math.random()-.5)*.10,
-              floor+.018,
-              feedStrength*(feedMode==='feedspot'?.90:1.0)
+              fxX,fxY,floor+.018,
+              feedStrength*(feedMode==='feedspot'?.98:1.0)
             );
-            f.feedDustAt=fishWorldTime+(feedMode==='feedspot'?(6.0+Math.random()*3.5):(5.2+Math.random()*3.2));
-            // Eingeschlossene Bodenluft löst sich zusammen mit derselben
-            // Gründelbewegung – nicht als unabhängiger Dauer-Blasengeber.
+            // Staub und Luftblasen haben dieselbe Ursache: der Fisch wühlt den
+            // Boden auf. Deshalb starten beide Effekte jetzt im selben Moment.
             spawnGroundFeedingBubbles(
-              f.obj.position.x+(Math.random()-.5)*.08,
-              f.obj.position.y+(Math.random()-.5)*.08,
-              floor+.020,
-              feedStrength,
-              shoreBubbleHint,
-              feedMode
+              fxX+(Math.random()-.5)*.05,fxY+(Math.random()-.5)*.05,
+              floor+.020,feedStrength,shoreBubbleHint,feedMode
             );
+            f.feedDustAt=fishWorldTime+(feedMode==='feedspot'?(3.6+Math.random()*2.0):(2.8+Math.random()*1.8));
             f.feedBubbleAt=f.feedDustAt;
           }
         }
@@ -23323,50 +23296,28 @@ const anglingFeedSpotMaterials=[anglingFeedSpotMat,anglingFeedSpotMat2];
 // V6.46: Unter Wasser wird ein aktiver Futterplatz auch als richtiger Grundplatz sichtbar.
 // Dort liegt Futter auf dem Boden und winzige Partikel steigen langsam auf.
 const anglingFeedUnderwaterGroup=new THREE.Group();anglingFeedUnderwaterGroup.visible=false;anglingScene.add(anglingFeedUnderwaterGroup);
-const anglingFeedBedMat=new THREE.MeshStandardMaterial({color:0x776b49,transparent:true,opacity:.18,roughness:1,metalness:0,side:THREE.DoubleSide,depthWrite:false,polygonOffset:true,polygonOffsetFactor:2,polygonOffsetUnits:2});
+const anglingFeedBedMat=new THREE.MeshStandardMaterial({color:0xb89245,transparent:true,opacity:.24,roughness:1,metalness:0,side:THREE.DoubleSide,depthWrite:false,polygonOffset:true,polygonOffsetFactor:2,polygonOffsetUnits:2});
 const anglingFeedBedGeo=new THREE.CircleGeometry(1,96);
 const anglingFeedBedBaseXY=new Float32Array(anglingFeedBedGeo.attributes.position.array.length);
 anglingFeedBedBaseXY.set(anglingFeedBedGeo.attributes.position.array);
 const anglingFeedBed=new THREE.Mesh(anglingFeedBedGeo,anglingFeedBedMat);anglingFeedBed.visible=true;anglingFeedBed.position.z=0;anglingFeedBed.renderOrder=-2;anglingFeedUnderwaterGroup.add(anglingFeedBed);
-const FEED_BOTTOM_CRUMB_COUNT=68;
+const FEED_BOTTOM_CRUMB_COUNT=240;
 const anglingFeedBottomCrumbPos=new Float32Array(FEED_BOTTOM_CRUMB_COUNT*3);
 const anglingFeedBottomCrumbGeo=new THREE.BufferGeometry();
 anglingFeedBottomCrumbGeo.setAttribute('position',new THREE.BufferAttribute(anglingFeedBottomCrumbPos,3));
-// Eine unregelmäßige, körnige Alpha-Maske ersetzt die früheren gelben
-// PointsMaterial-Quadrate. So wirken die Punkte wie kleine aufgeweichte
-// Futterkörner und nicht wie technische Markierungen.
-const anglingFeedCrumbCanvas=document.createElement('canvas');
-anglingFeedCrumbCanvas.width=anglingFeedCrumbCanvas.height=64;
+const anglingFeedCrumbCanvas=document.createElement('canvas');anglingFeedCrumbCanvas.width=anglingFeedCrumbCanvas.height=32;
 const anglingFeedCrumbCtx=anglingFeedCrumbCanvas.getContext('2d');
-anglingFeedCrumbCtx.translate(32,32);
-anglingFeedCrumbCtx.beginPath();
-for(let i=0;i<16;i++){
-  const a=i/16*Math.PI*2;
-  const r=18+(i%3===0?3:i%4===0?-2:0)+Math.sin(i*2.7)*1.6;
-  const px=Math.cos(a)*r,py=Math.sin(a)*r*.78;
-  if(i===0)anglingFeedCrumbCtx.moveTo(px,py);else anglingFeedCrumbCtx.lineTo(px,py);
-}
-anglingFeedCrumbCtx.closePath();
-const anglingFeedCrumbGradient=anglingFeedCrumbCtx.createRadialGradient(-5,-5,2,0,0,23);
-anglingFeedCrumbGradient.addColorStop(0,'rgba(255,245,204,.98)');
-anglingFeedCrumbGradient.addColorStop(.62,'rgba(206,180,112,.92)');
-anglingFeedCrumbGradient.addColorStop(1,'rgba(126,102,60,0)');
-anglingFeedCrumbCtx.fillStyle=anglingFeedCrumbGradient;anglingFeedCrumbCtx.fill();
+const anglingFeedCrumbGrad=anglingFeedCrumbCtx.createRadialGradient(16,16,1,16,16,15);
+anglingFeedCrumbGrad.addColorStop(0,'rgba(222,185,92,1)');anglingFeedCrumbGrad.addColorStop(.62,'rgba(190,145,63,.96)');anglingFeedCrumbGrad.addColorStop(1,'rgba(145,104,44,0)');
+anglingFeedCrumbCtx.fillStyle=anglingFeedCrumbGrad;anglingFeedCrumbCtx.fillRect(0,0,32,32);
 const anglingFeedCrumbTexture=new THREE.CanvasTexture(anglingFeedCrumbCanvas);
-anglingFeedCrumbTexture.encoding=THREE.sRGBEncoding;
-const anglingFeedBottomCrumbs=new THREE.Points(anglingFeedBottomCrumbGeo,new THREE.PointsMaterial({
-  color:0x9b8452,map:anglingFeedCrumbTexture,alphaTest:.06,size:.048,sizeAttenuation:true,
-  transparent:true,opacity:.72,depthWrite:false
-}));
+const anglingFeedBottomCrumbs=new THREE.Points(anglingFeedBottomCrumbGeo,new THREE.PointsMaterial({map:anglingFeedCrumbTexture,color:0xffffff,size:.042,sizeAttenuation:true,transparent:true,opacity:.94,alphaTest:.08,depthWrite:false}));
 anglingFeedBottomCrumbs.renderOrder=8;anglingFeedUnderwaterGroup.add(anglingFeedBottomCrumbs);
 const FEED_RISE_PARTICLE_COUNT=46;
 const anglingFeedRiseParticlePos=new Float32Array(FEED_RISE_PARTICLE_COUNT*3);
 const anglingFeedRiseParticleGeo=new THREE.BufferGeometry();
 anglingFeedRiseParticleGeo.setAttribute('position',new THREE.BufferAttribute(anglingFeedRiseParticlePos,3));
-const anglingFeedRiseParticles=new THREE.Points(anglingFeedRiseParticleGeo,new THREE.PointsMaterial({
-  color:0x9f9168,map:anglingFeedCrumbTexture,alphaTest:.04,size:.022,sizeAttenuation:true,
-  transparent:true,opacity:.32,depthWrite:false
-}));
+const anglingFeedRiseParticles=new THREE.Points(anglingFeedRiseParticleGeo,new THREE.PointsMaterial({color:0xd7c382,size:.028,sizeAttenuation:true,transparent:true,opacity:.38,depthWrite:false}));
 anglingFeedRiseParticles.renderOrder=8;anglingFeedUnderwaterGroup.add(anglingFeedRiseParticles);
 const anglingFeedBottomSeeds=Array.from({length:FEED_BOTTOM_CRUMB_COUNT},(_,i)=>({
   a:Math.random()*Math.PI*2,
@@ -35085,68 +35036,43 @@ function anglingLureDepthLimits(x,y){
   return {waterDepth,minDepth,maxDepth:bottomDepth,bottomZ,bottomClearance};
 }
 
-const groundFeedingSurfaceBubbleQueue=[];
-function updateGroundFeedingSurfaceBubbles(now){
-  for(let i=groundFeedingSurfaceBubbleQueue.length-1;i>=0;i--){
-    const q=groundFeedingSurfaceBubbleQueue[i];
-    if(now<q.at)continue;
-    groundFeedingSurfaceBubbleQueue.splice(i,1);
-    if(!anglingMode||anglingCinematicView!=='shore')continue;
-    anglingFeedingFxPos.set(q.x,q.y,anglingSurfaceZ(q.x,q.y));
-    spawnAnglingSurfaceEffect(anglingFeedingFxPos,.05+Math.random()*.025,.58+Math.random()*.15,1.0+Math.random()*.32,.05+Math.random()*.025,.16+Math.random()*.08);
-  }
-}
-
 function spawnGroundFeedingBubbles(x,y,z,strength=1,surfaceHint=true,mode='ambient'){
   bubblePool.points.visible=true;
   const s=THREE.MathUtils.clamp(strength,.45,1.5);
   const feedspot=mode==='feedspot';
 
-  // Kleine, sparsame Gruppen steigen nahezu lotrecht bis zur Oberfläche.
-  const count=(feedspot?1:2)+Math.round((feedspot?1.25:1.8)*s);
-  let firstArrival=Infinity;
+  // V1.2: Blasen entstehen zusammen mit dem Gründeln am Boden und müssen den
+  // kompletten Weg bis zur Oberfläche sichtbar zurücklegen. Der frühere Effekt
+  // erzeugte den Oberflächenring sofort, obwohl die eigentliche Blase nach nur
+  // wenigen Sekunden starb und die Oberfläche aus 3–5 m Tiefe nie erreichen konnte.
+  const count=(feedspot?5:4)+Math.round((feedspot?5:4)*s);
+  const surface=anglingSurfaceZ(x,y);
   for(let i=0;i<count;i++){
     const a=Math.random()*Math.PI*2;
-    const side=.0015+Math.random()*(feedspot?.0045:.0065)*s;
-    const startZ=z+.035+Math.random()*.055;
-    const rise=.22+Math.random()*(feedspot?.075:.10);
-    const travel=Math.max(.35,(-.07-startZ)/rise);
-    firstArrival=Math.min(firstArrival,travel);
-    // In der Uferkamera wird nur die zeitversetzte Oberflächenfolge geplant.
-    // Sonst würden unsichtbare Blasen am Boden einfrieren, bis später einmal
-    // in die Unterwasseransicht gewechselt wird.
-    if(!surfaceHint){
-      spawnPoolParticle(
-        bubblePool,
-        x+(Math.random()-.5)*((feedspot?.075:.10)+.035*s),
-        y+(Math.random()-.5)*((feedspot?.075:.10)+.035*s),
-        startZ,
-        .18+Math.random()*(feedspot?.16:.20),
-        travel+1.2+Math.random()*.8,
-        Math.cos(a)*side,
-        Math.sin(a)*side,
-        rise,
-        .34
-      );
-    }
-  }
-
-  // Aus der Uferkamera wird derselbe Oberflächenring erst nach der echten
-  // Aufstiegszeit gezeigt – nicht sofort beim Gründeln am Boden.
-  if(surfaceHint&&Number.isFinite(firstArrival)&&groundFeedingSurfaceBubbleQueue.length<24){
-    groundFeedingSurfaceBubbleQueue.push({
-      x:x+(Math.random()-.5)*.10,
-      y:y+(Math.random()-.5)*.10,
-      at:performance.now()+firstArrival*1000
-    });
+    const side=.006+Math.random()*.018*s;
+    const startZ=z+.025+Math.random()*.055;
+    const rise=.18+Math.random()*.08;
+    const travel=Math.max(.12,surface-startZ);
+    const life=travel/rise+1.4+Math.random()*1.8;
+    spawnPoolParticle(
+      bubblePool,
+      x+(Math.random()-.5)*(.12+.07*s),
+      y+(Math.random()-.5)*(.12+.07*s),
+      startZ,
+      .28+Math.random()*.24,
+      life,
+      Math.cos(a)*side,
+      Math.sin(a)*side,
+      rise,
+      .56
+    );
   }
 }
-
 function spawnAnglingBottomDust(x,y,z,strength=1){
   sedimentPool.points.visible=true;
   const s=THREE.MathUtils.clamp(strength,.4,1.6);
 
-  const cloudBursts=1+(Math.random()<.42*s?1:0);
+  const cloudBursts=2+Math.round(1.6*s);
   for(let i=0;i<cloudBursts;i++){
     spawnAnglingSedimentCloud(
       x+(Math.random()-.5)*(.08+.05*s),
@@ -35156,21 +35082,21 @@ function spawnAnglingBottomDust(x,y,z,strength=1){
     );
   }
 
-  const count=8+Math.round(7*s);
+  const count=16+Math.round(16*s);
   for(let i=0;i<count;i++){
     const a=Math.random()*Math.PI*2;
-    const speed=.012+Math.random()*.052*s;
+    const speed=.03+Math.random()*.14*s;
     spawnPoolParticle(
       sedimentPool,
       x+(Math.random()-.5)*(.26+.10*s),
       y+(Math.random()-.5)*(.26+.10*s),
       z+.02+Math.random()*.09,
-      .56+Math.random()*.72,
-      6.0+Math.random()*4.2,
+      .82+Math.random()*1.28,
+      5.8+Math.random()*3.2,
       Math.cos(a)*speed,
       Math.sin(a)*speed,
-      .006+Math.random()*.018,
-      .18
+      .024+Math.random()*.030,
+      .38
     );
   }
 }
@@ -38170,11 +38096,11 @@ function aczoPerf7Summary(){
  // im Stillstand reichen 8 Hz. Statische Sichtbarkeits-/Shadow-Caster-Pruefungen
  // laufen nur 4 Hz, statt bei jedem kompletten Renderpass.
  // SONNENFIX: Die sichtbaren Scheiben muessen nach JEDEM Kamera-Update und vor
- // JEDEM Hauptbild auf denselben gedämpften Himmelsanker gesetzt werden. Am
- // Frameende werden sie fuer Welt-/Nebenberechnungen wieder auf ihre
- // astronomischen Weltpositionen gesetzt. Wuerde diese billige Korrektur
- // ebenfalls auf 8 Hz gedrosselt, wechselte der Uebergang in den Himmelblick
- // zwischen Welt- und Kameraposition und die Sonne schiene seitlich zu springen.
+ // JEDEM Hauptbild relativ zur aktuellen Kamera stehen. Am Frameende werden sie
+ // fuer Welt-/Nebenberechnungen wieder auf ihre astronomischen Weltpositionen
+ // gesetzt. Wuerde diese billige Positionskorrektur ebenfalls auf 8 Hz
+ // gedrosselt, wechselte der Uebergang in den Himmelblick zwischen Welt- und
+ // Kameraposition und die Sonne schiene seitlich zu springen.
  if(simulationEnabled)positionCelestialDiscsForMainCamera();
  const aczoCelestialDue=aczoInteractive||aczoPlainMapGesture||(frameNow-aczoPerf4LastCelestialAt>=125);
  if(aczoCelestialDue){
