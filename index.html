@@ -14716,7 +14716,9 @@ function makeParticlePool(count,color,fadeAlpha=.22,useFog=false){
   points.visible=false;points.renderOrder=4.5;scene.add(points);
   return {count,positions,sizes,alphas,life,maxLife,vx,vy,vz,geo,points,cursor:0,fadeAlpha};
 }
-const bubblePool=makeParticlePool(120,0xdaf7ff);
+// V1.2 BUBBLE STREAM FIX: Lang lebende Gründelblasen dürfen nicht vom nächsten
+// Burst überschrieben werden, bevor sie nach 3–5 m Aufstieg die Oberfläche erreichen.
+const bubblePool=makeParticlePool(640,0xdaf7ff);
 const sedimentPool=makeParticlePool(180,0x9b8766);
 
 // V6.29: sichtbare Grundwolken. Maximal drei Wolken bleiben gleichzeitig aktiv;
@@ -20931,7 +20933,7 @@ function updateParticlePool(pool,dt,isBubble){
       pool.positions[k+1]+=.016*Math.cos(underwaterFxTime*1.7+i)*dt;
       const surface=anglingSurfaceZ(pool.positions[k],pool.positions[k+1]);
       if(pool.positions[k+2]>=surface-.025){
-        if(anglingMode&&Math.random()<.88){
+        if(anglingMode&&Math.random()<.72){
           anglingFeedingFxPos.set(pool.positions[k],pool.positions[k+1],surface+.004);
           spawnAnglingSurfaceEffect(anglingFeedingFxPos,.075+Math.random()*.055,.72+Math.random()*.16,1.25+Math.random()*.45,.09+Math.random()*.035,.28+Math.random()*.10);
         }
@@ -20966,6 +20968,10 @@ function updateUnderwaterEffects(dt){
   // steigen darunter aber real weiter und erzeugen erst beim Auftreffen den Ring.
   // Unter Wasser wird derselbe Pool sichtbar gerendert.
   updateParticlePool(bubblePool,dt,true);
+  // Mehrere Kamera-/Angel-Übergänge setzen den Pool bewusst auf invisible.
+  // Für die aktive Unterwasseransicht muss er deshalb hier jedes Bild wieder
+  // eindeutig freigegeben werden. Von Land läuft nur die Physik weiter.
+  bubblePool.points.visible=!!(fishMode||anglingUnderwater);
   if(!fishMode&&!anglingUnderwater) return;
   // PERF14: In der Kunstkoederkamera laufen die additiven Caustics deutlich
   // langsamer. Das verhindert das regelmaessige globale Hell/Dunkel-Pumpen,
@@ -35043,7 +35049,6 @@ function anglingLureDepthLimits(x,y){
 }
 
 function spawnGroundFeedingBubbles(x,y,z,strength=1,surfaceHint=true,mode='ambient'){
-  bubblePool.points.visible=true;
   const s=THREE.MathUtils.clamp(strength,.45,1.5);
   const feedspot=mode==='feedspot';
 
@@ -35065,12 +35070,14 @@ function spawnGroundFeedingBubbles(x,y,z,strength=1,surfaceHint=true,mode='ambie
       x+(Math.random()-.5)*(.12+.07*s),
       y+(Math.random()-.5)*(.12+.07*s),
       startZ,
-      .42+Math.random()*.28,
+      // Sichtbare Luftblase: deutlich größer als Sediment-/Futterpartikel.
+      // Unterschiedliche Größen verhindern einen künstlichen Perlenketten-Look.
+      .78+Math.random()*.52,
       life,
       Math.cos(a)*side,
       Math.sin(a)*side,
       rise,
-      .76
+      .94
     );
   }
 }
