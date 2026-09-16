@@ -20931,7 +20931,7 @@ function updateParticlePool(pool,dt,isBubble){
       pool.positions[k+1]+=.016*Math.cos(underwaterFxTime*1.7+i)*dt;
       const surface=anglingSurfaceZ(pool.positions[k],pool.positions[k+1]);
       if(pool.positions[k+2]>=surface-.025){
-        if(anglingMode&&Math.random()<.62){
+        if(anglingMode&&Math.random()<.88){
           anglingFeedingFxPos.set(pool.positions[k],pool.positions[k+1],surface+.004);
           spawnAnglingSurfaceEffect(anglingFeedingFxPos,.075+Math.random()*.055,.72+Math.random()*.16,1.25+Math.random()*.45,.09+Math.random()*.035,.28+Math.random()*.10);
         }
@@ -20961,6 +20961,11 @@ function randomFxPoint(minDepth,maxDepth){
 
 function updateUnderwaterEffects(dt){
   const anglingUnderwater=anglingMode&&anglingCinematicView==='underwater';
+  // V1.2 BUBBLE TRANSIT: Grundelblasen muessen unabhaengig von der Kamera
+  // weiterlaufen. Beim Posenangeln steht die Kamera ueber Wasser, die Blasen
+  // steigen darunter aber real weiter und erzeugen erst beim Auftreffen den Ring.
+  // Unter Wasser wird derselbe Pool sichtbar gerendert.
+  updateParticlePool(bubblePool,dt,true);
   if(!fishMode&&!anglingUnderwater) return;
   // PERF14: In der Kunstkoederkamera laufen die additiven Caustics deutlich
   // langsamer. Das verhindert das regelmaessige globale Hell/Dunkel-Pumpen,
@@ -21029,7 +21034,8 @@ function updateUnderwaterEffects(dt){
     }
     nextSedimentAt=underwaterFxTime+5+Math.random()*6.5;
   }
-  updateParticlePool(bubblePool,dt,true);
+  // bubblePool wurde bereits vor dem Kamera-Gate aktualisiert, damit dieselben
+  // Blasen auch beim Posenangeln ihren kompletten Weg zur Oberflaeche fortsetzen.
   updateParticlePool(sedimentPool,dt,false);
   updateParticlePool(bloodPool,dt,false);
   updateBloodClouds(dt);
@@ -35059,12 +35065,12 @@ function spawnGroundFeedingBubbles(x,y,z,strength=1,surfaceHint=true,mode='ambie
       x+(Math.random()-.5)*(.12+.07*s),
       y+(Math.random()-.5)*(.12+.07*s),
       startZ,
-      .28+Math.random()*.24,
+      .42+Math.random()*.28,
       life,
       Math.cos(a)*side,
       Math.sin(a)*side,
       rise,
-      .56
+      .76
     );
   }
 }
