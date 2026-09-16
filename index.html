@@ -14654,24 +14654,31 @@ function pondDepthAt(x,y){
   return raw;
 }
 
-function softPointMaterial(color){
+function softPointMaterial(color,useFog=false){
   return new THREE.ShaderMaterial({
-    transparent:true,depthWrite:false,depthTest:true,
-    uniforms:{pointColor:{value:new THREE.Color(color)}},
+    transparent:true,depthWrite:false,depthTest:true,fog:useFog,
+    uniforms:THREE.UniformsUtils.merge([
+      THREE.UniformsLib.fog,
+      {pointColor:{value:new THREE.Color(color)}}
+    ]),
     vertexShader:`
+      #include <fog_pars_vertex>
       attribute float pSize;attribute float pAlpha;varying float vAlpha;
       void main(){
         vec4 mv=modelViewMatrix*vec4(position,1.0);
         gl_PointSize=pSize*(150.0/max(1.0,-mv.z));
         vAlpha=pAlpha;gl_Position=projectionMatrix*mv;
+        #include <fog_vertex>
       }
     `,
     fragmentShader:`
+      #include <fog_pars_fragment>
       uniform vec3 pointColor;varying float vAlpha;
       void main(){
         vec2 q=gl_PointCoord-.5;float d=length(q);
         if(d>.5) discard;
         gl_FragColor=vec4(pointColor,vAlpha*smoothstep(.5,.12,d));
+        #include <fog_fragment>
       }
     `
   });
@@ -14697,7 +14704,7 @@ suspendedGeo.setAttribute('pAlpha',new THREE.BufferAttribute(suspendedAlpha,1));
 const suspendedWater=new THREE.Points(suspendedGeo,softPointMaterial(0xd4e5d6));
 suspendedWater.visible=false;suspendedWater.renderOrder=4.4;scene.add(suspendedWater);
 
-function makeParticlePool(count,color,fadeAlpha=.22){
+function makeParticlePool(count,color,fadeAlpha=.22,useFog=false){
   const positions=new Float32Array(count*3),sizes=new Float32Array(count),alphas=new Float32Array(count);
   const life=new Float32Array(count),maxLife=new Float32Array(count),vx=new Float32Array(count),vy=new Float32Array(count),vz=new Float32Array(count);
   positions.fill(-999);sizes.fill(1);alphas.fill(0);
@@ -14705,7 +14712,7 @@ function makeParticlePool(count,color,fadeAlpha=.22){
   geo.setAttribute('position',new THREE.BufferAttribute(positions,3));
   geo.setAttribute('pSize',new THREE.BufferAttribute(sizes,1));
   geo.setAttribute('pAlpha',new THREE.BufferAttribute(alphas,1));
-  const points=new THREE.Points(geo,softPointMaterial(color));
+  const points=new THREE.Points(geo,softPointMaterial(color,useFog));
   points.visible=false;points.renderOrder=4.5;scene.add(points);
   return {count,positions,sizes,alphas,life,maxLife,vx,vy,vz,geo,points,cursor:0,fadeAlpha};
 }
@@ -14752,7 +14759,7 @@ function updateAnglingSedimentClouds(dt){
   }
 }
 // Große, kräftige Blutwolke: weiterhin nur ein einziges Partikelsystem.
-const bloodPool=makeParticlePool(220,0xc0182b,.86);
+const bloodPool=makeParticlePool(220,0xc0182b,.86,true);
 
 // Zusätzlich zu den feinen Partikeln bilden mehrere weiche, expandierende
 // Flächen einen dichten roten Wolkenkern. So bleibt der Effekt unabhängig von
@@ -14772,7 +14779,7 @@ const bloodClouds=[];
 for(let i=0;i<9;i++){
   const material=new THREE.SpriteMaterial({
     map:bloodCloudTexture,color:0xffffff,transparent:true,opacity:0,
-    depthWrite:false,depthTest:true,fog:false
+    depthWrite:false,depthTest:true,fog:true
   });
   const sprite=new THREE.Sprite(material);
   sprite.visible=false;sprite.renderOrder=5.35;scene.add(sprite);
@@ -14781,15 +14788,15 @@ for(let i=0;i<9;i++){
 }
 let bloodCloudCursor=0;
 function spawnBloodCloud(position){
-  for(let layer=0;layer<3;layer++){
+  for(let layer=0;layer<2;layer++){
     const cloud=bloodClouds[bloodCloudCursor++%bloodClouds.length];
     cloud.position.copy(position);
     cloud.position.x+=(Math.random()-.5)*.08;
     cloud.position.y+=(Math.random()-.5)*.08;
     cloud.position.z+=(Math.random()-.5)*.05;
-    cloud.userData.life=cloud.userData.maxLife=6.0+Math.random()*1.2;
-    cloud.userData.startSize=.16+Math.random()*.05;
-    cloud.userData.endSize=.40+Math.random()*.08;
+    cloud.userData.life=cloud.userData.maxLife=4.4+Math.random()*.9;
+    cloud.userData.startSize=.14+Math.random()*.04;
+    cloud.userData.endSize=.34+Math.random()*.07;
     cloud.material.rotation=Math.random()*Math.PI;
     cloud.material.opacity=0;
     cloud.scale.setScalar(cloud.userData.startSize);
@@ -14809,7 +14816,7 @@ function updateBloodClouds(dt){
     cloud.material.rotation+=dt*.035;
     const fadeIn=Math.min(1,progress*7);
     const fadeOut=Math.min(1,cloud.userData.life/2.8);
-    cloud.material.opacity=.76*fadeIn*fadeOut;
+    cloud.material.opacity=.58*fadeIn*fadeOut;
   }
 }
 let nextBubbleAt=2+Math.random()*4,nextSedimentAt=3+Math.random()*4,underwaterFxTime=0;
@@ -21629,26 +21636,33 @@ function addFishPopulation(name,count,options={}){
   }
 }
 
-// Exakt dieselben Arten, Mengen, Größen und Schwarmparameter wie bisher. Der
-// Aufbau kann jetzt jedoch artweise zwischen zwei Loader-Frames pausieren.
+// Etwas dichtere Unterwasserwelt, ohne die Raubfischmenge oder den einzigartigen
+// goldenen Koi zu vervielfachen. Auf Mobilgeraeten bleibt der Aufschlag bewusst
+// kleiner; Desktop bekommt durch die groessere Leistungsreserve mehr Schwarmtiere.
+const fishWorldDesktopDensity=!(
+  (window.matchMedia&&window.matchMedia('(pointer:coarse)').matches)||
+  window.innerWidth<=700
+);
+const fishWorldCount=(mobileCount,desktopCount)=>fishWorldDesktopDensity?desktopCount:mobileCount;
 const fishWorldBuildPlan=[
-  ['roach',100,{schools:7}],
-  ['rudd',70,{schools:6}],
+  ['roach',fishWorldCount(112,120),{schools:fishWorldCount(8,9)}],
+  ['rudd',fishWorldCount(78,84),{schools:7}],
   ['pike',10,{exactSizes:[.62,.70,.76,.84,.92,1.00,1.08,1.16,1.24,1.32]}],
   ['catfish',5,{exactSizes:[.86,1.00,1.10,1.22,1.34]}],
-  ['carp',10,{schools:2}],
-  ['mirrorcarp',10,{schools:2}],
+  ['carp',fishWorldCount(11,12),{schools:2}],
+  ['mirrorcarp',fishWorldCount(11,12),{schools:2}],
   ['grasscarp',3,{exactSizes:[1.00,1.15,1.30]}],
   ['sturgeon',3],
   ['zander',4,{exactSizes:[.50,.60,.70,.90]}],
   ['eel',8],
-  ['tench',20],
-  ['bream',30,{schools:4}],
+  ['tench',fishWorldCount(22,24)],
+  ['bream',fishWorldCount(34,36),{schools:5}],
   ['koi',1],
-  ['perch',50,{schools:7,loners:6}],
-  ['sunfish',70,{schools:9}],
-  // Sehr großer Bestand, aber durch Sichtweiten-Culling weiterhin leichtgewichtig.
-  ['goby',160,{schools:18}]
+  ['perch',fishWorldCount(56,60),{schools:8,loners:6}],
+  ['sunfish',fishWorldCount(79,84),{schools:10}],
+  // Grosser Bestand, aber durch Sichtweiten-Culling und die bestehende
+  // Acht-Frame-Simulation entfernter Tiere weiterhin leichtgewichtig.
+  ['goby',fishWorldCount(179,192),{schools:fishWorldCount(20,22)}]
 ];
 let fishWorldBuildIndex=0;
 function buildFishWorldStep(){
@@ -22318,7 +22332,7 @@ const huntRules={
   zander:['goby'],
   eel:['goby']
 };
-let fishWorldTime=0,nextHuntAt=6,activeHunt=null,lastHuntPredatorSpecies=null;
+let fishWorldTime=0,nextHuntAt=12+Math.random()*8,activeHunt=null,lastHuntPredatorSpecies=null;
 
 function huntSpeciesIsActive(species){
   const cloud=(typeof liveWeather!=='undefined'?(liveWeather.cloud||0):0);
@@ -22332,7 +22346,9 @@ function startHuntEvent(){
   for(const predator of fishActors){
     const predatorSpecies=predator.obj.userData.species;
     const allowedPrey=huntRules[predatorSpecies];
-    if(!allowedPrey||predator.obj.userData.hiddenByHunt||!huntSpeciesIsActive(predatorSpecies)) continue;
+    if(!allowedPrey||predator.obj.userData.hiddenByHunt||
+       (predator.huntCooldownUntil||0)>fishWorldTime||
+       !huntSpeciesIsActive(predatorSpecies)) continue;
     for(const selectedPreySpecies of allowedPrey){
       let nearest=null,nearestD2=Infinity;
       for(const prey of fishActors){
@@ -22395,7 +22411,7 @@ function finishHuntEvent(){
   prey.obj.visible=false;
   prey.huntFleeUntil=0;
   spawnBloodCloud(p);
-  for(let i=0;i<48;i++){
+  for(let i=0;i<28;i++){
     const a=Math.random()*Math.PI*2,s=.012+Math.random()*.045;
     spawnPoolParticle(
       bloodPool,p.x+(Math.random()-.5)*.22,p.y+(Math.random()-.5)*.22,p.z+(Math.random()-.5)*.14,
@@ -22404,17 +22420,33 @@ function finishHuntEvent(){
     );
   }
   randomSpeciesPoint(predator.obj.userData.species,predator.target);
-  predator.pause=.35+Math.random()*.45;
+  // Nach einer erfolgreichen Jagd ruht genau dieser Räuber deutlich länger.
+  // Gleichzeitig verhindert eine globale Pause, dass sofort ein anderer Hecht
+  // die nächste sichtbare Verfolgung beginnt.
+  predator.pause=2.5+Math.random()*3.5;
+  predator.huntCooldownUntil=fishWorldTime+28+Math.random()*22;
+  nextHuntAt=Math.max(nextHuntAt,fishWorldTime+24+Math.random()*18);
   activeHunt=null;
+}
+
+function cancelHuntEvent(){
+  if(!activeHunt)return;
+  const {predator}=activeHunt;
+  randomSpeciesPoint(predator.obj.userData.species,predator.target);
+  predator.pause=1.8+Math.random()*2.4;
+  predator.huntCooldownUntil=fishWorldTime+16+Math.random()*14;
+  activeHunt=null;
+  nextHuntAt=Math.max(nextHuntAt,fishWorldTime+14+Math.random()*10);
 }
 
 function updateHuntSchedule(){
   if(!activeHunt&&fishWorldTime>=nextHuntAt){
-    startHuntEvent();
-    nextHuntAt=fishWorldTime+10;
+    const started=startHuntEvent();
+    nextHuntAt=fishWorldTime+(started?18+Math.random()*12:10+Math.random()*8);
   }
-  // Sicherheitsnetz für sehr weit auseinandergeratene Tiere.
-  if(activeHunt&&fishWorldTime-activeHunt.startedAt>9) finishHuntEvent();
+  // Eine nach neun Sekunden erfolglose Verfolgung wird wirklich abgebrochen.
+  // Früher wurde sie trotzdem als Beutefang samt Blutwolke abgeschlossen.
+  if(activeHunt&&fishWorldTime-activeHunt.startedAt>9) cancelHuntEvent();
 }
 
 let anglingVisibleStrikeActor=null;
