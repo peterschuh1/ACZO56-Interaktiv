@@ -13175,7 +13175,10 @@ function randomPersonAreaPoint(out){
 
 const carTestGroup=new THREE.Group();
 scene.add(carTestGroup);
-let carTestWait=8+Math.random()*12;
+// Der gemeinsame Besuchsplaner weiter unten entscheidet, welches Fahrzeug
+// zuerst und als Nächstes erscheint. Die alten konkurrierenden Einzel-Timer
+// bleiben nur als kompatible Zustandswerte erhalten und starten nichts mehr.
+let carTestWait=Infinity;
 let currentVisit=null;
 let previousCarColor=-1;
 const carPalette=[0x2f5e85,0x8a2e2e,0x485447,0x8b8d91,0x6f4b31,0x25313b];
@@ -13294,7 +13297,8 @@ function finishCarVisit(){
   carTestGroup.remove(currentVisit.car);
   disposeSceneTree(currentVisit.car);
   currentVisit=null;
-  carTestWait=120+Math.random()*180;
+  carTestWait=Infinity;
+  if(typeof aczoScheduleNextPropertyVisit==='function')aczoScheduleNextPropertyVisit();
 }
 
 function carTrafficDaytimeAllowed(){
@@ -13325,9 +13329,6 @@ function updateCarVisit(dt,daytime=carTrafficDaytimeAllowed()){
 
   const scaledDt=dt;
   if(!currentVisit){
-    if(typeof bmwX3Visit!=='undefined'&&bmwX3Visit)return;
-    carTestWait-=scaledDt;
-    if(carTestWait<=0) spawnCarVisit();
     return;
   }
   const v=currentVisit;
@@ -17936,6 +17937,8 @@ function aczoVisitorSegmentAllowed(x0,y0,x1,y1,person=null){
      aczoVisitorSegmentHitsCar(currentVisit.car,x0,y0,x1,y1,.34))return false;
   if(typeof bmwX3Visit!=='undefined'&&bmwX3Visit&&
      aczoVisitorSegmentHitsCar(bmwX3Visit.car,x0,y0,x1,y1,.34))return false;
+  if(typeof golfFamilyVisit!=='undefined'&&golfFamilyVisit&&
+     aczoVisitorSegmentHitsCar(golfFamilyVisit.car,x0,y0,x1,y1,.34))return false;
   return true;
 }
 function aczoVisitorNavCorners(){
@@ -17963,6 +17966,7 @@ function aczoVisitorNavCorners(){
   };
   if(typeof currentVisit!=='undefined'&&currentVisit)addCarCorners(currentVisit.car);
   if(typeof bmwX3Visit!=='undefined'&&bmwX3Visit)addCarCorners(bmwX3Visit.car);
+  if(typeof golfFamilyVisit!=='undefined'&&golfFamilyVisit)addCarCorners(golfFamilyVisit.car);
   return points.filter(p=>!aczoPointInsideVisitorBuilding(p.x,p.y,.32));
 }
 function aczoPlanVisitorOutdoorPath(from,destination){
@@ -18105,6 +18109,9 @@ function aczoCollectActiveVisitorPositions(){
   }
   if(typeof bmwX3Visit!=='undefined'&&bmwX3Visit&&bmwX3Visit.person&&bmwX3Visit.person.obj.visible)
     positions.push(bmwX3Visit.person.obj.position);
+  if(typeof golfFamilyVisit!=='undefined'&&golfFamilyVisit)for(const person of golfFamilyVisit.people){
+    if(person.obj.visible)positions.push(person.obj.position);
+  }
   return positions;
 }
 function updateAczoFacilityDoors(dt){
@@ -18153,7 +18160,7 @@ const bmwX3VisitGroup=new THREE.Group();
 bmwX3VisitGroup.name='ACZO56_BMW_X3_E83_BESUCH';
 scene.add(bmwX3VisitGroup);
 var bmwX3Visit=null;
-let bmwX3Wait=38+Math.random()*72;
+let bmwX3Wait=Infinity;
 const bmwX3TmpPos=new THREE.Vector3();
 const bmwX3TmpDir=new THREE.Vector3();
 
@@ -18326,7 +18333,8 @@ function finishBmwX3Visit(){
   aczoSetSwingGateCommand(false);
   bmwX3VisitGroup.remove(bmwX3Visit.person.obj,bmwX3Visit.car);
   disposeSceneTree(bmwX3Visit.person.obj);disposeSceneTree(bmwX3Visit.car);
-  bmwX3Visit=null;bmwX3Wait=240+Math.random()*300;
+  bmwX3Visit=null;bmwX3Wait=Infinity;
+  if(typeof aczoScheduleNextPropertyVisit==='function')aczoScheduleNextPropertyVisit();
 }
 function aczoBeginBmwGateWalk(visit,closing=false){
   visit.person.obj.visible=true;visit.person.blockedTime=0;
@@ -18346,8 +18354,6 @@ function updateBmwX3Visit(dt,daytime=carTrafficDaytimeAllowed()){
   // PERF23: Tour/Abfahrt laufen auch unsichtbar in 2D und beim Angeln weiter.
   if(!daytime){if(bmwX3Visit)finishBmwX3Visit();return;}
   if(!bmwX3Visit){
-    if(currentVisit)return;
-    bmwX3Wait-=dt;if(bmwX3Wait<=0)spawnBmwX3Visit();
     return;
   }
   const visit=bmwX3Visit,person=visit.person;
@@ -18448,6 +18454,305 @@ function updateBmwX3Visit(dt,daytime=carTrafficDaytimeAllowed()){
     visit.car.rotation.z=smoothPersonalAngle(visit.car.rotation.z,Math.atan2(-bmwX3TmpDir.x,bmwX3TmpDir.y),1-Math.exp(-4.4*dt));
     if(visit.distance<=0)finishBmwX3Visit();
   }
+}
+
+// =========================================================
+// Familienbesuch: hellgrauer VW Golf Variant mit zwei Erwachsenen und Kind.
+// Nach dem Parken spielt die Familie auf der freien Flaeche neben der Fahne
+// eine kurze Partie Wikingerschach (Kubb). Der Ablauf ist bewusst getrennt
+// von den vorhandenen Besucher- und BMW-Zustandsmaschinen.
+// =========================================================
+const golfFamilyVisitGroup=new THREE.Group();
+golfFamilyVisitGroup.name='ACZO56_GOLF_VARIANT_FAMILIE_KUBB';
+scene.add(golfFamilyVisitGroup);
+var golfFamilyVisit=null;
+const golfFamilyTmpDir=new THREE.Vector3();
+const ACZO_KUBB_CENTER=new THREE.Vector3(57.15,25.25,ACZO_VISITOR_GROUND_Z+.025);
+const ACZO_KUBB_YAW=-.18;
+
+function createGolfVariant(){
+  const car=new THREE.Group();
+  car.name='VW_GOLF_VARIANT_HELLGRAU';
+  car.userData.kind='vw-golf-variant';
+  car.userData.brand='Volkswagen';car.userData.model='Golf Variant';car.userData.wheelBottom=0;
+  const paint=new THREE.MeshStandardMaterial({color:0xb8bec2,roughness:.32,metalness:.58,envMapIntensity:1.10,side:THREE.DoubleSide});
+  const trim=new THREE.MeshStandardMaterial({color:0x171c1f,roughness:.67,metalness:.20,side:THREE.DoubleSide});
+  const glass=new THREE.MeshStandardMaterial({color:0x203943,roughness:.17,metalness:.20,transparent:true,opacity:.83,side:THREE.DoubleSide});
+  const chrome=new THREE.MeshStandardMaterial({color:0xc1c7c8,roughness:.25,metalness:.84,side:THREE.DoubleSide});
+  const lamp=new THREE.MeshStandardMaterial({color:0xf6eed7,emissive:0xffdfa0,emissiveIntensity:.13,roughness:.19});
+  const rear=new THREE.MeshStandardMaterial({color:0xa0191c,emissive:0x500003,emissiveIntensity:.20,roughness:.28});
+  const add=(geo,mat,name,pos=[0,0,0],rot=[0,0,0])=>{const m=new THREE.Mesh(geo,mat);m.name=name;m.position.set(...pos);m.rotation.set(...rot);m.castShadow=true;m.receiveShadow=true;car.add(m);return m;};
+  const shell=aczoVehicleShellGeometry([
+    {y:2.28,w:.67,z0:.33,z1:.70},{y:2.04,w:.88,z0:.28,z1:.98},
+    {y:1.35,w:.91,z0:.25,z1:1.14},{y:.66,w:.80,z0:.26,z1:1.58},
+    {y:-1.42,w:.80,z0:.26,z1:1.58},{y:-2.08,w:.88,z0:.30,z1:1.10},
+    {y:-2.29,w:.72,z0:.36,z1:.74}
+  ]);
+  add(shell,paint,'GOLF_VARIANT_GEFORMTE_KAROSSERIE');
+  add(new THREE.BoxGeometry(1.39,2.15,.60),trim,'GOLF_VARIANT_GESCHLOSSENER_INNENRAUM',[0,-.38,1.25]);
+  for(const x of [-.40,.40])for(const y of [-.74,.28]){
+    add(new THREE.BoxGeometry(.42,.44,.48),trim,'GOLF_VARIANT_SITZ',[x,y,1.05]);
+    add(new THREE.CylinderGeometry(.13,.13,.16,12),trim,'GOLF_VARIANT_KOPFSTUETZE',[x,y,1.43],[Math.PI*.5,0,0]);
+  }
+  add(new THREE.BoxGeometry(1.52,2.02,.075),paint,'GOLF_VARIANT_LANGES_DACH',[0,-.46,1.62]);
+  add(new THREE.BoxGeometry(1.48,.045,.53),glass,'GOLF_VARIANT_FRONTSCHEIBE',[0,.69,1.37],[.34,0,0]);
+  add(new THREE.BoxGeometry(1.48,.045,.54),glass,'GOLF_VARIANT_STEILES_HECKFENSTER',[0,-1.55,1.36],[-.16,0,0]);
+  for(const side of [-1,1]){
+    add(new THREE.BoxGeometry(.038,.78,.48),glass,'GOLF_VARIANT_SEITENSCHEIBE_VORN',[side*.815,.22,1.38]);
+    add(new THREE.BoxGeometry(.038,.82,.48),glass,'GOLF_VARIANT_SEITENSCHEIBE_HINTEN',[side*.815,-.66,1.38]);
+    add(new THREE.BoxGeometry(.038,.48,.45),glass,'GOLF_VARIANT_LADERAUMFENSTER',[side*.815,-1.34,1.36]);
+    add(new THREE.BoxGeometry(.055,.08,.55),trim,'GOLF_VARIANT_B_SAEULE',[side*.826,-.22,1.38]);
+    add(new THREE.BoxGeometry(.055,.08,.52),trim,'GOLF_VARIANT_C_SAEULE',[side*.826,-1.10,1.37]);
+    add(new THREE.BoxGeometry(.10,.28,.12),paint,'GOLF_VARIANT_SPIEGEL',[side*.96,.55,1.22]);
+    add(new THREE.BoxGeometry(.045,2.46,.055),chrome,'GOLF_VARIANT_DACHRELING',[side*.61,-.46,1.72]);
+    for(const y of [.28,-.66])add(new THREE.BoxGeometry(.034,.33,.026),chrome,'GOLF_VARIANT_TUERGRIFF',[side*.925,y,1.08]);
+    add(new THREE.BoxGeometry(.050,3.55,.08),trim,'GOLF_VARIANT_SCHWELLER',[side*.92,-.08,.42]);
+  }
+  add(new THREE.BoxGeometry(1.78,.16,.24),trim,'GOLF_VARIANT_FRONTSTOSSFAENGER',[0,2.18,.48]);
+  add(new THREE.BoxGeometry(.82,.027,.22),trim,'GOLF_VARIANT_KUEHLERGRILL',[0,2.30,.70]);
+  add(new THREE.BoxGeometry(1.78,.16,.24),trim,'GOLF_VARIANT_HECKSTOSSFAENGER',[0,-2.18,.48]);
+  for(const x of [-.59,.59]){
+    const front=add(new THREE.SphereGeometry(.15,12,8),lamp,'GOLF_VARIANT_SCHEINWERFER',[x,2.285,.91]);front.scale.set(1.45,.36,.70);
+    add(new THREE.BoxGeometry(.38,.035,.25),rear,'GOLF_VARIANT_RUECKLEUCHTE',[x,-2.285,.90]);
+  }
+  const tyreGeo=new THREE.CylinderGeometry(.35,.35,.25,22),rimGeo=new THREE.CylinderGeometry(.20,.20,.27,18);
+  for(const x of [-.95,.95])for(const y of [-1.36,1.36]){
+    add(tyreGeo,trim,'GOLF_VARIANT_REIFEN',[x,y,.35],[0,0,Math.PI*.5]);
+    add(rimGeo,chrome,'GOLF_VARIANT_FELGE',[x,y,.35],[0,0,Math.PI*.5]);
+  }
+  const badge=add(new THREE.CylinderGeometry(.10,.10,.026,20),chrome,'GOLF_VARIANT_VW_EMBLEM',[0,2.315,.92],[Math.PI*.5,0,0]);
+  badge.castShadow=false;
+  aczoVehiclePlate(car,'TR VK 56',2.316,.55,true);aczoVehiclePlate(car,'TR VK 56',-2.316,.60,false);
+  car.traverse(o=>{if(o.isMesh){o.castShadow=!(o.userData&&o.userData.aczoNoShadow);o.receiveShadow=true;}});
+  aczoAttachDynamicContactShadow(car,1.96,4.70,.25,.038,1.70);
+  return car;
+}
+
+function createGolfFamilyPerson(index){
+  const person=createVisitPerson(index+1);
+  person.speed=index===2?1.02:.91+index*.04;
+  person.obj.name=index===2?'GOLF_FAMILIE_KIND':'GOLF_FAMILIE_ERWACHSENER_'+(index+1);
+  if(index===2){
+    // Ursprung liegt an den Fuessen: das kleinere Modell steht trotz Skalierung
+    // sauber auf demselben Boden wie die Erwachsenen.
+    person.obj.scale.multiplyScalar(.67);
+    const shadow=person.obj.userData.aczoDynamicContactShadow;
+    if(shadow)shadow.scale.multiplyScalar(.72);
+  }
+  return person;
+}
+
+function createKubbSet(){
+  const set=new THREE.Group();set.name='WIKINGERSCHACH_KUBB_SPIELFELD';
+  set.position.copy(ACZO_KUBB_CENTER);set.rotation.z=ACZO_KUBB_YAW;set.visible=false;
+  const wood=new THREE.MeshStandardMaterial({color:0xcaa36c,roughness:.88,metalness:.01});
+  const woodLight=new THREE.MeshStandardMaterial({color:0xe1c48d,roughness:.84,metalness:.01});
+  const stripe=new THREE.MeshStandardMaterial({color:0x8b3131,roughness:.82,metalness:.02});
+  const blockGeo=new THREE.BoxGeometry(.21,.21,.46);
+  set.userData.blocks=[];
+  for(const side of [-1,1])for(let i=0;i<5;i++){
+    const block=new THREE.Mesh(blockGeo,wood);block.name='KUBB_HOLZKLOTZ';
+    block.position.set(-1.12+i*.56,side*2.05,.23);block.castShadow=true;block.receiveShadow=true;
+    block.userData.fallen=false;block.userData.baseZ=.23;set.add(block);set.userData.blocks.push(block);
+  }
+  const king=new THREE.Group();king.name='KUBB_KOENIG';king.position.set(0,0,0);
+  const kingBody=new THREE.Mesh(new THREE.BoxGeometry(.27,.27,.60),woodLight);kingBody.position.z=.30;kingBody.castShadow=true;kingBody.receiveShadow=true;king.add(kingBody);
+  const crown=new THREE.Mesh(new THREE.ConeGeometry(.24,.20,4),stripe);crown.position.z=.68;crown.rotation.z=Math.PI*.25;crown.castShadow=true;king.add(crown);
+  king.userData.fallen=false;king.userData.baseZ=0;set.add(king);set.userData.king=king;
+  const baton=new THREE.Mesh(new THREE.CylinderGeometry(.045,.045,.34,10),woodLight);
+  baton.name='KUBB_WURFHOLZ';baton.rotation.x=Math.PI*.5;baton.visible=false;baton.castShadow=true;set.add(baton);set.userData.baton=baton;
+  golfFamilyVisitGroup.add(set);return set;
+}
+
+function aczoGolfKubbWorldPoint(localX,localY,out=new THREE.Vector3()){
+  out.set(localX,localY,0).applyAxisAngle(new THREE.Vector3(0,0,1),ACZO_KUBB_YAW).add(ACZO_KUBB_CENTER);
+  out.z=ACZO_VISITOR_GROUND_Z;return out;
+}
+function aczoGolfSetFieldRoutes(visit,returning=false){
+  const fieldSpots=[[-1.32,-2.95],[1.32,-2.95],[0,2.90]];
+  visit.people.forEach((person,i)=>{
+    person.pause=0;person.returned=false;person.blockedTime=0;person.navQueue.length=0;
+    const destination=returning
+      ?aczoParkingPersonPosition(visit.car,i,visit.people.length,new THREE.Vector3())
+      :aczoGolfKubbWorldPoint(fieldSpots[i][0],fieldSpots[i][1]);
+    aczoSetVisitorOutdoorRoute(person,destination,0);
+  });
+}
+function aczoGolfMoveFamily(visit,dt){
+  let all=true;
+  for(const person of visit.people){
+    if(person.returned)continue;
+    if(person.blockedTime>1.35){
+      person.blockedTime=0;person.avoidSign=person.avoidSign?-person.avoidSign:1;
+      const final=person.navQueue.length?person.navQueue[person.navQueue.length-1].pos:person.target;
+      aczoSetVisitorOutdoorRoute(person,final,0);
+    }
+    if(movePersonToward(person,person.target,dt)){
+      if(aczoAdvanceImmediatePersonRoute(person))all=false;
+      else person.returned=true;
+    }else all=false;
+  }
+  return all;
+}
+function aczoGolfStartKubbThrow(visit){
+  const set=visit.kubb,standing=set.userData.blocks.filter(b=>!b.userData.fallen);
+  let target=null;
+  if(standing.length)target=standing[Math.floor(Math.random()*standing.length)];
+  else if(!set.userData.king.userData.fallen)target=set.userData.king;
+  if(!target){visit.playTimer=Math.min(visit.playTimer,.2);return;}
+  const thrower=visit.people[visit.throwIndex%visit.people.length];visit.throwIndex++;
+  const start=set.worldToLocal(thrower.obj.position.clone());
+  start.z=(thrower===visit.people[2]) ? .82 : 1.05;
+  const hit=Math.random()<((target===set.userData.king) ? .82 : .74);
+  const end=target.position.clone();
+  if(!hit){end.x+=(Math.random()<.5?-1:1)*(.38+Math.random()*.45);end.y+=(Math.random()-.5)*.42;}
+  end.z=.14;
+  visit.throwData={target:hit?target:null,start,end,time:0,duration:.72+Math.random()*.24};
+  set.userData.baton.visible=true;set.userData.baton.position.copy(start);
+}
+function aczoGolfUpdateKubb(visit,dt){
+  const set=visit.kubb,baton=set.userData.baton;
+  visit.animTime+=dt;visit.nextThrow-=dt;
+  const centre=ACZO_KUBB_CENTER;
+  visit.people.forEach((p,i)=>{
+    p.obj.rotation.z=smoothPersonalAngle(p.obj.rotation.z,Math.atan2(-(centre.x-p.obj.position.x),centre.y-p.obj.position.y),1-Math.exp(-3.5*dt));
+    if(p.obj.userData.head)p.obj.userData.head.rotation.z=Math.sin(visit.animTime*1.8+i*1.7)*.20;
+  });
+  if(visit.throwData){
+    const shot=visit.throwData;shot.time+=dt;
+    const u=THREE.MathUtils.clamp(shot.time/shot.duration,0,1);
+    baton.position.copy(shot.start).lerp(shot.end,u);baton.position.z+=Math.sin(Math.PI*u)*(.82+Math.random()*.015);
+    baton.rotation.y+=dt*10.5;baton.rotation.z+=dt*7.2;
+    if(u>=1){
+      if(shot.target){
+        shot.target.userData.fallen=true;shot.target.rotation.x=Math.PI*.5;
+        shot.target.position.z=(shot.target===set.userData.king) ? .14 : .11;
+      }
+      baton.visible=false;visit.throwData=null;visit.nextThrow=2.0+Math.random()*1.6;
+    }
+  }else if(visit.nextThrow<=0&&visit.playTimer>1.0)aczoGolfStartKubbThrow(visit);
+}
+
+function spawnGolfFamilyVisit(){
+  aczoSetSwingGateCommand(false);
+  const car=createGolfVariant();carRouteSample(0,car.position,golfFamilyTmpDir);
+  car.rotation.z=Math.atan2(-golfFamilyTmpDir.x,golfFamilyTmpDir.y);
+  const people=[createGolfFamilyPerson(0),createGolfFamilyPerson(1),createGolfFamilyPerson(2)];
+  people.forEach(p=>{p.obj.visible=false;golfFamilyVisitGroup.add(p.obj);});
+  golfFamilyVisitGroup.add(car);
+  golfFamilyVisit={state:'arriving',car,people,kubb:createKubbSet(),distance:0,speed:4.45,timer:0,playTimer:0,nextThrow:1.0,throwIndex:0,throwData:null,animTime:0};
+}
+function finishGolfFamilyVisit(){
+  if(!golfFamilyVisit)return;
+  aczoSetSwingGateCommand(false);
+  const visit=golfFamilyVisit;
+  visit.people.forEach(p=>{golfFamilyVisitGroup.remove(p.obj);disposeSceneTree(p.obj);});
+  golfFamilyVisitGroup.remove(visit.car,visit.kubb);disposeSceneTree(visit.car);disposeSceneTree(visit.kubb);
+  golfFamilyVisit=null;
+  if(typeof aczoScheduleNextPropertyVisit==='function')aczoScheduleNextPropertyVisit();
+}
+function aczoBeginGolfGateWalk(visit,closing=false){
+  const driver=visit.people[0];driver.obj.visible=true;driver.blockedTime=0;driver.returned=false;
+  aczoSetGatePersonRoute(driver,visit.car,true);visit.state=closing?'gate-closer-to-handle':'gate-opener-to-handle';
+}
+function updateGolfFamilyVisit(dt,daytime=carTrafficDaytimeAllowed()){
+  const blockedView=anglingPhotoWallsActive();
+  golfFamilyVisitGroup.visible=!is2D&&daytime&&!blockedView;
+  if(!daytime){if(golfFamilyVisit)finishGolfFamilyVisit();return;}
+  if(!golfFamilyVisit)return;
+  const visit=golfFamilyVisit,driver=visit.people[0];
+  if(visit.state==='arriving'){
+    visit.distance=Math.min(ACZO_SWING_GATE_OUTSIDE_STOP_DISTANCE,visit.distance+visit.speed*dt);
+    carRouteSample(visit.distance,visit.car.position,golfFamilyTmpDir);
+    visit.car.rotation.z=smoothPersonalAngle(visit.car.rotation.z,Math.atan2(-golfFamilyTmpDir.x,golfFamilyTmpDir.y),1-Math.exp(-4.4*dt));
+    if(visit.distance>=ACZO_SWING_GATE_OUTSIDE_STOP_DISTANCE){visit.state='gate-arrival-stop';visit.timer=.85;}
+  }else if(visit.state==='gate-arrival-stop'){
+    visit.timer-=dt;if(visit.timer<=0)aczoBeginGolfGateWalk(visit,false);
+  }else if(visit.state==='gate-opener-to-handle'){
+    if(movePersonToward(driver,driver.target,dt)&&!aczoAdvanceImmediatePersonRoute(driver)){aczoSetSwingGateCommand(true);visit.state='gate-opening';}
+  }else if(visit.state==='gate-opening'){
+    if(aczoSwingGateOpenProgress()>.96){aczoSetGatePersonRoute(driver,visit.car,false);visit.state='gate-opener-to-car';}
+  }else if(visit.state==='gate-opener-to-car'){
+    if(movePersonToward(driver,driver.target,dt)&&!aczoAdvanceImmediatePersonRoute(driver)){driver.obj.visible=false;visit.state='arriving-inside';}
+  }else if(visit.state==='arriving-inside'){
+    aczoSetSwingGateCommand(true);visit.distance=Math.min(carRouteLength,visit.distance+visit.speed*dt);
+    carRouteSample(visit.distance,visit.car.position,golfFamilyTmpDir);
+    visit.car.rotation.z=smoothPersonalAngle(visit.car.rotation.z,Math.atan2(-golfFamilyTmpDir.x,golfFamilyTmpDir.y),1-Math.exp(-4.4*dt));
+    if(visit.distance>=carRouteLength){visit.state='parking';visit.timer=1.5;}
+  }else if(visit.state==='parking'){
+    aczoSetSwingGateCommand(true);visit.timer-=dt;
+    if(visit.timer<=0){
+      visit.people.forEach((p,i)=>{aczoParkingPersonPosition(visit.car,i,visit.people.length,p.obj.position);p.obj.visible=true;});
+      aczoGolfSetFieldRoutes(visit,false);visit.state='field-walk';
+    }
+  }else if(visit.state==='field-walk'){
+    aczoSetSwingGateCommand(true);
+    if(aczoGolfMoveFamily(visit,dt)){
+      visit.kubb.visible=true;visit.state='setup';visit.timer=2.4;
+      visit.people.forEach(p=>p.returned=false);
+    }
+  }else if(visit.state==='setup'){
+    visit.timer-=dt;
+    if(visit.timer<=0){visit.state='playing';visit.playTimer=48+Math.random()*18;visit.nextThrow=.8;}
+  }else if(visit.state==='playing'){
+    aczoSetSwingGateCommand(true);visit.playTimer-=dt;aczoGolfUpdateKubb(visit,dt);
+    if(visit.playTimer<=0&&!visit.throwData){visit.state='celebrating';visit.timer=3.2;}
+  }else if(visit.state==='celebrating'){
+    visit.timer-=dt;visit.animTime+=dt;
+    visit.people.forEach((p,i)=>{p.obj.rotation.z+=Math.sin(visit.animTime*4+i)*dt*.35;});
+    if(visit.timer<=0){visit.kubb.visible=false;aczoGolfSetFieldRoutes(visit,true);visit.state='returning';}
+  }else if(visit.state==='returning'){
+    if(aczoGolfMoveFamily(visit,dt)){
+      visit.people.forEach(p=>{p.obj.visible=false;p.returned=false;});visit.state='departing-inside';visit.timer=.8;
+    }
+  }else if(visit.state==='departing-inside'){
+    aczoSetSwingGateCommand(true);if(visit.timer>0){visit.timer-=dt;return;}
+    visit.distance=Math.max(ACZO_SWING_GATE_OUTSIDE_STOP_DISTANCE,visit.distance-visit.speed*dt);
+    carRouteSample(visit.distance,visit.car.position,golfFamilyTmpDir);golfFamilyTmpDir.multiplyScalar(-1);
+    visit.car.rotation.z=smoothPersonalAngle(visit.car.rotation.z,Math.atan2(-golfFamilyTmpDir.x,golfFamilyTmpDir.y),1-Math.exp(-4.4*dt));
+    if(visit.distance<=ACZO_SWING_GATE_OUTSIDE_STOP_DISTANCE){visit.state='gate-exit-stop';visit.timer=.85;}
+  }else if(visit.state==='gate-exit-stop'){
+    visit.timer-=dt;if(visit.timer<=0)aczoBeginGolfGateWalk(visit,true);
+  }else if(visit.state==='gate-closer-to-handle'){
+    if(movePersonToward(driver,driver.target,dt)&&!aczoAdvanceImmediatePersonRoute(driver)){aczoSetSwingGateCommand(false);visit.state='gate-closing';}
+  }else if(visit.state==='gate-closing'){
+    if(aczoSwingGateOpenProgress()<.04){aczoSetGatePersonRoute(driver,visit.car,false);visit.state='gate-closer-to-car';}
+  }else if(visit.state==='gate-closer-to-car'){
+    if(movePersonToward(driver,driver.target,dt)&&!aczoAdvanceImmediatePersonRoute(driver)){driver.obj.visible=false;visit.state='departing';}
+  }else if(visit.state==='departing'){
+    visit.distance=Math.max(0,visit.distance-visit.speed*dt);carRouteSample(visit.distance,visit.car.position,golfFamilyTmpDir);golfFamilyTmpDir.multiplyScalar(-1);
+    visit.car.rotation.z=smoothPersonalAngle(visit.car.rotation.z,Math.atan2(-golfFamilyTmpDir.x,golfFamilyTmpDir.y),1-Math.exp(-4.4*dt));
+    if(visit.distance<=0)finishGolfFamilyVisit();
+  }
+}
+
+// Ein einziger Planer verhindert konkurrierende Timer. Damit kann nicht nur
+// der bisherige Standardwagen, sondern auch BMW oder Golf der allererste
+// Besuch nach dem Laden sein.
+let aczoPropertyVisitWait=8+Math.random()*12;
+let aczoLastPropertyVisitType='';
+let aczoForcedPropertyVisitUsed=false;
+function aczoPropertyVisitActive(){return !!currentVisit||!!bmwX3Visit||!!golfFamilyVisit;}
+function aczoScheduleNextPropertyVisit(initial=false){
+  aczoPropertyVisitWait=initial?8+Math.random()*12:135+Math.random()*210;
+}
+function aczoChoosePropertyVisitType(){
+  if(!aczoForcedPropertyVisitUsed){
+    const forced=new URLSearchParams(location.search).get('besuchtest');
+    aczoForcedPropertyVisitUsed=true;
+    if(forced==='normal'||forced==='bmw'||forced==='golf')return forced;
+  }
+  const roll=Math.random();let type=roll<.34?'normal':roll<.67?'bmw':'golf';
+  // Etwas Abwechslung, ohne eine Fahrzeugart auszuschliessen.
+  if(type===aczoLastPropertyVisitType&&Math.random()<.55)type=type==='normal'?'bmw':type==='bmw'?'golf':'normal';
+  return type;
+}
+function updateAczoPropertyVisitScheduler(dt,daytime=carTrafficDaytimeAllowed()){
+  if(!daytime||aczoPropertyVisitActive())return;
+  if(!Number.isFinite(aczoPropertyVisitWait))aczoScheduleNextPropertyVisit();
+  aczoPropertyVisitWait-=dt;if(aczoPropertyVisitWait>0)return;
+  const type=aczoChoosePropertyVisitType();aczoLastPropertyVisitType=type;aczoPropertyVisitWait=Infinity;
+  if(type==='bmw')spawnBmwX3Visit();else if(type==='golf')spawnGolfFamilyVisit();else spawnCarVisit();
 }
 
 
@@ -35290,9 +35595,9 @@ function aczoSecondaryCameraDue(lastAt,now){
 // unmittelbar danach exakt auf ihren vorherigen Zustand gesetzt.
 const aczoAnglingInsetGroups=[cloudGroup,cloudReflectionGroup,aczoOuterForestGroup,
   aczoSurveyedNatureGroup,realBirchGroup,birdGroup,aczoWildBoarGroup,carTestGroup,
-  personalSceneGroup,bmwX3VisitGroup];
+  personalSceneGroup,bmwX3VisitGroup,golfFamilyVisitGroup];
 const aczoAnglingInsetShoreGroups=[cloudGroup,cloudReflectionGroup,aczoOuterForestGroup,
-  birdGroup,aczoWildBoarGroup,carTestGroup,personalSceneGroup,bmwX3VisitGroup];
+  birdGroup,aczoWildBoarGroup,carTestGroup,personalSceneGroup,bmwX3VisitGroup,golfFamilyVisitGroup];
 const aczoAnglingInsetStates=new Array(aczoAnglingInsetGroups.length).fill(false);
 const aczoAnglingInsetShoreStates=new Array(aczoAnglingInsetShoreGroups.length).fill(false);
 function aczoRenderLightweightAnglingInset(cam,keepShoreNature=false){
@@ -37342,7 +37647,8 @@ if(aczoPerf7CpuEnabled){
   [
     ['updateSkyClouds','Clouds'],['updateRealCloudReflections','CloudRefl'],
     ['updateRainRipples','Rain'],['updateBirds','Birds'],['updateTraffic','Traffic'],
-    ['updateCarVisit','Visits'],['updateBmwX3Visit','Visits'],
+    ['updateAczoPropertyVisitScheduler','Visits'],['updateCarVisit','Visits'],
+    ['updateBmwX3Visit','Visits'],['updateGolfFamilyVisit','Visits'],
     ['updateAczoSurveyForestLod','ForestLOD'],['updateAczoRealBirchFineLod','BirchLOD'],
     ['updateAczoWildBoars','Wildlife'],['updateClubFlagPole','Flag'],
     ['updateFishView','Fish'],['updateFishActors','Fish'],['updateFishShadows','Fish'],
@@ -37393,7 +37699,7 @@ function aczoPerf7Summary(){
 
  // Autonome sichtbare Bewegung bekommt ein eigenes, deutlich günstigeres Budget.
  // So bleiben Besucher/BMW/Regen/Schnee lesbar, blockieren aber nicht dauerhaft 30 FPS.
- const aczoAmbientMotion=!!currentVisit||!!bmwX3Visit
+ const aczoAmbientMotion=!!currentVisit||!!bmwX3Visit||!!golfFamilyVisit
    ||rainSystem.visible||seasonSnowPoints.visible;
 
  // P7: Ein 120-Hz-iPhone braucht fuer diesen Viewer keine 120 kompletten
@@ -37474,7 +37780,8 @@ function aczoPerf7Summary(){
   // laut Profiler praktisch kostenlos; das alte 120/240-ms-Raster erzeugte
   // dagegen das sichtbare 4-8-Hz-Ruckeln. Wetter/Wolken bleiben separat langsam.
   const aczoVisitorDaytime=carTrafficDaytimeAllowed();
-  updateBirds(visualDt);updateTraffic(visualDt);updateCarVisit(visualDt,aczoVisitorDaytime);updateBmwX3Visit(visualDt,aczoVisitorDaytime);
+  updateBirds(visualDt);updateTraffic(visualDt);updateAczoPropertyVisitScheduler(visualDt,aczoVisitorDaytime);
+  updateCarVisit(visualDt,aczoVisitorDaytime);updateBmwX3Visit(visualDt,aczoVisitorDaytime);updateGolfFamilyVisit(visualDt,aczoVisitorDaytime);
   updateAczoFacilityDoors(visualDt);updateAczoConstructionGates(visualDt);
   updateAczoMainEntranceMotionLight(visualDt);updatePersonalCampScene(visualDt);
   // P10: Material-/Jahreszeitenzustand aendert sich im normalen Betrieb nicht
