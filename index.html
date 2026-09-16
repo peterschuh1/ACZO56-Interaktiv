@@ -23052,9 +23052,15 @@ function updateFishActors(dt){
         const fishW=Math.abs(f.obj.userData.baseFishWidth||f.obj.scale.x||.18);
         const fishH=Math.abs(f.obj.userData.baseFishHeight||f.obj.scale.y||.08);
 
-        // Störe grundeln horizontal. Karpfen, Spiegelkarpfen, Schleien und
-        // Brassen behalten ihre bisherige 45°-Fresspose.
-        f.visualPitch=species==='sturgeon'?0:-THREE.MathUtils.degToRad(45);
+        // Störe grundeln weiterhin horizontal. Die übrigen Grundfresser bekommen
+        // pro Gründelphase EINEN festen Zufallswinkel. Dadurch stehen nicht alle
+        // wie geklont bei 45°, ohne jemals steiler als bisher zu werden.
+        if(species==='sturgeon'){
+          f.visualPitch=0;
+        }else{
+          if(!Number.isFinite(f.feedPitch))f.feedPitch=-THREE.MathUtils.degToRad(22+Math.random()*23);
+          f.visualPitch=f.feedPitch;
+        }
         // Beim ruhigen Gruendeln bleibt die bewaehrte klare Seitenansicht.
         f.visualDepthYaw=0;
 
@@ -23131,7 +23137,8 @@ function updateFishActors(dt){
           // 4–7 Sekunden ruhig grundeln statt pro Frame zwischen Schwimmen und
           // 45°-Pose hin- und herzuschalten.
           f.feedBottomUntil=fishWorldTime+4.0+Math.random()*3.0;
-          f.visualPitch=species==='sturgeon'?0:-THREE.MathUtils.degToRad(45);
+          f.feedPitch=species==='sturgeon'?0:-THREE.MathUtils.degToRad(22+Math.random()*23);
+          f.visualPitch=f.feedPitch;
           f.pause=0;
           f.feedSource='feedspot';
           f.feedDustAt=fishWorldTime+.9+Math.random()*1.1;
@@ -23149,7 +23156,8 @@ function updateFishActors(dt){
       // Futterplatz immer mal wieder kurz am Grund gründeln.
       if(ambientBottomGrazer&&ambientBottomReady&&Math.random()<.55){
         f.feedBottomUntil=fishWorldTime+3.2+Math.random()*3.0;
-        f.visualPitch=species==='sturgeon'?0:-THREE.MathUtils.degToRad(45);
+        f.feedPitch=species==='sturgeon'?0:-THREE.MathUtils.degToRad(22+Math.random()*23);
+        f.visualPitch=f.feedPitch;
         f.pause=0;
         f.feedSource='ambient';
         f.feedDustAt=0; // erste Staubwolke sofort
