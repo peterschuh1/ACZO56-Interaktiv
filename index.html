@@ -7495,7 +7495,10 @@ const sunDisc=new THREE.Sprite(
  })
 );
 sunDisc.position.copy(sun.position);
-sunDisc.scale.set(48,48,1);
+// SONNENFIX 2: Die alte 48-m-Scheibe wirkte in der Kartenperspektive wie ein
+// sehr grosser, am Bildschirm befestigter Lichtball. Deutlich kleiner, aber
+// auf Mobil weiterhin klar erkennbar.
+sunDisc.scale.set(22,22,1);
 sunDisc.renderOrder=CELESTIAL_DISC_RENDER_ORDER;
 scene.add(sunDisc);
 
@@ -7846,7 +7849,7 @@ const moonDisc=new THREE.Sprite(new THREE.SpriteMaterial({
   depthTest:true
 }));
 moonDisc.renderOrder=CELESTIAL_DISC_RENDER_ORDER;
-moonDisc.scale.set(25,25,1);
+moonDisc.scale.set(16,16,1);
 moonDisc.userData.visualOpacity=1;
 
 scene.add(moonDisc);
@@ -7913,7 +7916,7 @@ const moonGlow=new THREE.Sprite(new THREE.SpriteMaterial({
   blending:THREE.AdditiveBlending
 }));
 moonGlow.renderOrder=CELESTIAL_GLOW_RENDER_ORDER;
-moonGlow.scale.set(50,50,1);
+moonGlow.scale.set(36,36,1);
 moonGlow.userData.visualOpacity=.82;
 scene.add(moonGlow);
 
@@ -8727,7 +8730,7 @@ function applyNeutralDayScene(){
   sunDisc.position.copy(sun.position);
   sunDisc.userData.astronomicallyVisible=true;
   sunDisc.visible=!is2D&&celestialDiscAllowedForView();
-  sunDisc.scale.set(48,48,1);
+  sunDisc.scale.set(22,22,1);
   if(sunDisc.material){
     sunDisc.material.opacity=1.0;
     sunDisc.material.depthTest=true;
@@ -11217,12 +11220,14 @@ function celestialVector(pos,radius){
   ).multiplyScalar(radius);
 }
 
-// V8.92: Die Lichtquellen bleiben unverändert am Kartenursprung ausgerichtet.
-// Nur ihre sichtbaren Scheiben werden für das Hauptbild relativ zur Kamera auf
-// denselben Richtungsvektor gesetzt. So entsteht bei Kamerafahrten keine
-// künstliche Parallaxe, während Licht, Schatten und Wasser-Richtungen identisch
-// zu V8.91 bleiben.
+// V8.92 / SONNENFIX 2: Die Lichtquellen bleiben unverändert am Kartenursprung
+// ausgerichtet. Die sichtbaren Scheiben folgen der normalen Kartenkamera nur
+// zu 90 Prozent. Die kleine verbleibende Parallaxe bindet Sonne und Mond beim
+// Zoomen sichtbar an den fernen Himmel, ohne den grossen Positionssprung der
+// frueheren reinen Weltposition zurueckzubringen. In Fisch-/Angelansichten
+// bleibt die bewaehrte vollstaendige Kameranachfuehrung erhalten.
 const celestialDiscCameraDirection=new THREE.Vector3();
+const celestialDiscCameraAnchor=new THREE.Vector3();
 function positionCelestialDiscsForMainCamera(){
   const span=Math.max(D.sceneW,D.sceneH);
   const place=(disc,light,distance)=>{
@@ -11230,7 +11235,9 @@ function positionCelestialDiscsForMainCamera(){
     celestialDiscCameraDirection.copy(light.position).sub(light.target.position);
     if(celestialDiscCameraDirection.lengthSq()<1e-8)return;
     celestialDiscCameraDirection.normalize();
-    disc.position.copy(camera.position).addScaledVector(celestialDiscCameraDirection,distance);
+    const cameraFollow=(fishMode||anglingMode)?1:.90;
+    celestialDiscCameraAnchor.copy(light.target.position).lerp(camera.position,cameraFollow);
+    disc.position.copy(celestialDiscCameraAnchor).addScaledVector(celestialDiscCameraDirection,distance);
   };
   place(sunDisc,sun,span*2.1);
   place(moonDisc,moonLight,span*1.9);
@@ -11322,11 +11329,11 @@ function updateAstronomy(){
         0,1
       )
     : 0;
-  const moonVisualScale=THREE.MathUtils.lerp(25,20,moonDaylight);
+  const moonVisualScale=THREE.MathUtils.lerp(16,14,moonDaylight);
   moonDisc.userData.visualOpacity=moonVisualOpacity;
   moonDisc.scale.set(moonVisualScale,moonVisualScale,1);
   if(typeof moonGlow!=='undefined'){
-    const moonGlowScale=THREE.MathUtils.lerp(50,35,moonDaylight);
+    const moonGlowScale=THREE.MathUtils.lerp(36,28,moonDaylight);
     moonGlow.userData.visualOpacity=moonVisualOpacity*THREE.MathUtils.lerp(.82,.12,moonDaylight);
     moonGlow.scale.set(moonGlowScale,moonGlowScale,1);
   }
@@ -38094,11 +38101,11 @@ function aczoPerf7Summary(){
  // im Stillstand reichen 8 Hz. Statische Sichtbarkeits-/Shadow-Caster-Pruefungen
  // laufen nur 4 Hz, statt bei jedem kompletten Renderpass.
  // SONNENFIX: Die sichtbaren Scheiben muessen nach JEDEM Kamera-Update und vor
- // JEDEM Hauptbild relativ zur aktuellen Kamera stehen. Am Frameende werden sie
- // fuer Welt-/Nebenberechnungen wieder auf ihre astronomischen Weltpositionen
- // gesetzt. Wuerde diese billige Positionskorrektur ebenfalls auf 8 Hz
- // gedrosselt, wechselte der Uebergang in den Himmelblick zwischen Welt- und
- // Kameraposition und die Sonne schiene seitlich zu springen.
+ // JEDEM Hauptbild auf denselben gedämpften Himmelsanker gesetzt werden. Am
+ // Frameende werden sie fuer Welt-/Nebenberechnungen wieder auf ihre
+ // astronomischen Weltpositionen gesetzt. Wuerde diese billige Korrektur
+ // ebenfalls auf 8 Hz gedrosselt, wechselte der Uebergang in den Himmelblick
+ // zwischen Welt- und Kameraposition und die Sonne schiene seitlich zu springen.
  if(simulationEnabled)positionCelestialDiscsForMainCamera();
  const aczoCelestialDue=aczoInteractive||aczoPlainMapGesture||(frameNow-aczoPerf4LastCelestialAt>=125);
  if(aczoCelestialDue){
