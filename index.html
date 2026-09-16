@@ -4809,6 +4809,19 @@ html,body{
 Interaktive Tiefenkarte & Angelspiel · Live-Wetter · astronomisches Licht · Unterwasserwelt · Fischsammlung<br>
 Bitte gefundene Darstellungs-, Steuerungs- oder Spielfehler mit Gerät, Browser und betroffenem Modus melden.
 </div>
+       <details class="help-note" style="cursor:pointer">
+         <summary style="font-weight:800">Update-History</summary>
+         <div style="margin-top:8px;cursor:default">
+           <strong>Version 1.3</strong><br>
+           • Natürlichere Fischbewegungen und ruhigeres Verhalten der Raubfische<br>
+           • Unterschiedliche Fresswinkel beim Gründeln<br>
+           • Futterplatz mit feineren Futterpartikeln, Sedimentwolken und aufsteigenden Luftblasen<br>
+           • Luftblasen mit sichtbarem Aufstieg und Oberflächenringen<br>
+           • EP-System, Tagesaufgaben und Preise für Lockfutter und Köder neu ausbalanciert<br>
+           • Besucher- und Kollisionsverhalten weiter verbessert<br>
+           • Diverse Darstellungs-, Steuerungs- und Performance-Korrekturen
+         </div>
+       </details>
        <div class="help-note"><strong>Datenquellen & Hinweise</strong><br>
 Tiefenkarte und Darstellung: AC 1956 Zewen-Oberkirch e. V.<br>
 Luftbild/Kartengrundlage: © GeoBasis-DE / LVermGeoRP (2026), dl-de/by-2-0<br>
@@ -27344,14 +27357,14 @@ const ANGLING_POPULATION={
   sturgeon:3,zander:4,eel:8,tench:20,bream:30,koi:1,perch:50,sunfish:70,goby:160
 };
 const ANGLING_LURE_CATALOG={
-  spinner_basic:{name:'Blinker Standard',icon:'spinner_basic',type:'spinner',price:20,desc:'Solider Allrounder für Raubfische.',tag:'Standard',boost:{}},
-  softbait_basic:{name:'Gummifisch Standard',icon:'softbait_basic',type:'softbait',price:20,desc:'Grundnah stark, besonders auf Zander.',tag:'Standard',boost:{}},
-  spinner_premium:{name:'Blinker Premium',icon:'spinner_premium',type:'spinner',price:35,desc:'Etwas auffälliger und insgesamt fängiger.',tag:'+15 % Attraktivität',boost:{pike:1.15,zander:1.15,perch:1.15,catfish:1.15}},
-  softbait_premium:{name:'Gummifisch Premium',icon:'softbait_premium',type:'softbait',price:35,desc:'Mehr Aktion und etwas höhere Raubfischchance.',tag:'+15 % Attraktivität',boost:{pike:1.15,zander:1.15,perch:1.15,catfish:1.15}},
-  pike_special:{name:'Hecht-Spezial',icon:'pike_special',type:'spinner',price:50,desc:'Gezielt auf Hecht abgestimmt.',tag:'Hecht ++',boost:{pike:1.65,zander:.82,perch:.92,catfish:.70}},
-  zander_special:{name:'Zander-Spezial',icon:'zander_special',type:'softbait',price:50,desc:'Grundnaher Spezialköder für Zander.',tag:'Zander ++',boost:{zander:1.70,pike:.86,perch:.90,catfish:.88}},
-  perch_special:{name:'Barsch-Spezial',icon:'perch_special',type:'spinner',price:45,desc:'Kompakt und aggressiv für Barsche.',tag:'Barsch ++',boost:{perch:1.75,pike:.88,zander:.82,catfish:.55}},
-  catfish_special:{name:'Wels-Spezial',icon:'catfish_special',type:'softbait',price:55,desc:'Große Silhouette für Wels.',tag:'Wels ++',boost:{catfish:2.05,zander:.82,pike:.82,perch:.55}}
+  spinner_basic:{name:'Blinker Standard',icon:'spinner_basic',type:'spinner',price:15,desc:'Solider Allrounder für Raubfische.',tag:'Standard',boost:{}},
+  softbait_basic:{name:'Gummifisch Standard',icon:'softbait_basic',type:'softbait',price:15,desc:'Grundnah stark, besonders auf Zander.',tag:'Standard',boost:{}},
+  spinner_premium:{name:'Blinker Premium',icon:'spinner_premium',type:'spinner',price:25,desc:'Etwas auffälliger und insgesamt fängiger.',tag:'+15 % Attraktivität',boost:{pike:1.15,zander:1.15,perch:1.15,catfish:1.15}},
+  softbait_premium:{name:'Gummifisch Premium',icon:'softbait_premium',type:'softbait',price:25,desc:'Mehr Aktion und etwas höhere Raubfischchance.',tag:'+15 % Attraktivität',boost:{pike:1.15,zander:1.15,perch:1.15,catfish:1.15}},
+  pike_special:{name:'Hecht-Spezial',icon:'pike_special',type:'spinner',price:40,desc:'Gezielt auf Hecht abgestimmt.',tag:'Hecht ++',boost:{pike:1.65,zander:.82,perch:.92,catfish:.70}},
+  zander_special:{name:'Zander-Spezial',icon:'zander_special',type:'softbait',price:40,desc:'Grundnaher Spezialköder für Zander.',tag:'Zander ++',boost:{zander:1.70,pike:.86,perch:.90,catfish:.88}},
+  perch_special:{name:'Barsch-Spezial',icon:'perch_special',type:'spinner',price:35,desc:'Kompakt und aggressiv für Barsche.',tag:'Barsch ++',boost:{perch:1.75,pike:.88,zander:.82,catfish:.55}},
+  catfish_special:{name:'Wels-Spezial',icon:'catfish_special',type:'softbait',price:40,desc:'Große Silhouette für Wels.',tag:'Wels ++',boost:{catfish:2.05,zander:.82,pike:.82,perch:.55}}
 };
 const ANGLING_EQUIPMENT_CATALOG={
   rod_standard:{
@@ -27477,9 +27490,9 @@ function anglingApplyActiveRodAppearance(){
 }
 
 const ANGLING_FEED_CATALOG={
-  cheap:{name:'Lockfutter günstig',price:100,tag:'10 Min. · guter Effekt',desc:'Einfaches Lockfutter. Erhöht Aktivität und Bisschance am Futterplatz deutlich.',bite:1.45,attract:1.22,predator:1.08,radius:2.6},
-  normal:{name:'Lockfutter normal',price:165,tag:'10 Min. · starker Effekt',desc:'Kräftiger Futtermix. Baut einen klaren Futterplatz auf und zieht Fische spürbar an.',bite:1.80,attract:1.42,predator:1.13,radius:2.9},
-  premium:{name:'Lockfutter Premium',price:260,tag:'10 Min. · sehr starker Effekt',desc:'Hochwertiger Futtermix. Maximale Lockwirkung und deutlich erhöhte Aktivität am Spot.',bite:2.25,attract:1.68,predator:1.20,radius:3.2}
+  cheap:{name:'Lockfutter günstig',price:50,tag:'10 Min. · guter Effekt',desc:'Einfaches Lockfutter. Erhöht Aktivität und Bisschance am Futterplatz deutlich.',bite:1.45,attract:1.22,predator:1.08,radius:2.6},
+  normal:{name:'Lockfutter normal',price:80,tag:'10 Min. · starker Effekt',desc:'Kräftiger Futtermix. Baut einen klaren Futterplatz auf und zieht Fische spürbar an.',bite:1.80,attract:1.42,predator:1.13,radius:2.9},
+  premium:{name:'Lockfutter Premium',price:120,tag:'10 Min. · sehr starker Effekt',desc:'Hochwertiger Futtermix. Maximale Lockwirkung und deutlich erhöhte Aktivität am Spot.',bite:2.25,attract:1.68,predator:1.20,radius:3.2}
 };
 const ANGLING_FEED_DURATION=10*60*1000;
 const ANGLING_FEED_BUILDUP=4*60*1000;
@@ -32171,50 +32184,50 @@ function anglingLocalDayKey(ts=Date.now()){
 }
 
 const ANGLING_DAILY_QUEST_KEY='aczo56-angling-daily-quests-v1';
-const ANGLING_DAILY_QUEST_BONUS_EP=25;
+const ANGLING_DAILY_QUEST_BONUS_EP=50;
 const ANGLING_DAILY_QUEST_PREDATORS=new Set(['pike','zander','catfish','eel','perch']);
 const ANGLING_DAILY_QUEST_PEACEFUL=new Set(['roach','rudd','bream','tench','carp','mirrorcarp','grasscarp','koi']);
 const ANGLING_DAILY_QUESTS=[
   // LEICHT – bewusst unterschiedliche Spielideen, nicht nur kleinere Zahlen derselben Aufgabe.
-  {id:'l_catch2',difficulty:'light',category:'volume',family:'catch-count',title:'Erster Erfolg',desc:'Fange 2 Fische.',reward:10,kind:'count',target:2},
-  {id:'l_species2',difficulty:'light',category:'variety',family:'species-variety',title:'Artenwechsel',desc:'Fange 2 verschiedene Fischarten.',reward:15,kind:'uniqueSpecies',target:2},
-  {id:'l_natural1',difficulty:'light',category:'method',family:'natural-method',title:'Natur pur',desc:'Fange einen Fisch mit Naturköder.',reward:10,kind:'naturalCount',target:1},
-  {id:'l_worm1',difficulty:'light',category:'bait',family:'specific-bait',title:'Wurmklassiker',desc:'Fange einen Fisch mit Wurm.',reward:10,kind:'baitCount',target:1,baits:['worm']},
-  {id:'l_feed1',difficulty:'light',category:'tactic',family:'feed-tactic',title:'Gut vorbereitet',desc:'Fange einen Fisch innerhalb eines aktiven Futterplatzes.',reward:15,kind:'feedCount',target:1,onFeed:true},
-  {id:'l_nofeed1',difficulty:'light',category:'tactic',family:'feed-tactic',title:'Ohne Lockfutter',desc:'Fange einen Fisch außerhalb eines aktiven Futterplatzes.',reward:15,kind:'feedCount',target:1,onFeed:false},
-  {id:'l_depth25',difficulty:'light',category:'depth',family:'depth',title:'Etwas tiefer',desc:'Fange einen Fisch aus mindestens 2,5 m Tiefe.',reward:15,kind:'depthCount',target:1,minDepth:2.5},
-  {id:'l_size35',difficulty:'light',category:'size',family:'size',title:'Solider Fang',desc:'Fange einen Fisch über 35 cm.',reward:15,kind:'sizeCount',target:1,minCm:35},
-  {id:'l_silver',difficulty:'light',category:'target',family:'fish-target',fishTheme:true,title:'Silber im Kescher',desc:'Fange ein Rotauge oder eine Rotfeder.',reward:15,kind:'targetSpecies',target:1,species:['roach','rudd']},
-  {id:'l_ufersmall',difficulty:'light',category:'target',family:'fish-target',fishTheme:true,title:'Uferbewohner',desc:'Fange eine Grundel oder einen Sonnenbarsch.',reward:10,kind:'targetSpecies',target:1,species:['goby','sunfish']},
-  {id:'l_perch',difficulty:'light',category:'target',family:'fish-target',fishTheme:true,title:'Stachelritter',desc:'Fange einen Flussbarsch.',reward:15,kind:'targetSpecies',target:1,species:['perch']},
+  {id:'l_catch2',difficulty:'light',category:'volume',family:'catch-count',title:'Erster Erfolg',desc:'Fange 2 Fische.',reward:20,kind:'count',target:2},
+  {id:'l_species2',difficulty:'light',category:'variety',family:'species-variety',title:'Artenwechsel',desc:'Fange 2 verschiedene Fischarten.',reward:25,kind:'uniqueSpecies',target:2},
+  {id:'l_natural1',difficulty:'light',category:'method',family:'natural-method',title:'Natur pur',desc:'Fange einen Fisch mit Naturköder.',reward:20,kind:'naturalCount',target:1},
+  {id:'l_worm1',difficulty:'light',category:'bait',family:'specific-bait',title:'Wurmklassiker',desc:'Fange einen Fisch mit Wurm.',reward:20,kind:'baitCount',target:1,baits:['worm']},
+  {id:'l_feed1',difficulty:'light',category:'tactic',family:'feed-tactic',title:'Gut vorbereitet',desc:'Fange einen Fisch innerhalb eines aktiven Futterplatzes.',reward:25,kind:'feedCount',target:1,onFeed:true},
+  {id:'l_nofeed1',difficulty:'light',category:'tactic',family:'feed-tactic',title:'Ohne Lockfutter',desc:'Fange einen Fisch außerhalb eines aktiven Futterplatzes.',reward:25,kind:'feedCount',target:1,onFeed:false},
+  {id:'l_depth25',difficulty:'light',category:'depth',family:'depth',title:'Etwas tiefer',desc:'Fange einen Fisch aus mindestens 2,5 m Tiefe.',reward:25,kind:'depthCount',target:1,minDepth:2.5},
+  {id:'l_size35',difficulty:'light',category:'size',family:'size',title:'Solider Fang',desc:'Fange einen Fisch über 35 cm.',reward:25,kind:'sizeCount',target:1,minCm:35},
+  {id:'l_silver',difficulty:'light',category:'target',family:'fish-target',fishTheme:true,title:'Silber im Kescher',desc:'Fange ein Rotauge oder eine Rotfeder.',reward:25,kind:'targetSpecies',target:1,species:['roach','rudd']},
+  {id:'l_ufersmall',difficulty:'light',category:'target',family:'fish-target',fishTheme:true,title:'Uferbewohner',desc:'Fange eine Grundel oder einen Sonnenbarsch.',reward:20,kind:'targetSpecies',target:1,species:['goby','sunfish']},
+  {id:'l_perch',difficulty:'light',category:'target',family:'fish-target',fishTheme:true,title:'Stachelritter',desc:'Fange einen Flussbarsch.',reward:25,kind:'targetSpecies',target:1,species:['perch']},
 
   // MITTEL
-  {id:'m_species3',difficulty:'medium',category:'variety',family:'species-variety',title:'Bunter Kescher',desc:'Fange 3 verschiedene Fischarten.',reward:20,kind:'uniqueSpecies',target:3},
-  {id:'m_natural2',difficulty:'medium',category:'method',family:'natural-method',title:'Naturköder-Session',desc:'Fange 2 Fische mit Naturködern.',reward:20,kind:'naturalCount',target:2},
-  {id:'m_baits2',difficulty:'medium',category:'bait',family:'bait-variety',title:'Köderwechsel',desc:'Fange Fische mit 2 unterschiedlichen Ködern.',reward:20,kind:'uniqueBaits',target:2},
-  {id:'m_predator1',difficulty:'medium',category:'fishgroup',family:'predator-group',fishTheme:true,title:'Raubfischkontakt',desc:'Fange einen Raubfisch.',reward:20,kind:'groupCount',target:1,group:'predator'},
-  {id:'m_peace2',difficulty:'medium',category:'fishgroup',family:'peaceful-group',fishTheme:true,title:'Friedfischrunde',desc:'Fange 2 Friedfische.',reward:20,kind:'groupCount',target:2,group:'peaceful'},
-  {id:'m_artificial1',difficulty:'medium',category:'method',family:'artificial-method',title:'Aktiv gesucht',desc:'Fange einen Fisch mit Kunstköder.',reward:20,kind:'artificialCount',target:1},
-  {id:'m_depth4',difficulty:'medium',category:'depth',family:'depth',title:'Tiefe gesucht',desc:'Fange einen Fisch aus mindestens 4,0 m Tiefe.',reward:20,kind:'depthCount',target:1,minDepth:4},
-  {id:'m_size50',difficulty:'medium',category:'size',family:'size',title:'Halber Meter',desc:'Fange einen Fisch über 50 cm.',reward:20,kind:'sizeCount',target:1,minCm:50},
-  {id:'m_spots2',difficulty:'medium',category:'tactic',family:'spot-tactic',title:'Zwei Plätze',desc:'Fange jeweils einen Fisch an 2 deutlich unterschiedlichen Angelstellen.',reward:20,kind:'uniqueSpots',target:2},
-  {id:'m_bream',difficulty:'medium',category:'target',family:'fish-target',fishTheme:true,title:'Breit gebaut',desc:'Fange eine Brasse.',reward:20,kind:'targetSpecies',target:1,species:['bream']},
-  {id:'m_tench',difficulty:'medium',category:'target',family:'fish-target',fishTheme:true,title:'Goldgrün',desc:'Fange eine Schleie.',reward:25,kind:'targetSpecies',target:1,species:['tench']},
-  {id:'m_carp',difficulty:'medium',category:'target',family:'fish-target',fishTheme:true,title:'Karpfenzeit',desc:'Fange einen Schuppen-, Spiegel- oder Graskarpfen.',reward:25,kind:'targetSpecies',target:1,species:['carp','mirrorcarp','grasscarp']},
-  {id:'m_perch_lure',difficulty:'medium',category:'target',family:'fish-target',fishTheme:true,title:'Barsch aktiv',desc:'Fange einen Flussbarsch mit Kunstköder.',reward:25,kind:'targetMethod',target:1,species:['perch'],method:'artificial'},
+  {id:'m_species3',difficulty:'medium',category:'variety',family:'species-variety',title:'Bunter Kescher',desc:'Fange 3 verschiedene Fischarten.',reward:35,kind:'uniqueSpecies',target:3},
+  {id:'m_natural2',difficulty:'medium',category:'method',family:'natural-method',title:'Naturköder-Session',desc:'Fange 2 Fische mit Naturködern.',reward:35,kind:'naturalCount',target:2},
+  {id:'m_baits2',difficulty:'medium',category:'bait',family:'bait-variety',title:'Köderwechsel',desc:'Fange Fische mit 2 unterschiedlichen Ködern.',reward:35,kind:'uniqueBaits',target:2},
+  {id:'m_predator1',difficulty:'medium',category:'fishgroup',family:'predator-group',fishTheme:true,title:'Raubfischkontakt',desc:'Fange einen Raubfisch.',reward:35,kind:'groupCount',target:1,group:'predator'},
+  {id:'m_peace2',difficulty:'medium',category:'fishgroup',family:'peaceful-group',fishTheme:true,title:'Friedfischrunde',desc:'Fange 2 Friedfische.',reward:35,kind:'groupCount',target:2,group:'peaceful'},
+  {id:'m_artificial1',difficulty:'medium',category:'method',family:'artificial-method',title:'Aktiv gesucht',desc:'Fange einen Fisch mit Kunstköder.',reward:35,kind:'artificialCount',target:1},
+  {id:'m_depth4',difficulty:'medium',category:'depth',family:'depth',title:'Tiefe gesucht',desc:'Fange einen Fisch aus mindestens 4,0 m Tiefe.',reward:35,kind:'depthCount',target:1,minDepth:4},
+  {id:'m_size50',difficulty:'medium',category:'size',family:'size',title:'Halber Meter',desc:'Fange einen Fisch über 50 cm.',reward:35,kind:'sizeCount',target:1,minCm:50},
+  {id:'m_spots2',difficulty:'medium',category:'tactic',family:'spot-tactic',title:'Zwei Plätze',desc:'Fange jeweils einen Fisch an 2 deutlich unterschiedlichen Angelstellen.',reward:35,kind:'uniqueSpots',target:2},
+  {id:'m_bream',difficulty:'medium',category:'target',family:'fish-target',fishTheme:true,title:'Breit gebaut',desc:'Fange eine Brasse.',reward:35,kind:'targetSpecies',target:1,species:['bream']},
+  {id:'m_tench',difficulty:'medium',category:'target',family:'fish-target',fishTheme:true,title:'Goldgrün',desc:'Fange eine Schleie.',reward:40,kind:'targetSpecies',target:1,species:['tench']},
+  {id:'m_carp',difficulty:'medium',category:'target',family:'fish-target',fishTheme:true,title:'Karpfenzeit',desc:'Fange einen Schuppen-, Spiegel- oder Graskarpfen.',reward:40,kind:'targetSpecies',target:1,species:['carp','mirrorcarp','grasscarp']},
+  {id:'m_perch_lure',difficulty:'medium',category:'target',family:'fish-target',fishTheme:true,title:'Barsch aktiv',desc:'Fange einen Flussbarsch mit Kunstköder.',reward:40,kind:'targetMethod',target:1,species:['perch'],method:'artificial'},
 
   // SCHWER
-  {id:'h_species4',difficulty:'hard',category:'variety',family:'species-variety',title:'Artenkenner',desc:'Fange 4 verschiedene Fischarten.',reward:30,kind:'uniqueSpecies',target:4},
-  {id:'h_size70',difficulty:'hard',category:'size',family:'size',title:'Großer Fang',desc:'Fange einen Fisch über 70 cm.',reward:30,kind:'sizeCount',target:1,minCm:70},
-  {id:'h_predators2',difficulty:'hard',category:'fishgroup',family:'predator-group',fishTheme:true,title:'Räuber unterwegs',desc:'Fange 2 Raubfische.',reward:30,kind:'groupCount',target:2,group:'predator'},
-  {id:'h_baits3',difficulty:'hard',category:'bait',family:'bait-variety',title:'Köderkiste genutzt',desc:'Fange Fische mit 3 unterschiedlichen Ködern.',reward:30,kind:'uniqueBaits',target:3},
-  {id:'h_allround',difficulty:'hard',category:'method',family:'mixed-method',title:'Allround-Angler',desc:'Fange mindestens einen Fisch mit Naturköder und einen mit Kunstköder.',reward:30,kind:'allroundMethods',target:2},
-  {id:'h_depth4x2',difficulty:'hard',category:'depth',family:'depth',title:'Tiefenjäger',desc:'Fange 2 Fische aus mindestens 4,0 m Tiefe.',reward:30,kind:'depthCount',target:2,minDepth:4},
-  {id:'h_mobile',difficulty:'hard',category:'tactic',family:'spot-tactic',title:'Mobil bleiben',desc:'Fange 3 Fische an mindestens 2 deutlich unterschiedlichen Angelstellen.',reward:30,kind:'catchesAcrossSpots',target:3,minSpots:2},
-  {id:'h_big_nofeed',difficulty:'hard',category:'tactic',family:'feed-tactic',title:'Groß ohne Futter',desc:'Fange einen Fisch über 60 cm außerhalb eines aktiven Futterplatzes.',reward:35,kind:'sizeNoFeed',target:1,minCm:60},
-  {id:'h_baitfish_predator',difficulty:'hard',category:'method',family:'baitfish-method',fishTheme:true,title:'Raubfischansitz',desc:'Fange einen Raubfisch mit Köderfisch.',reward:35,kind:'groupMethod',target:1,group:'predator',method:'baitfish'},
-  {id:'h_pike_zander',difficulty:'hard',category:'target',family:'fish-target',fishTheme:true,title:'Räuber im Fokus',desc:'Fange einen Hecht oder Zander.',reward:30,kind:'targetSpecies',target:1,species:['pike','zander']},
-  {id:'h_catch5',difficulty:'hard',category:'volume',family:'catch-count',title:'Guter Angeltag',desc:'Fange insgesamt 5 Fische.',reward:30,kind:'count',target:5}
+  {id:'h_species4',difficulty:'hard',category:'variety',family:'species-variety',title:'Artenkenner',desc:'Fange 4 verschiedene Fischarten.',reward:50,kind:'uniqueSpecies',target:4},
+  {id:'h_size70',difficulty:'hard',category:'size',family:'size',title:'Großer Fang',desc:'Fange einen Fisch über 70 cm.',reward:50,kind:'sizeCount',target:1,minCm:70},
+  {id:'h_predators2',difficulty:'hard',category:'fishgroup',family:'predator-group',fishTheme:true,title:'Räuber unterwegs',desc:'Fange 2 Raubfische.',reward:50,kind:'groupCount',target:2,group:'predator'},
+  {id:'h_baits3',difficulty:'hard',category:'bait',family:'bait-variety',title:'Köderkiste genutzt',desc:'Fange Fische mit 3 unterschiedlichen Ködern.',reward:50,kind:'uniqueBaits',target:3},
+  {id:'h_allround',difficulty:'hard',category:'method',family:'mixed-method',title:'Allround-Angler',desc:'Fange mindestens einen Fisch mit Naturköder und einen mit Kunstköder.',reward:50,kind:'allroundMethods',target:2},
+  {id:'h_depth4x2',difficulty:'hard',category:'depth',family:'depth',title:'Tiefenjäger',desc:'Fange 2 Fische aus mindestens 4,0 m Tiefe.',reward:50,kind:'depthCount',target:2,minDepth:4},
+  {id:'h_mobile',difficulty:'hard',category:'tactic',family:'spot-tactic',title:'Mobil bleiben',desc:'Fange 3 Fische an mindestens 2 deutlich unterschiedlichen Angelstellen.',reward:50,kind:'catchesAcrossSpots',target:3,minSpots:2},
+  {id:'h_big_nofeed',difficulty:'hard',category:'tactic',family:'feed-tactic',title:'Groß ohne Futter',desc:'Fange einen Fisch über 60 cm außerhalb eines aktiven Futterplatzes.',reward:60,kind:'sizeNoFeed',target:1,minCm:60},
+  {id:'h_baitfish_predator',difficulty:'hard',category:'method',family:'baitfish-method',fishTheme:true,title:'Raubfischansitz',desc:'Fange einen Raubfisch mit Köderfisch.',reward:60,kind:'groupMethod',target:1,group:'predator',method:'baitfish'},
+  {id:'h_pike_zander',difficulty:'hard',category:'target',family:'fish-target',fishTheme:true,title:'Räuber im Fokus',desc:'Fange einen Hecht oder Zander.',reward:50,kind:'targetSpecies',target:1,species:['pike','zander']},
+  {id:'h_catch5',difficulty:'hard',category:'volume',family:'catch-count',title:'Guter Angeltag',desc:'Fange insgesamt 5 Fische.',reward:50,kind:'count',target:5}
 ];
 let anglingDailyQuestState=null;
 let anglingDailyQuestIntroTimer=0;
@@ -34645,9 +34658,9 @@ function attemptAnglingLanding(){
 }
 
 const ANGLING_EP_REWARD_RANGE={
-  goby:[18,27],roach:[19,28],rudd:[20,28],sunfish:[19,28],perch:[22,32],bream:[25,35],
-  tench:[28,38],eel:[30,42],zander:[40,55],carp:[45,60],mirrorcarp:[50,65],pike:[50,70],
-  sturgeon:[60,80],grasscarp:[65,85],catfish:[70,100]
+  goby:[20,30],roach:[22,32],rudd:[23,33],sunfish:[22,32],perch:[26,38],bream:[30,42],
+  tench:[34,47],eel:[36,50],zander:[48,65],carp:[54,72],mirrorcarp:[60,78],pike:[60,84],
+  sturgeon:[72,96],grasscarp:[78,102],catfish:[85,120]
 };
 function anglingEpRewardForCatch(caught){
   if(caught.species==='koi')return caught.snagged?500:1000;
