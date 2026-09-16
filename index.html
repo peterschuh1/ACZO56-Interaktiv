@@ -14719,6 +14719,45 @@ function makeParticlePool(count,color,fadeAlpha=.22,useFog=false){
 // V1.2 BUBBLE STREAM FIX: Lang lebende Gründelblasen dürfen nicht vom nächsten
 // Burst überschrieben werden, bevor sie nach 3–5 m Aufstieg die Oberfläche erreichen.
 const bubblePool=makeParticlePool(640,0xdaf7ff);
+// V1.2 ECHTE LUFTBLASEN-DARSTELLUNG:
+// Der generische Soft-Point-Shader eignet sich für Schwebstoffe/Sediment, aber nicht
+// für Luftblasen. Blasen brauchen einen hellen Rand, einen transparenten Kern und
+// eine Mindestgröße auf dem Bildschirm, sonst verschwinden sie im blauen Wasser.
+bubblePool.points.material.dispose();
+bubblePool.points.material=new THREE.ShaderMaterial({
+  transparent:true,depthWrite:false,depthTest:true,
+  blending:THREE.NormalBlending,
+  uniforms:{bubbleColor:{value:new THREE.Color(0xeafcff)}},
+  vertexShader:`
+    attribute float pSize;
+    attribute float pAlpha;
+    varying float vAlpha;
+    void main(){
+      vec4 mv=modelViewMatrix*vec4(position,1.0);
+      float perspective=pSize*(260.0/max(1.0,-mv.z));
+      gl_PointSize=clamp(perspective,7.0,34.0);
+      vAlpha=pAlpha;
+      gl_Position=projectionMatrix*mv;
+    }
+  `,
+  fragmentShader:`
+    uniform vec3 bubbleColor;
+    varying float vAlpha;
+    void main(){
+      vec2 q=gl_PointCoord-.5;
+      float d=length(q);
+      if(d>.5)discard;
+      float rim=smoothstep(.50,.37,d)*smoothstep(.25,.38,d);
+      float highlight=1.0-smoothstep(.035,.13,length(q-vec2(-.15,.15)));
+      float body=(1.0-smoothstep(.48,.28,d))*.12;
+      float alpha=(rim*.88+highlight*.72+body)*vAlpha;
+      if(alpha<.025)discard;
+      gl_FragColor=vec4(bubbleColor,alpha);
+    }
+  `
+});
+bubblePool.points.renderOrder=5.45;
+bubblePool.points.frustumCulled=false;
 const sedimentPool=makeParticlePool(180,0x9b8766);
 
 // V6.29: sichtbare Grundwolken. Maximal drei Wolken bleiben gleichzeitig aktiv;
@@ -20940,7 +20979,7 @@ function updateParticlePool(pool,dt,isBubble){
         pool.life[i]=0;pool.alphas[i]=0;pool.positions[k]=-999;continue;
       }
       const age=1-pool.life[i]/Math.max(.01,pool.maxLife[i]);
-      pool.alphas[i]=.62*Math.min(1,age*5)*Math.min(1,pool.life[i]/1.2);
+      pool.alphas[i]=.92*Math.min(1,age*6)*Math.min(1,pool.life[i]/.75);
     }else{
       const q=pool.life[i]/Math.max(.01,pool.maxLife[i]);
       const fadeIn=Math.min(1,(1-q)*8),fadeOut=Math.min(1,q*3);
