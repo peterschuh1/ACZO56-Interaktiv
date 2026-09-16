@@ -14747,12 +14747,18 @@ bubblePool.points.material=new THREE.ShaderMaterial({
       vec2 q=gl_PointCoord-.5;
       float d=length(q);
       if(d>.5)discard;
-      float rim=smoothstep(.50,.468,d)*smoothstep(.405,.462,d);
+      float outer=smoothstep(.50,.482,d)*smoothstep(.445,.478,d);
+      float rim=smoothstep(.485,.458,d)*smoothstep(.400,.452,d);
       float highlight=1.0-smoothstep(.018,.060,length(q-vec2(-.16,.16)));
       float body=(1.0-smoothstep(.47,.33,d))*.018;
-      float alpha=(rim*.27+highlight*.15+body)*vAlpha;
-      if(alpha<.025)discard;
-      gl_FragColor=vec4(bubbleColor,alpha);
+      float alpha=(outer*.22+rim*.27+highlight*.15+body)*vAlpha;
+      if(alpha<.020)discard;
+      // Zweifarbiger Blasenrand: der sehr dünne dunklere Außenrand hält die
+      // Blase auch vor der hellen Wasseroberfläche sichtbar; der helle Innenrand
+      // erhält den bisherigen transparenten Eindruck vor dunklem Grund.
+      vec3 edgeColor=mix(vec3(.20,.48,.58),bubbleColor,
+                         clamp((rim*.90+highlight*.65+body*2.0)/(outer+rim+.001),0.0,1.0));
+      gl_FragColor=vec4(edgeColor,alpha);
     }
   `
 });
@@ -35096,9 +35102,10 @@ function spawnGroundFeedingBubbles(x,y,z,strength=1,surfaceHint=true,mode='ambie
   // erzeugte den Oberflächenring sofort, obwohl die eigentliche Blase nach nur
   // wenigen Sekunden starb und die Oberfläche aus 3–5 m Tiefe nie erreichen konnte.
   // Futterplatz bewusst zurückhaltend: wenige einzelne Blasen pro Gründelimpuls.
-  const count=feedspot
-    ? (Math.random()<.62 ? 1 : 2)
-    : 4+Math.round(4*s);
+  // Natürliches Gründeln bleibt überall dezent: pro tatsächlichem Gründelimpuls
+  // nur einzelne Blasen. Der Futterplatz wirkt lebhafter, weil dort mehr Fische
+  // und mehr Gründelereignisse stattfinden, nicht weil jeder Fisch eine Fontäne erzeugt.
+  const count=Math.random()<.62 ? 1 : 2;
   const surface=anglingSurfaceZ(x,y);
   for(let i=0;i<count;i++){
     const a=Math.random()*Math.PI*2;
