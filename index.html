@@ -38093,11 +38093,17 @@ function aczoPerf7Summary(){
  // PERF4: Kameraabhaengige Himmelsdarstellung bleibt bei Interaktion direkt,
  // im Stillstand reichen 8 Hz. Statische Sichtbarkeits-/Shadow-Caster-Pruefungen
  // laufen nur 4 Hz, statt bei jedem kompletten Renderpass.
+ // SONNENFIX: Die sichtbaren Scheiben muessen nach JEDEM Kamera-Update und vor
+ // JEDEM Hauptbild relativ zur aktuellen Kamera stehen. Am Frameende werden sie
+ // fuer Welt-/Nebenberechnungen wieder auf ihre astronomischen Weltpositionen
+ // gesetzt. Wuerde diese billige Positionskorrektur ebenfalls auf 8 Hz
+ // gedrosselt, wechselte der Uebergang in den Himmelblick zwischen Welt- und
+ // Kameraposition und die Sonne schiene seitlich zu springen.
+ if(simulationEnabled)positionCelestialDiscsForMainCamera();
  const aczoCelestialDue=aczoInteractive||aczoPlainMapGesture||(frameNow-aczoPerf4LastCelestialAt>=125);
  if(aczoCelestialDue){
    aczoPerf4LastCelestialAt=frameNow;
    if(simulationEnabled){
-     positionCelestialDiscsForMainCamera();
      enforceCelestialDiscVisibility();
      updateCelestialReflectionScreens();
      updateCelestialDepthLighting();
