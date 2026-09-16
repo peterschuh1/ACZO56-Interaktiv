@@ -14734,8 +14734,8 @@ bubblePool.points.material=new THREE.ShaderMaterial({
     varying float vAlpha;
     void main(){
       vec4 mv=modelViewMatrix*vec4(position,1.0);
-      float perspective=pSize*(92.0/max(1.0,-mv.z));
-      gl_PointSize=clamp(perspective,2.4,9.0);
+      float perspective=pSize*(78.0/max(1.0,-mv.z));
+      gl_PointSize=clamp(perspective,2.0,7.2);
       vAlpha=pAlpha;
       gl_Position=projectionMatrix*mv;
     }
@@ -14747,10 +14747,10 @@ bubblePool.points.material=new THREE.ShaderMaterial({
       vec2 q=gl_PointCoord-.5;
       float d=length(q);
       if(d>.5)discard;
-      float rim=smoothstep(.50,.445,d)*smoothstep(.365,.435,d);
-      float highlight=1.0-smoothstep(.025,.075,length(q-vec2(-.16,.16)));
-      float body=(1.0-smoothstep(.47,.31,d))*.035;
-      float alpha=(rim*.40+highlight*.24+body)*vAlpha;
+      float rim=smoothstep(.50,.468,d)*smoothstep(.405,.462,d);
+      float highlight=1.0-smoothstep(.018,.060,length(q-vec2(-.16,.16)));
+      float body=(1.0-smoothstep(.47,.33,d))*.018;
+      float alpha=(rim*.27+highlight*.15+body)*vAlpha;
       if(alpha<.025)discard;
       gl_FragColor=vec4(bubbleColor,alpha);
     }
@@ -20979,7 +20979,7 @@ function updateParticlePool(pool,dt,isBubble){
         pool.life[i]=0;pool.alphas[i]=0;pool.positions[k]=-999;continue;
       }
       const age=1-pool.life[i]/Math.max(.01,pool.maxLife[i]);
-      pool.alphas[i]=.58*Math.min(1,age*5)*Math.min(1,pool.life[i]/.90);
+      pool.alphas[i]=.44*Math.min(1,age*5)*Math.min(1,pool.life[i]/.90);
     }else{
       const q=pool.life[i]/Math.max(.01,pool.maxLife[i]);
       const fadeIn=Math.min(1,(1-q)*8),fadeOut=Math.min(1,q*3);
@@ -35095,7 +35095,10 @@ function spawnGroundFeedingBubbles(x,y,z,strength=1,surfaceHint=true,mode='ambie
   // kompletten Weg bis zur Oberfläche sichtbar zurücklegen. Der frühere Effekt
   // erzeugte den Oberflächenring sofort, obwohl die eigentliche Blase nach nur
   // wenigen Sekunden starb und die Oberfläche aus 3–5 m Tiefe nie erreichen konnte.
-  const count=(feedspot?5:4)+Math.round((feedspot?5:4)*s);
+  // Futterplatz bewusst zurückhaltend: wenige einzelne Blasen pro Gründelimpuls.
+  const count=feedspot
+    ? 2+Math.round(2*s)
+    : 4+Math.round(4*s);
   const surface=anglingSurfaceZ(x,y);
   for(let i=0;i<count;i++){
     const a=Math.random()*Math.PI*2;
