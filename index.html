@@ -23192,8 +23192,13 @@ function updateFishActors(dt){
       if(!Number.isFinite(f.sideFlipCandidateSince))f.sideFlipCandidateSince=0;
       if(!Number.isFinite(f.sideFlipCandidate))f.sideFlipCandidate=0;
 
-      const desiredSide=screenX>.14?-1:(screenX<-.14?1:0);
+      // Kopfseite mit echter Hysterese: Bei einer klaren Richtungsänderung muss
+      // der Fisch schnell genug drehen, sonst schwimmt die Fototextur sichtbar
+      // rückwärts. Nahe der Frontalansicht bleibt die bisherige Seite dagegen
+      // stabil und kann nicht frameweise hin und her springen.
+      const desiredSide=screenX>.18?-1:(screenX<-.18?1:0);
       const wantsFlip=desiredSide!==0&&desiredSide!==f.screenSide;
+      const strongOpposite=Math.abs(screenX)>.42;
 
       if(wantsFlip){
         if(f.sideFlipCandidate!==desiredSide){
@@ -23201,15 +23206,16 @@ function updateFishActors(dt){
           f.sideFlipCandidateSince=fishWorldTime;
         }else if(
           fishWorldTime>=f.sideFlipCooldownUntil &&
-          fishWorldTime-f.sideFlipCandidateSince>=.62
+          fishWorldTime-f.sideFlipCandidateSince>=(strongOpposite?.12:.28)
         ){
           f.screenSide=desiredSide;
-          f.sideFlipCooldownUntil=fishWorldTime+1.10;
+          f.sideFlipCooldownUntil=fishWorldTime+(strongOpposite?.32:.55);
           f.sideFlipCandidate=0;
           f.sideFlipCandidateSince=0;
         }
-      }else{
-        // Gleiche Richtung oder fast frontal: aktuelle Ausrichtung beibehalten.
+      }else if(Math.abs(screenX)>.08){
+        // Nur bei einer wirklich erkennbaren Bewegungsrichtung Kandidaten löschen.
+        // Im frontalen Totbereich bleibt die aktuelle Kopfseite unangetastet.
         f.sideFlipCandidate=0;
         f.sideFlipCandidateSince=0;
       }
@@ -23219,15 +23225,15 @@ function updateFishActors(dt){
       // Hechte ändern bei der Jagd ihre vertikale Bewegungsrichtung sehr häufig.
       // Ihre Fotofläche folgt dem weiterhin, aber deutlich gedämpfter, damit der
       // Kopf nicht mehr bei jedem kleinen Kurswechsel hysterisch nickt.
-      const pikePitchStable=species==='pike';
-      const pitchLimit=pikePitchStable
-        ?THREE.MathUtils.degToRad(7)
+      const predatorPitchStable=['pike','zander','perch','catfish'].includes(species);
+      const pitchLimit=predatorPitchStable
+        ?THREE.MathUtils.degToRad(6)
         :(strictBottomFish.has(species)?THREE.MathUtils.degToRad(8):MAX_FISH_PITCH);
       let targetPitch=isLureHunter?0:THREE.MathUtils.clamp(
         Math.atan2(fishMoveDelta.z,Math.max(.0001,horizontalSpeed)),
         -pitchLimit,pitchLimit
       );
-      if(pikePitchStable)targetPitch*=.62;
+      if(predatorPitchStable)targetPitch*=.52;
       // P63: Grundeln bleiben optisch immer horizontal. Ihre Bodennähe wird
       // ausschließlich über die Z-Position geregelt, nicht über Kopfneigung.
       if(species==='goby')targetPitch=0;
@@ -23236,14 +23242,14 @@ function updateFishActors(dt){
       // aber nicht mehr jeden winzigen Richtungswechsel sofort sichtbar mitmachen.
       // Gerade bei Jagd und Bodenkorrekturen wechselte das Vorzeichen der Z-Richtung
       // zuvor frameweise und ließ den Kopf unnatürlich hoch/runter zittern.
-      const pitchDeadband=THREE.MathUtils.degToRad(pikePitchStable?3.4:(strictBottomFish.has(species)?3.2:1.8));
+      const pitchDeadband=THREE.MathUtils.degToRad(predatorPitchStable?3.8:(strictBottomFish.has(species)?3.2:1.8));
       if(Math.abs(targetPitch)<pitchDeadband)targetPitch=0;
       if(!Number.isFinite(f.visualPitch))f.visualPitch=0;
 
-      const pitchLambda=pikePitchStable?2.0:((isHunter||isLureHunter)?4.8:(isFleeing?4.0:2.2));
+      const pitchLambda=predatorPitchStable?1.55:((isHunter||isLureHunter)?4.8:(isFleeing?4.0:2.2));
       const pitchBlend=1-Math.exp(-pitchLambda*Math.max(.001,step));
       const blendedPitch=THREE.MathUtils.lerp(f.visualPitch,targetPitch,pitchBlend);
-      const maxPitchRate=pikePitchStable?.15:((isHunter||isLureHunter)?.66:(isFleeing?.56:.28)); // P58: ruhiger, kein Kopf-Pumpen
+      const maxPitchRate=predatorPitchStable?.105:((isHunter||isLureHunter)?.66:(isFleeing?.56:.28)); // P58: ruhiger, kein Kopf-Pumpen
       const maxPitchStep=maxPitchRate*Math.max(.001,step);
       f.visualPitch+=THREE.MathUtils.clamp(
         blendedPitch-f.visualPitch,
@@ -23260,11 +23266,13 @@ function updateFishActors(dt){
       const lateralMotion=Math.abs(screenX);
       const depthShare=Math.abs(depthMotion)/Math.max(.001,Math.abs(depthMotion)+lateralMotion);
       const depthTurn=THREE.MathUtils.smoothstep(depthShare,.16,.94);
-      const targetDepthYaw=Math.abs(depthMotion)<.08
+      const targetDepthYaw=Math.abs(depthMotion)<.14
         ?0
         :-f.screenSide*Math.sign(depthMotion)*MAX_FISH_DEPTH_YAW*depthTurn;
       if(!Number.isFinite(f.visualDepthYaw))f.visualDepthYaw=0;
-      const yawLambda=(isHunter||isLureHunter)?5.2:(isFleeing?4.4:2.7);
+      // Tiefendrehung bewusst ruhiger. Kleine Kurskorrekturen dürfen die
+      // Billboard-Fläche nicht mehr sichtbar links/rechts schaukeln lassen.
+      const yawLambda=(isHunter||isLureHunter)?3.4:(isFleeing?3.2:2.15);
       f.visualDepthYaw=THREE.MathUtils.lerp(
         f.visualDepthYaw,targetDepthYaw,
         1-Math.exp(-yawLambda*Math.max(.001,step))
