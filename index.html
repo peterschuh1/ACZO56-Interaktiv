@@ -14724,7 +14724,7 @@ function makeParticlePool(count,color,fadeAlpha=.22,useFog=false){
   return {count,positions,sizes,alphas,life,maxLife,vx,vy,vz,geo,points,cursor:0,fadeAlpha};
 }
 const bubblePool=makeParticlePool(42,0xdaf7ff);
-const sedimentPool=makeParticlePool(84,0x9b8766);
+const sedimentPool=makeParticlePool(84,0x9b8766,.18);
 
 // V6.29: sichtbare Grundwolken. Maximal drei Wolken bleiben gleichzeitig aktiv;
 // bei einer vierten wird die älteste sofort wiederverwendet.
@@ -14750,8 +14750,10 @@ const anglingFeedingFxPos=new THREE.Vector3();
 function spawnAnglingSedimentCloud(x,y,z,strength=1){
   const cloud=anglingSedimentClouds[anglingSedimentCloudCursor++%anglingSedimentClouds.length];
   cloud.position.set(x+(Math.random()-.5)*.05,y+(Math.random()-.5)*.05,z+.045);
-  cloud.userData.life=cloud.userData.maxLife=2.8+Math.random()*.7;
-  cloud.userData.startSize=.26+.06*strength;cloud.userData.endSize=.92+.26*strength;
+  // Unter Wasser baut sich eine aufgewirbelte Grundwolke langsam auf und
+  // bleibt mehrere Sekunden weich stehen, statt kurz aufzublitzen.
+  cloud.userData.life=cloud.userData.maxLife=7.5+Math.random()*2.8;
+  cloud.userData.startSize=.18+.045*strength;cloud.userData.endSize=1.04+.30*strength;
   cloud.material.rotation=Math.random()*Math.PI;cloud.material.opacity=0;cloud.scale.setScalar(cloud.userData.startSize);cloud.visible=true;
 }
 function updateAnglingSedimentClouds(dt){
@@ -14760,9 +14762,12 @@ function updateAnglingSedimentClouds(dt){
     cloud.userData.life-=dt;
     if(cloud.userData.life<=0){cloud.visible=false;cloud.material.opacity=0;continue;}
     const p=1-cloud.userData.life/cloud.userData.maxLife;
-    cloud.scale.setScalar(THREE.MathUtils.lerp(cloud.userData.startSize,cloud.userData.endSize,1-Math.pow(1-p,2)));
-    cloud.position.z+=dt*.012;cloud.material.rotation+=dt*.06;
-    cloud.material.opacity=.64*Math.min(1,p*6)*Math.min(1,cloud.userData.life/1.05);
+    const expansion=THREE.MathUtils.smoothstep(p,0,1);
+    const fadeIn=THREE.MathUtils.smoothstep(p,0,.24);
+    const fadeOut=1-THREE.MathUtils.smoothstep(p,.58,1);
+    cloud.scale.setScalar(THREE.MathUtils.lerp(cloud.userData.startSize,cloud.userData.endSize,expansion));
+    cloud.position.z+=dt*.006;cloud.material.rotation+=dt*.025;
+    cloud.material.opacity=.43*fadeIn*fadeOut;
   }
 }
 // Große, kräftige Blutwolke: weiterhin nur ein einziges Partikelsystem.
@@ -20921,15 +20926,22 @@ function updateParticlePool(pool,dt,isBubble){
     if(pool.life[i]<=0) continue;
     const k=i*3;
     pool.life[i]-=dt;
-    if(pool.life[i]<=0||(isBubble&&pool.positions[k+2]>-.07)){
+    const reachedSurface=isBubble&&pool.positions[k+2]>-.07;
+    if(pool.life[i]<=0||reachedSurface){
+      // Die Blase platzt erst an der Oberfläche und hinterlässt dort einen
+      // sehr kleinen, schnell auslaufenden Ring.
+      if(reachedSurface&&anglingMode&&Math.random()<.62){
+        anglingFeedingFxPos.set(pool.positions[k],pool.positions[k+1],anglingSurfaceZ(pool.positions[k],pool.positions[k+1]));
+        spawnAnglingSurfaceEffect(anglingFeedingFxPos,.055+Math.random()*.035,.58+Math.random()*.20,1.05+Math.random()*.42,.055+Math.random()*.035,.18+Math.random()*.09);
+      }
       pool.life[i]=0;pool.alphas[i]=0;pool.positions[k]=-999;continue;
     }
     pool.positions[k]+=pool.vx[i]*dt;
     pool.positions[k+1]+=pool.vy[i]*dt;
     pool.positions[k+2]+=pool.vz[i]*dt;
     if(isBubble){
-      pool.positions[k]+=.012*Math.sin(underwaterFxTime*2.1+i)*dt;
-      pool.positions[k+1]+=.012*Math.cos(underwaterFxTime*1.7+i)*dt;
+      pool.positions[k]+=.004*Math.sin(underwaterFxTime*2.1+i)*dt;
+      pool.positions[k+1]+=.004*Math.cos(underwaterFxTime*1.7+i)*dt;
       pool.alphas[i]=.48*Math.min(1,pool.life[i]/Math.max(.01,pool.maxLife[i]*.24));
     }else{
       const q=pool.life[i]/Math.max(.01,pool.maxLife[i]);
@@ -21009,13 +21021,13 @@ function updateUnderwaterEffects(dt){
     });
     if(bottomFish.length){
       const f=bottomFish[Math.floor(Math.random()*bottomFish.length)],d=pondDepthAt(f.obj.position.x,f.obj.position.y);
-      const z=-d*exaggeration+.07,n=9+Math.floor(Math.random()*6);
+      const z=-d*exaggeration+.07,n=6+Math.floor(Math.random()*4);
       for(let i=0;i<n;i++){
         const a=Math.random()*Math.PI*2,s=.025+Math.random()*.10;
         spawnPoolParticle(
           sedimentPool,f.obj.position.x+(Math.random()-.5)*.36,f.obj.position.y+(Math.random()-.5)*.36,z+Math.random()*.12,
-          .75+Math.random()*1.0,2.8+Math.random()*2.4,
-          Math.cos(a)*s,Math.sin(a)*s,.012+Math.random()*.035,.22
+          .62+Math.random()*.72,6.0+Math.random()*3.0,
+          Math.cos(a)*s*.55,Math.sin(a)*s*.55,.006+Math.random()*.018,.18
         );
       }
     }
@@ -21591,7 +21603,9 @@ function initialFishFeedSeed(name,index){
   // Ein junger Futterplatz beginnt mit einer kleinen, ausgewogenen Kerngruppe.
   // Nur diese wenigen Tiere sind garantiert; alle weiteren bleiben zufaellig.
   // So dominieren weder Schuppen- noch Spiegelkarpfen den Platz.
-  const guaranteed={roach:3,rudd:2,bream:2,tench:2,carp:1,mirrorcarp:1,sturgeon:1};
+  // Ein Hecht bleibt als einzelner, vorsichtiger Randräuber verfügbar. Er
+  // greift nur über den bestehenden Jagd-Timer an und löst keinen Dauerstress aus.
+  const guaranteed={roach:3,rudd:2,bream:2,tench:2,carp:1,mirrorcarp:1,sturgeon:1,pike:1};
   const count=guaranteed[name]||0;
   return index<count ? index*.003 : Math.random();
 }
@@ -22339,6 +22353,7 @@ const huntRules={
   zander:['goby'],
   eel:['goby']
 };
+const smallHuntPreySpecies=new Set(['goby','sunfish','roach','rudd','perch']);
 let fishWorldTime=0,nextHuntAt=12+Math.random()*8,activeHunt=null,lastHuntPredatorSpecies=null;
 
 function huntSpeciesIsActive(species){
@@ -22350,6 +22365,10 @@ function huntSpeciesIsActive(species){
 
 function startHuntEvent(){
   const pairs=[];
+  const feedRaidActive=!!(anglingFeedActive&&performance.now()<anglingFeedActive.expires);
+  const feedRaidRadius=feedRaidActive
+    ? Math.pow(((ANGLING_FEED_CATALOG[anglingFeedActive.type]||ANGLING_FEED_CATALOG.normal).radius*1.85),2)
+    : 0;
   for(const predator of fishActors){
     const predatorSpecies=predator.obj.userData.species;
     const allowedPrey=huntRules[predatorSpecies];
@@ -22369,7 +22388,11 @@ function startHuntEvent(){
         const ndc=nearest.obj.position.clone().project(camera);
         const onScreen=ndc.z>-1&&ndc.z<1&&Math.abs(ndc.x)<.82&&Math.abs(ndc.y)<.82;
         const repeatPenalty=predatorSpecies===lastHuntPredatorSpecies?12:0;
-        const score=pairD+cameraD*.48+(onScreen?-55:28)+(pairD>16?35:0)+repeatPenalty;
+        const preyAtFeed=feedRaidActive&&smallHuntPreySpecies.has(selectedPreySpecies)&&
+          Math.pow(nearest.obj.position.x-anglingFeedActive.x,2)+Math.pow(nearest.obj.position.y-anglingFeedActive.y,2)<feedRaidRadius;
+        // Bei einem aktiven Futterplatz bevorzugt die vorhandene Jagdlogik
+        // gelegentlich dessen Rand. Es entsteht kein zusätzlicher Dauer-Timer.
+        const score=pairD+cameraD*.48+(onScreen?-55:28)+(pairD>16?35:0)+repeatPenalty+(preyAtFeed?-42:0);
         pairs.push({predator,prey:nearest,score,pairD,onScreen,cameraD});
       }
     }
@@ -22385,8 +22408,9 @@ function startHuntEvent(){
   const predatorPos=pair.predator.obj.position;
   const preyName=pair.prey.obj.userData.species;
   const fleeing=fishActors.filter(f=>
-    f.obj.userData.species===preyName&&!f.obj.userData.hiddenByHunt&&
-    f.obj.position.distanceToSquared(pair.prey.obj.position)<42
+    (f===pair.prey||smallHuntPreySpecies.has(f.obj.userData.species))&&
+    !f.obj.userData.hiddenByHunt&&
+    f.obj.position.distanceToSquared(pair.prey.obj.position)<49
   );
   for(const f of fleeing){
     const away=f.obj.position.clone().sub(predatorPos);
@@ -22394,7 +22418,7 @@ function startHuntEvent(){
     away.z*=.22;away.normalize();
     f.huntFleeTarget=f.obj.position.clone().addScaledVector(away,4.8+Math.random()*3.6);
     let d=pondDepthAt(f.huntFleeTarget.x,f.huntFleeTarget.y);
-    if(d==null||d<.38) randomSpeciesPoint(preyName,f.huntFleeTarget);
+    if(d==null||d<.38) randomSpeciesPoint(f.obj.userData.species,f.huntFleeTarget);
     else{
       const bottom=-d*exaggeration;
       if(preyName==='goby') f.huntFleeTarget.z=bottom+.065;
@@ -22602,14 +22626,14 @@ function anglingFeedRuleForSpecies(species){
     case 'roach': return {group:'center',threshold:.035,radial:.70,spread:.64,zMin:.08,zMax:.28};
     case 'rudd': return {group:'center',threshold:.022,radial:.78,spread:.72,zMin:.14,zMax:.34};
     case 'bream': return {group:'center',threshold:.08,radial:.82,spread:.58,zMin:.06,zMax:.18};
-    case 'carp': return {group:'center',threshold:.07,radial:.92,spread:.50,zMin:.07,zMax:.16};
-    case 'mirrorcarp': return {group:'center',threshold:.07,radial:.92,spread:.50,zMin:.07,zMax:.16};
+    case 'carp': return {group:'center',threshold:.026,radial:.92,spread:.50,zMin:.07,zMax:.16};
+    case 'mirrorcarp': return {group:'center',threshold:.026,radial:.92,spread:.50,zMin:.07,zMax:.16};
     case 'tench': return {group:'center',threshold:.06,radial:.88,spread:.56,zMin:.04,zMax:.12};
     case 'sturgeon': return {group:'center',threshold:.20,radial:1.02,spread:.44,zMin:.03,zMax:.08};
     case 'perch': return {group:'edge',threshold:.012,radial:1.16,spread:.26,zMin:.22,zMax:.46};
-    case 'pike': return {group:'edge',threshold:.035,radial:1.42,spread:.26,zMin:.18,zMax:.38};
-    case 'zander': return {group:'edge',threshold:.06,radial:1.30,spread:.22,zMin:.06,zMax:.18};
-    case 'catfish': return {group:'edge',threshold:.04,radial:1.54,spread:.24,zMin:.04,zMax:.12};
+    case 'pike': return {group:'edge',threshold:.012,radial:1.42,spread:.26,zMin:.18,zMax:.38};
+    case 'zander': return {group:'edge',threshold:.014,radial:1.30,spread:.22,zMin:.06,zMax:.18};
+    case 'catfish': return {group:'edge',threshold:.010,radial:1.54,spread:.24,zMin:.04,zMax:.12};
     default:return null;
   }
 }
@@ -22693,13 +22717,15 @@ function updateAnglingFeedUnderwaterVisual(dt,lureUnderwaterActive){
 // weiterhin Vorrang hat. Der Stör bleibt neutral und flieht nicht automatisch.
 function anglingLureScareProfile(species){
   switch(species){
-    case 'roach':      return {radius:2.00,chance:1.00,distance:[2.8,4.2],duration:[2.0,2.8]};
-    case 'rudd':       return {radius:2.00,chance:1.00,distance:[2.8,4.2],duration:[2.0,2.8]};
-    case 'bream':      return {radius:2.00,chance:.42,distance:[2.4,3.6],duration:[1.8,2.6]};
-    case 'carp':       return {radius:1.05,chance:.28,distance:[2.5,3.8],duration:[1.9,2.8]};
-    case 'mirrorcarp': return {radius:1.05,chance:.28,distance:[2.5,3.8],duration:[1.9,2.8]};
-    case 'grasscarp':  return {radius:1.08,chance:.30,distance:[2.6,4.0],duration:[1.9,2.8]};
-    case 'tench':      return {radius:.98,chance:.34,distance:[2.2,3.4],duration:[1.8,2.5]};
+    case 'goby':       return {radius:3.00,chance:.80,distance:[2.5,3.8],duration:[1.8,2.5]};
+    case 'sunfish':    return {radius:3.00,chance:.92,distance:[2.8,4.2],duration:[2.0,2.8]};
+    case 'roach':      return {radius:3.00,chance:1.00,distance:[3.0,4.5],duration:[2.0,2.8]};
+    case 'rudd':       return {radius:3.00,chance:1.00,distance:[3.0,4.5],duration:[2.0,2.8]};
+    case 'bream':      return {radius:3.00,chance:.46,distance:[2.6,3.9],duration:[1.8,2.6]};
+    case 'carp':       return {radius:3.00,chance:.30,distance:[2.7,4.0],duration:[1.9,2.8]};
+    case 'mirrorcarp': return {radius:3.00,chance:.30,distance:[2.7,4.0],duration:[1.9,2.8]};
+    case 'grasscarp':  return {radius:3.00,chance:.32,distance:[2.8,4.2],duration:[1.9,2.8]};
+    case 'tench':      return {radius:3.00,chance:.38,distance:[2.4,3.7],duration:[1.8,2.5]};
     default:return null;
   }
 }
@@ -22727,6 +22753,7 @@ function triggerAnglingLureScare(f,cfg){
 
 function updateFishActors(dt){
   const fishNow=performance.now();
+  updateGroundFeedingSurfaceBubbles(fishNow);
   // P30: Der Kunstkoederflug ueber Wasser braucht keine 516-koepfige Unterwasser-
   // Population zu simulieren. Erst die echte Unterwasseransicht aktiviert sie.
   const lureUnderwaterActive=anglingMode&&anglingUsesArtificialLure()&&anglingLure.visible&&anglingCinematicView==='underwater';
@@ -22758,7 +22785,11 @@ function updateFishActors(dt){
   updateAnglingFeedUnderwaterVisual(dt,lureUnderwaterActive);
   if(!fishVisualActive&&!feedWorldActive) return;
   fishWorldTime+=dt;
-  updateHuntSchedule();
+  // Jagden starten nur, wenn die Unterwasserwelt tatsächlich zu sehen ist.
+  // Dadurch wird der seltene Futterplatz-Überfall nicht unbemerkt während der
+  // Uferansicht verbraucht und beim Eintauchen ist er weiterhin erlebbar.
+  if(fishVisualActive)updateHuntSchedule();
+  else if(activeHunt)cancelHuntEvent();
   fishActorFrame++;
   fishPlantTime+=dt;
   fishPlantMat.uniforms.time.value=fishPlantTime;
@@ -23038,10 +23069,9 @@ function updateFishActors(dt){
               floor+.018,
               feedStrength*(feedMode==='feedspot'?.90:1.0)
             );
-            f.feedDustAt=fishWorldTime+(feedMode==='feedspot'?(2.8+Math.random()*2.1):(2.2+Math.random()*1.9));
-          }
-
-          if(fishWorldTime>=f.feedBubbleAt){
+            f.feedDustAt=fishWorldTime+(feedMode==='feedspot'?(6.0+Math.random()*3.5):(5.2+Math.random()*3.2));
+            // Eingeschlossene Bodenluft löst sich zusammen mit derselben
+            // Gründelbewegung – nicht als unabhängiger Dauer-Blasengeber.
             spawnGroundFeedingBubbles(
               f.obj.position.x+(Math.random()-.5)*.08,
               f.obj.position.y+(Math.random()-.5)*.08,
@@ -23050,7 +23080,7 @@ function updateFishActors(dt){
               shoreBubbleHint,
               feedMode
             );
-            f.feedBubbleAt=fishWorldTime+(feedMode==='feedspot'?(4.6+Math.random()*2.6):(2.8+Math.random()*2.0));
+            f.feedBubbleAt=f.feedDustAt;
           }
         }
       }
@@ -23293,7 +23323,7 @@ const anglingFeedSpotMaterials=[anglingFeedSpotMat,anglingFeedSpotMat2];
 // V6.46: Unter Wasser wird ein aktiver Futterplatz auch als richtiger Grundplatz sichtbar.
 // Dort liegt Futter auf dem Boden und winzige Partikel steigen langsam auf.
 const anglingFeedUnderwaterGroup=new THREE.Group();anglingFeedUnderwaterGroup.visible=false;anglingScene.add(anglingFeedUnderwaterGroup);
-const anglingFeedBedMat=new THREE.MeshStandardMaterial({color:0xb89245,transparent:true,opacity:.24,roughness:1,metalness:0,side:THREE.DoubleSide,depthWrite:false,polygonOffset:true,polygonOffsetFactor:2,polygonOffsetUnits:2});
+const anglingFeedBedMat=new THREE.MeshStandardMaterial({color:0x776b49,transparent:true,opacity:.18,roughness:1,metalness:0,side:THREE.DoubleSide,depthWrite:false,polygonOffset:true,polygonOffsetFactor:2,polygonOffsetUnits:2});
 const anglingFeedBedGeo=new THREE.CircleGeometry(1,96);
 const anglingFeedBedBaseXY=new Float32Array(anglingFeedBedGeo.attributes.position.array.length);
 anglingFeedBedBaseXY.set(anglingFeedBedGeo.attributes.position.array);
@@ -23302,13 +23332,41 @@ const FEED_BOTTOM_CRUMB_COUNT=68;
 const anglingFeedBottomCrumbPos=new Float32Array(FEED_BOTTOM_CRUMB_COUNT*3);
 const anglingFeedBottomCrumbGeo=new THREE.BufferGeometry();
 anglingFeedBottomCrumbGeo.setAttribute('position',new THREE.BufferAttribute(anglingFeedBottomCrumbPos,3));
-const anglingFeedBottomCrumbs=new THREE.Points(anglingFeedBottomCrumbGeo,new THREE.PointsMaterial({color:0xc49d4f,size:.06,sizeAttenuation:true,transparent:true,opacity:.88,depthWrite:false}));
+// Eine unregelmäßige, körnige Alpha-Maske ersetzt die früheren gelben
+// PointsMaterial-Quadrate. So wirken die Punkte wie kleine aufgeweichte
+// Futterkörner und nicht wie technische Markierungen.
+const anglingFeedCrumbCanvas=document.createElement('canvas');
+anglingFeedCrumbCanvas.width=anglingFeedCrumbCanvas.height=64;
+const anglingFeedCrumbCtx=anglingFeedCrumbCanvas.getContext('2d');
+anglingFeedCrumbCtx.translate(32,32);
+anglingFeedCrumbCtx.beginPath();
+for(let i=0;i<16;i++){
+  const a=i/16*Math.PI*2;
+  const r=18+(i%3===0?3:i%4===0?-2:0)+Math.sin(i*2.7)*1.6;
+  const px=Math.cos(a)*r,py=Math.sin(a)*r*.78;
+  if(i===0)anglingFeedCrumbCtx.moveTo(px,py);else anglingFeedCrumbCtx.lineTo(px,py);
+}
+anglingFeedCrumbCtx.closePath();
+const anglingFeedCrumbGradient=anglingFeedCrumbCtx.createRadialGradient(-5,-5,2,0,0,23);
+anglingFeedCrumbGradient.addColorStop(0,'rgba(255,245,204,.98)');
+anglingFeedCrumbGradient.addColorStop(.62,'rgba(206,180,112,.92)');
+anglingFeedCrumbGradient.addColorStop(1,'rgba(126,102,60,0)');
+anglingFeedCrumbCtx.fillStyle=anglingFeedCrumbGradient;anglingFeedCrumbCtx.fill();
+const anglingFeedCrumbTexture=new THREE.CanvasTexture(anglingFeedCrumbCanvas);
+anglingFeedCrumbTexture.encoding=THREE.sRGBEncoding;
+const anglingFeedBottomCrumbs=new THREE.Points(anglingFeedBottomCrumbGeo,new THREE.PointsMaterial({
+  color:0x9b8452,map:anglingFeedCrumbTexture,alphaTest:.06,size:.048,sizeAttenuation:true,
+  transparent:true,opacity:.72,depthWrite:false
+}));
 anglingFeedBottomCrumbs.renderOrder=8;anglingFeedUnderwaterGroup.add(anglingFeedBottomCrumbs);
 const FEED_RISE_PARTICLE_COUNT=46;
 const anglingFeedRiseParticlePos=new Float32Array(FEED_RISE_PARTICLE_COUNT*3);
 const anglingFeedRiseParticleGeo=new THREE.BufferGeometry();
 anglingFeedRiseParticleGeo.setAttribute('position',new THREE.BufferAttribute(anglingFeedRiseParticlePos,3));
-const anglingFeedRiseParticles=new THREE.Points(anglingFeedRiseParticleGeo,new THREE.PointsMaterial({color:0xd7c382,size:.028,sizeAttenuation:true,transparent:true,opacity:.38,depthWrite:false}));
+const anglingFeedRiseParticles=new THREE.Points(anglingFeedRiseParticleGeo,new THREE.PointsMaterial({
+  color:0x9f9168,map:anglingFeedCrumbTexture,alphaTest:.04,size:.022,sizeAttenuation:true,
+  transparent:true,opacity:.32,depthWrite:false
+}));
 anglingFeedRiseParticles.renderOrder=8;anglingFeedUnderwaterGroup.add(anglingFeedRiseParticles);
 const anglingFeedBottomSeeds=Array.from({length:FEED_BOTTOM_CRUMB_COUNT},(_,i)=>({
   a:Math.random()*Math.PI*2,
@@ -35027,49 +35085,60 @@ function anglingLureDepthLimits(x,y){
   return {waterDepth,minDepth,maxDepth:bottomDepth,bottomZ,bottomClearance};
 }
 
+const groundFeedingSurfaceBubbleQueue=[];
+function updateGroundFeedingSurfaceBubbles(now){
+  for(let i=groundFeedingSurfaceBubbleQueue.length-1;i>=0;i--){
+    const q=groundFeedingSurfaceBubbleQueue[i];
+    if(now<q.at)continue;
+    groundFeedingSurfaceBubbleQueue.splice(i,1);
+    if(!anglingMode||anglingCinematicView!=='shore')continue;
+    anglingFeedingFxPos.set(q.x,q.y,anglingSurfaceZ(q.x,q.y));
+    spawnAnglingSurfaceEffect(anglingFeedingFxPos,.05+Math.random()*.025,.58+Math.random()*.15,1.0+Math.random()*.32,.05+Math.random()*.025,.16+Math.random()*.08);
+  }
+}
+
 function spawnGroundFeedingBubbles(x,y,z,strength=1,surfaceHint=true,mode='ambient'){
   bubblePool.points.visible=true;
   const s=THREE.MathUtils.clamp(strength,.45,1.5);
   const feedspot=mode==='feedspot';
 
-  // Am Futterplatz soll der Luftaustritt realistischer und zurückhaltender wirken.
-  const count=(feedspot?2:4)+Math.round((feedspot?3:5)*s);
+  // Kleine, sparsame Gruppen steigen nahezu lotrecht bis zur Oberfläche.
+  const count=(feedspot?1:2)+Math.round((feedspot?1.25:1.8)*s);
+  let firstArrival=Infinity;
   for(let i=0;i<count;i++){
     const a=Math.random()*Math.PI*2;
-    const side=(feedspot?.008:.010)+Math.random()*(feedspot?.018:.028)*s;
-    spawnPoolParticle(
-      bubblePool,
-      x+(Math.random()-.5)*((feedspot?.10:.14)+.06*s),
-      y+(Math.random()-.5)*((feedspot?.10:.14)+.06*s),
-      z+.04+Math.random()*.06,
-      .24+Math.random()*(feedspot?.20:.28),
-      (feedspot?3.2:3.4)+Math.random()*(feedspot?2.6:3.0),
-      Math.cos(a)*side,
-      Math.sin(a)*side,
-      .15+Math.random()*(feedspot?.11:.15),
-      .38
-    );
-  }
-
-  // Von oben nur ein sehr dezenter, kleiner Luftblasenteppich – keine großen
-  // Platscher. Am Futterplatz nochmals sparsamer.
-  if(surfaceHint){
-    const n=feedspot?(Math.random()<.70?1:2):(2+(Math.random()<.55?1:0));
-    for(let i=0;i<n;i++){
-      anglingFeedingFxPos.set(
-        x+(Math.random()-.5)*((feedspot?.14:.18)+.10*s),
-        y+(Math.random()-.5)*((feedspot?.14:.18)+.10*s),
-        0
-      );
-      spawnAnglingSurfaceEffect(
-        anglingFeedingFxPos,
-        (feedspot?.06:.08)+.07*s,
-        (feedspot?.64:.72)+Math.random()*.20,
-        (feedspot?1.18:1.45)+Math.random()*(feedspot?.45:.75),
-        (feedspot?.09:.12)+Math.random()*.04,
-        (feedspot?.26:.34)+Math.random()*.12
+    const side=.0015+Math.random()*(feedspot?.0045:.0065)*s;
+    const startZ=z+.035+Math.random()*.055;
+    const rise=.22+Math.random()*(feedspot?.075:.10);
+    const travel=Math.max(.35,(-.07-startZ)/rise);
+    firstArrival=Math.min(firstArrival,travel);
+    // In der Uferkamera wird nur die zeitversetzte Oberflächenfolge geplant.
+    // Sonst würden unsichtbare Blasen am Boden einfrieren, bis später einmal
+    // in die Unterwasseransicht gewechselt wird.
+    if(!surfaceHint){
+      spawnPoolParticle(
+        bubblePool,
+        x+(Math.random()-.5)*((feedspot?.075:.10)+.035*s),
+        y+(Math.random()-.5)*((feedspot?.075:.10)+.035*s),
+        startZ,
+        .18+Math.random()*(feedspot?.16:.20),
+        travel+1.2+Math.random()*.8,
+        Math.cos(a)*side,
+        Math.sin(a)*side,
+        rise,
+        .34
       );
     }
+  }
+
+  // Aus der Uferkamera wird derselbe Oberflächenring erst nach der echten
+  // Aufstiegszeit gezeigt – nicht sofort beim Gründeln am Boden.
+  if(surfaceHint&&Number.isFinite(firstArrival)&&groundFeedingSurfaceBubbleQueue.length<24){
+    groundFeedingSurfaceBubbleQueue.push({
+      x:x+(Math.random()-.5)*.10,
+      y:y+(Math.random()-.5)*.10,
+      at:performance.now()+firstArrival*1000
+    });
   }
 }
 
@@ -35077,7 +35146,7 @@ function spawnAnglingBottomDust(x,y,z,strength=1){
   sedimentPool.points.visible=true;
   const s=THREE.MathUtils.clamp(strength,.4,1.6);
 
-  const cloudBursts=2+Math.round(1.6*s);
+  const cloudBursts=1+(Math.random()<.42*s?1:0);
   for(let i=0;i<cloudBursts;i++){
     spawnAnglingSedimentCloud(
       x+(Math.random()-.5)*(.08+.05*s),
@@ -35087,21 +35156,21 @@ function spawnAnglingBottomDust(x,y,z,strength=1){
     );
   }
 
-  const count=16+Math.round(16*s);
+  const count=8+Math.round(7*s);
   for(let i=0;i<count;i++){
     const a=Math.random()*Math.PI*2;
-    const speed=.03+Math.random()*.14*s;
+    const speed=.012+Math.random()*.052*s;
     spawnPoolParticle(
       sedimentPool,
       x+(Math.random()-.5)*(.26+.10*s),
       y+(Math.random()-.5)*(.26+.10*s),
       z+.02+Math.random()*.09,
-      .72+Math.random()*1.18,
-      2.2+Math.random()*2.4,
+      .56+Math.random()*.72,
+      6.0+Math.random()*4.2,
       Math.cos(a)*speed,
       Math.sin(a)*speed,
-      .012+Math.random()*.040,
-      .30
+      .006+Math.random()*.018,
+      .18
     );
   }
 }
