@@ -14748,21 +14748,14 @@ function spawnAnglingSedimentCloud(x,y,z,strength=1){
   cloud.material.rotation=Math.random()*Math.PI;cloud.material.opacity=0;cloud.scale.setScalar(cloud.userData.startSize);cloud.visible=true;
 }
 function updateAnglingSedimentClouds(dt){
-  // FIX V2: Ausschließlich die weichen Sediment-Sprites ausblenden, sobald die
-  // Kamera über Wasser ist. BubblePool, Blasenphysik und Oberflächenringe
-  // werden hier bewusst überhaupt nicht angefasst.
-  const showSedimentClouds=!!window.__aczoUnderwaterSceneActive;
   for(const cloud of anglingSedimentClouds){
-    if(cloud.userData.life<=0){cloud.visible=false;continue;}
+    if(cloud.userData.life<=0)continue;
     cloud.userData.life-=dt;
     if(cloud.userData.life<=0){cloud.visible=false;cloud.material.opacity=0;continue;}
     const p=1-cloud.userData.life/cloud.userData.maxLife;
     cloud.scale.setScalar(THREE.MathUtils.lerp(cloud.userData.startSize,cloud.userData.endSize,1-Math.pow(1-p,2)));
     cloud.position.z+=dt*.012;cloud.material.rotation+=dt*.06;
-    cloud.material.opacity=showSedimentClouds
-      ? .64*Math.min(1,p*6)*Math.min(1,cloud.userData.life/1.05)
-      : 0;
-    cloud.visible=showSedimentClouds;
+    cloud.material.opacity=.64*Math.min(1,p*6)*Math.min(1,cloud.userData.life/1.05);
   }
 }
 // Große, kräftige Blutwolke: weiterhin nur ein einziges Partikelsystem.
