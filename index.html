@@ -27503,7 +27503,7 @@ function anglingActiveNetId(){
   const id=anglingProgress.selectedNet;
   return ANGLING_EQUIPMENT_CATALOG[id]?.slot==='net'&&anglingEquipmentStock(id)>0?id:'net_standard';
 }
-function anglingNetLandingMultiplier(){return anglingActiveNetId()==='net_pro'?1.18:1;}
+function anglingNetLandingMultiplier(){return anglingActiveNetId()==='net_pro'?(.92/.72):1;}
 function anglingNetVisualScale(){return anglingActiveNetId()==='net_pro'?.92:.72;}
 
 function anglingApplyActiveRodAppearance(){
