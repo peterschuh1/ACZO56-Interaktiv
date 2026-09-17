@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
-<title>ACZO56-Interaktiv-V1.3</title>
+<title>ACZO56-Interaktiv-V1.2</title>
 <!-- ACZO56 BETA 1.2: Hänger-, Fischkontakt-, Touch- und Idle-Korrekturen auf bestehender Basis. -->
 <!-- V7.83: Kritische Viewer-Ressourcen früh anfordern. -->
 <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
@@ -1971,12 +1971,6 @@ html,body{
 .angling-hof-card h2{margin:6px 0 1px;font-size:clamp(21px,4.2vw,38px);line-height:1.04;font-weight:1000;text-shadow:0 3px 20px rgba(0,0,0,.35)}
 .angling-hof-value{margin-top:7px;font-size:clamp(15px,2.5vw,22px);font-weight:950;color:#f4fff8}
 .angling-hof-detail{margin:7px auto 0;max-width:610px;font-size:11px;line-height:1.45;font-weight:750;color:rgba(239,255,247,.82)}
-.angling-hof-ranking{display:none;margin:10px auto 2px;max-width:470px;text-align:left}
-.angling-hof-ranking.show{display:grid;gap:5px}
-.angling-hof-rank-row{display:grid;grid-template-columns:28px minmax(0,1fr) auto;gap:8px;align-items:center;padding:7px 10px;border-radius:11px;background:rgba(255,255,255,.065);border:1px solid rgba(255,255,255,.12)}
-.angling-hof-rank-row:first-child{background:rgba(255,225,105,.11);border-color:rgba(255,225,105,.30)}
-.angling-hof-rank-medal{font-size:16px;text-align:center}.angling-hof-rank-name{font-size:11px;font-weight:950;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.angling-hof-rank-value{font-size:10px;font-weight:900;color:#f4fff8;text-align:right;white-space:nowrap}
-@media(max-width:680px){.angling-hof-ranking{margin-top:8px}.angling-hof-rank-row{grid-template-columns:24px minmax(0,1fr) auto;padding:6px 8px;gap:6px}.angling-hof-rank-medal{font-size:14px}.angling-hof-rank-name{font-size:9.5px}.angling-hof-rank-value{font-size:8.8px}}
 .angling-hof-progress{height:8px;margin:11px auto 2px;max-width:420px;border-radius:999px;background:rgba(255,255,255,.14);overflow:hidden}
 .angling-hof-progress>span{display:block;height:100%;width:0;border-radius:inherit;background:linear-gradient(90deg,#d6aa42,#fff0a4);transition:width .65s ease}
 .angling-hof-dots{display:flex;justify-content:center;gap:5px;margin-top:11px}.angling-hof-dots i{display:block;width:5px;height:5px;border-radius:50%;background:rgba(255,255,255,.25)}.angling-hof-dots i.on{background:#ffe583;box-shadow:0 0 10px rgba(255,229,131,.72)}
@@ -3776,60 +3770,6 @@ html,body{
 .aczo-phone-layout .angling-hof-brand small{font-size:7px!important;letter-spacing:.12em!important}
 .aczo-phone-layout .angling-hof-brand strong{font-size:14px!important;letter-spacing:.035em!important}
 
-
-/* V1.3 HOF MOBILE BOTTOM: unten über dem Hausdach, aber mit reservierter
-   Signaturzone für „Produced by Predatorpit“. Himmel, Feuerwerk und Fahne
-   bleiben frei, die Signatur ebenfalls. */
-.aczo-phone-layout .angling-hof-card{
-  top:auto!important;
-  bottom:max(76px,calc(env(safe-area-inset-bottom) + 58px))!important;
-  transform:translateX(-50%)!important
-}
-
-/* V1.3 HOF MOBILE: Top-3-Karten kompakter halten.
-   Die Karten bleiben weiterhin oberhalb der projizierten Fahnenmastspitze,
-   werden aber nicht mehr so hoch, dass sie unter den Zurück-Button ragen. */
-.aczo-phone-layout .angling-hof-card:has(.angling-hof-ranking.show){
-  padding:10px 12px 10px!important;
-  border-radius:16px!important
-}
-.aczo-phone-layout .angling-hof-card:has(.angling-hof-ranking.show) .angling-hof-kicker{
-  font-size:7.4px!important;
-  line-height:1.05!important;
-  letter-spacing:.14em!important
-}
-.aczo-phone-layout .angling-hof-card:has(.angling-hof-ranking.show) h2{
-  margin:4px 0 0!important;
-  font-size:24px!important;
-  line-height:1!important
-}
-.aczo-phone-layout .angling-hof-card:has(.angling-hof-ranking.show) .angling-hof-ranking{
-  margin:7px auto 1px!important;
-  gap:4px!important
-}
-.aczo-phone-layout .angling-hof-card:has(.angling-hof-ranking.show) .angling-hof-rank-row{
-  grid-template-columns:22px minmax(0,1fr) auto!important;
-  min-height:0!important;
-  padding:5px 8px!important;
-  gap:6px!important;
-  border-radius:10px!important
-}
-.aczo-phone-layout .angling-hof-card:has(.angling-hof-ranking.show) .angling-hof-rank-medal{font-size:13px!important}
-.aczo-phone-layout .angling-hof-card:has(.angling-hof-ranking.show) .angling-hof-rank-name{font-size:9.2px!important}
-.aczo-phone-layout .angling-hof-card:has(.angling-hof-ranking.show) .angling-hof-rank-value{font-size:8.2px!important}
-.aczo-phone-layout .angling-hof-card:has(.angling-hof-ranking.show) .angling-hof-detail{
-  margin-top:6px!important;
-  font-size:8.8px!important;
-  line-height:1.22!important
-}
-.aczo-phone-layout .angling-hof-card:has(.angling-hof-ranking.show) .angling-hof-dots{
-  margin-top:7px!important;
-  gap:4px!important
-}
-.aczo-phone-layout .angling-hof-card:has(.angling-hof-ranking.show) .angling-hof-dots i{
-  width:4px!important;height:4px!important
-}
-
 /* Online-Präsenz ist eine kurze Statusmeldung und kein dauerhaftes HUD. Sie
    erscheint unterhalb der oberen Bedienelemente, auch während eines Drills. */
 .angling-community-toast{top:165px!important}
@@ -4374,7 +4314,6 @@ html,body{
        <div id="anglingHallOfFameKicker" class="angling-hof-kicker">VEREINSWEIHER</div>
        <h2 id="anglingHallOfFameTitle">Hall of Fame</h2>
        <div id="anglingHallOfFameValue" class="angling-hof-value"></div>
-       <div id="anglingHallOfFameRanking" class="angling-hof-ranking"></div>
        <div id="anglingHallOfFameDetail" class="angling-hof-detail"></div>
        <div id="anglingHallOfFameProgress" class="angling-hof-progress" style="display:none"><span></span></div>
        <div id="anglingHallOfFameDots" class="angling-hof-dots"></div>
@@ -4870,23 +4809,6 @@ html,body{
 Interaktive Tiefenkarte & Angelspiel · Live-Wetter · astronomisches Licht · Unterwasserwelt · Fischsammlung<br>
 Bitte gefundene Darstellungs-, Steuerungs- oder Spielfehler mit Gerät, Browser und betroffenem Modus melden.
 </div>
-       <details class="help-note" style="cursor:pointer">
-         <summary style="font-weight:800">Update-History</summary>
-         <div style="margin-top:8px;cursor:default">
-           <strong>Version 1.3</strong><br>
-           • 2D-/3D-Karte, Tiefendarstellung und Übergänge weiter optimiert<br>
-           • Darstellung, Performance und mobile Steuerung weiter verbessert<br>
-           • Astronomisches Licht, Zeitraffer und Schattenbewegungen verfeinert<br>
-           • Unterwasserwelt mit natürlicherem Fischverhalten und ruhigeren Bewegungen erweitert<br>
-           • Gründelverhalten mit unterschiedlichen Fresswinkeln, Sedimentwolken und Luftblasen verbessert<br>
-           • Futterplatz und Unterwasser-Effekte realistischer abgestimmt<br>
-           • Angelspiel, Fischkontakt, Hänger- und Kollisionsverhalten weiter verfeinert<br>
-           • Besucher, Fahrzeuge und Bewegungsabläufe in der Umgebung überarbeitet<br>
-           • EP-System, Tagesaufgaben sowie Lockfutter- und Köderpreise neu ausbalanciert<br>
-           • Neue Animationen und versteckte Easter Eggs ergänzt<br>           • Hall of Fame mit Top-3-Vereinswertungen und kompakter persönlicher Übersicht überarbeitet<br>
-           • Zahlreiche Detailkorrekturen an Darstellung, Bedienung und Spielablauf
-         </div>
-       </details>
        <div class="help-note"><strong>Datenquellen & Hinweise</strong><br>
 Tiefenkarte und Darstellung: AC 1956 Zewen-Oberkirch e. V.<br>
 Luftbild/Kartengrundlage: © GeoBasis-DE / LVermGeoRP (2026), dl-de/by-2-0<br>
@@ -4917,7 +4839,7 @@ Wetterdaten: Open-Meteo · Astronomische Berechnungen: SunCalc<br>
 // V7.75: Der Startlayer ist bereits durch HTML/CSS sichtbar, bevor dieser schwere
 // Three.js-Block ausgeführt wird. Er wird erst nach einem echten Renderbild freigegeben.
 // Öffentliche Versionsbezeichnung. Interner Arbeitsstand: Build 1.34.
-const VIEWER_VERSION='ACZO56-Interaktiv-V1.3';
+const VIEWER_VERSION='ACZO56-Interaktiv-V1.2';
 const ACZO_INTERNAL_BUILD='1.38';
 const helpVersion=document.getElementById('helpVersion');
 if(helpVersion) helpVersion.textContent=VIEWER_VERSION;
@@ -5577,7 +5499,6 @@ const anglingHallOfFameKicker=document.getElementById('anglingHallOfFameKicker')
 const anglingHallOfFameTitle=document.getElementById('anglingHallOfFameTitle');
 const anglingHallOfFameValue=document.getElementById('anglingHallOfFameValue');
 const anglingHallOfFameDetail=document.getElementById('anglingHallOfFameDetail');
-const anglingHallOfFameRankingEl=document.getElementById('anglingHallOfFameRanking');
 const anglingHallOfFameProgress=document.getElementById('anglingHallOfFameProgress');
 const anglingHallOfFameDots=document.getElementById('anglingHallOfFameDots');
 const anglingHallOfFameCredit=document.getElementById('anglingHallOfFameCredit');
@@ -14469,6 +14390,17 @@ function setFishSubmergedLayers(submerged){
   suspendedWater.visible=submerged;
   bubblePool.points.visible=submerged;
   sedimentPool.points.visible=submerged;
+  // FIX: weiche Grundwolken duerfen niemals durch die Wasseroberflaeche in
+  // der normalen Angelperspektive sichtbar bleiben. Beim Auftauchen werden
+  // laufende Wolken verworfen; neue entstehen erst wieder unter Wasser.
+  if(!submerged&&typeof anglingSedimentClouds!=='undefined'){
+    anglingSedimentClouds.forEach(cloud=>{
+      cloud.visible=false;
+      cloud.material.opacity=0;
+      cloud.userData.life=0;
+      cloud.userData.maxLife=0;
+    });
+  }
   bloodPool.points.visible=submerged;
   underwaterStones.visible=submerged;
   fishBottomClutterGroup.visible=false;
@@ -14795,55 +14727,8 @@ function makeParticlePool(count,color,fadeAlpha=.22,useFog=false){
   points.visible=false;points.renderOrder=4.5;scene.add(points);
   return {count,positions,sizes,alphas,life,maxLife,vx,vy,vz,geo,points,cursor:0,fadeAlpha};
 }
-// V1.2 BUBBLE STREAM FIX: Lang lebende Gründelblasen dürfen nicht vom nächsten
-// Burst überschrieben werden, bevor sie nach 3–5 m Aufstieg die Oberfläche erreichen.
-const bubblePool=makeParticlePool(640,0xdaf7ff);
-// V1.2 ECHTE LUFTBLASEN-DARSTELLUNG:
-// Der generische Soft-Point-Shader eignet sich für Schwebstoffe/Sediment, aber nicht
-// für Luftblasen. Blasen brauchen einen hellen Rand, einen transparenten Kern und
-// eine Mindestgröße auf dem Bildschirm, sonst verschwinden sie im blauen Wasser.
-bubblePool.points.material.dispose();
-bubblePool.points.material=new THREE.ShaderMaterial({
-  transparent:true,depthWrite:false,depthTest:true,
-  blending:THREE.NormalBlending,
-  uniforms:{bubbleColor:{value:new THREE.Color(0xeafcff)}},
-  vertexShader:`
-    attribute float pSize;
-    attribute float pAlpha;
-    varying float vAlpha;
-    void main(){
-      vec4 mv=modelViewMatrix*vec4(position,1.0);
-      float perspective=pSize*(78.0/max(1.0,-mv.z));
-      gl_PointSize=clamp(perspective,2.0,7.2);
-      vAlpha=pAlpha;
-      gl_Position=projectionMatrix*mv;
-    }
-  `,
-  fragmentShader:`
-    uniform vec3 bubbleColor;
-    varying float vAlpha;
-    void main(){
-      vec2 q=gl_PointCoord-.5;
-      float d=length(q);
-      if(d>.5)discard;
-      float outer=smoothstep(.50,.480,d)*smoothstep(.440,.476,d);
-      float rim=smoothstep(.486,.454,d)*smoothstep(.395,.449,d);
-      float highlight=1.0-smoothstep(.018,.062,length(q-vec2(-.16,.16)));
-      float body=(1.0-smoothstep(.47,.33,d))*.022;
-      // Kontrast etwas anheben, ohne Größe oder Randbreite sichtbar aufzublasen.
-      float alpha=(outer*.40+rim*.43+highlight*.22+body)*vAlpha;
-      if(alpha<.016)discard;
-      // Kräftigerer blau-grauer Außenkontrast gegen die helle Oberfläche,
-      // heller Innenrand gegen dunklen Boden.
-      vec3 edgeColor=mix(vec3(.10,.32,.40),bubbleColor,
-                         clamp((rim*.98+highlight*.72+body*2.0)/(outer*.78+rim+.001),0.0,1.0));
-      gl_FragColor=vec4(edgeColor,alpha);
-    }
-  `
-});
-bubblePool.points.renderOrder=5.45;
-bubblePool.points.frustumCulled=false;
-const sedimentPool=makeParticlePool(180,0x9b8766);
+const bubblePool=makeParticlePool(42,0xdaf7ff);
+const sedimentPool=makeParticlePool(84,0x9b8766);
 
 // V6.29: sichtbare Grundwolken. Maximal drei Wolken bleiben gleichzeitig aktiv;
 // bei einer vierten wird die älteste sofort wiederverwendet.
@@ -14859,7 +14744,7 @@ anglingSedimentCtx.fillStyle=anglingSedimentGrad;anglingSedimentCtx.fillRect(0,0
 const anglingSedimentTexture=new THREE.CanvasTexture(anglingSedimentCanvas);
 anglingSedimentTexture.encoding=THREE.sRGBEncoding;
 const anglingSedimentClouds=[];
-for(let i=0;i<24;i++){
+for(let i=0;i<9;i++){
   const mat=new THREE.SpriteMaterial({map:anglingSedimentTexture,transparent:true,opacity:0,depthWrite:false,depthTest:true,fog:true});
   const sp=new THREE.Sprite(mat);sp.visible=false;sp.renderOrder=5.15;scene.add(sp);
   sp.userData.life=0;sp.userData.maxLife=0;anglingSedimentClouds.push(sp);
@@ -14868,12 +14753,9 @@ let anglingSedimentCloudCursor=0;
 const anglingFeedingFxPos=new THREE.Vector3();
 function spawnAnglingSedimentCloud(x,y,z,strength=1){
   const cloud=anglingSedimentClouds[anglingSedimentCloudCursor++%anglingSedimentClouds.length];
-  cloud.position.set(x+(Math.random()-.5)*.08,y+(Math.random()-.5)*.08,z+.035);
-  // V1.2: Eine echte Gründelwolke baut sich unter Wasser langsam auf, bleibt
-  // einige Sekunden stehen und fällt ebenso weich wieder zusammen.
-  cloud.userData.life=cloud.userData.maxLife=7.6+Math.random()*2.4;
-  cloud.userData.startSize=.22+.05*strength;cloud.userData.endSize=1.00+.28*strength;
-  cloud.userData.rise=.030+Math.random()*.014; // insgesamt ca. 25–40 cm über Grund
+  cloud.position.set(x+(Math.random()-.5)*.05,y+(Math.random()-.5)*.05,z+.045);
+  cloud.userData.life=cloud.userData.maxLife=2.8+Math.random()*.7;
+  cloud.userData.startSize=.26+.06*strength;cloud.userData.endSize=.92+.26*strength;
   cloud.material.rotation=Math.random()*Math.PI;cloud.material.opacity=0;cloud.scale.setScalar(cloud.userData.startSize);cloud.visible=true;
 }
 function updateAnglingSedimentClouds(dt){
@@ -14882,12 +14764,9 @@ function updateAnglingSedimentClouds(dt){
     cloud.userData.life-=dt;
     if(cloud.userData.life<=0){cloud.visible=false;cloud.material.opacity=0;continue;}
     const p=1-cloud.userData.life/cloud.userData.maxLife;
-    const grow=THREE.MathUtils.smoothstep(p,0,.58);
-    cloud.scale.setScalar(THREE.MathUtils.lerp(cloud.userData.startSize,cloud.userData.endSize,grow));
-    cloud.position.z+=dt*(cloud.userData.rise||.034);cloud.material.rotation+=dt*.028;
-    const fadeIn=THREE.MathUtils.smoothstep(p,0,.24);
-    const fadeOut=1-THREE.MathUtils.smoothstep(p,.64,1);
-    cloud.material.opacity=.70*fadeIn*fadeOut;
+    cloud.scale.setScalar(THREE.MathUtils.lerp(cloud.userData.startSize,cloud.userData.endSize,1-Math.pow(1-p,2)));
+    cloud.position.z+=dt*.012;cloud.material.rotation+=dt*.06;
+    cloud.material.opacity=.64*Math.min(1,p*6)*Math.min(1,cloud.userData.life/1.05);
   }
 }
 // Große, kräftige Blutwolke: weiterhin nur ein einziges Partikelsystem.
@@ -21046,25 +20925,16 @@ function updateParticlePool(pool,dt,isBubble){
     if(pool.life[i]<=0) continue;
     const k=i*3;
     pool.life[i]-=dt;
-    if(pool.life[i]<=0){
+    if(pool.life[i]<=0||(isBubble&&pool.positions[k+2]>-.07)){
       pool.life[i]=0;pool.alphas[i]=0;pool.positions[k]=-999;continue;
     }
     pool.positions[k]+=pool.vx[i]*dt;
     pool.positions[k+1]+=pool.vy[i]*dt;
     pool.positions[k+2]+=pool.vz[i]*dt;
     if(isBubble){
-      pool.positions[k]+=.016*Math.sin(underwaterFxTime*2.1+i)*dt;
-      pool.positions[k+1]+=.016*Math.cos(underwaterFxTime*1.7+i)*dt;
-      const surface=anglingSurfaceZ(pool.positions[k],pool.positions[k+1]);
-      if(pool.positions[k+2]>=surface-.025){
-        if(anglingMode&&Math.random()<.72){
-          anglingFeedingFxPos.set(pool.positions[k],pool.positions[k+1],surface+.004);
-          spawnAnglingSurfaceEffect(anglingFeedingFxPos,.075+Math.random()*.055,.72+Math.random()*.16,1.25+Math.random()*.45,.09+Math.random()*.035,.28+Math.random()*.10);
-        }
-        pool.life[i]=0;pool.alphas[i]=0;pool.positions[k]=-999;continue;
-      }
-      const age=1-pool.life[i]/Math.max(.01,pool.maxLife[i]);
-      pool.alphas[i]=.54*Math.min(1,age*5)*Math.min(1,pool.life[i]/.90);
+      pool.positions[k]+=.012*Math.sin(underwaterFxTime*2.1+i)*dt;
+      pool.positions[k+1]+=.012*Math.cos(underwaterFxTime*1.7+i)*dt;
+      pool.alphas[i]=.48*Math.min(1,pool.life[i]/Math.max(.01,pool.maxLife[i]*.24));
     }else{
       const q=pool.life[i]/Math.max(.01,pool.maxLife[i]);
       const fadeIn=Math.min(1,(1-q)*8),fadeOut=Math.min(1,q*3);
@@ -21087,15 +20957,6 @@ function randomFxPoint(minDepth,maxDepth){
 
 function updateUnderwaterEffects(dt){
   const anglingUnderwater=anglingMode&&anglingCinematicView==='underwater';
-  // V1.2 BUBBLE TRANSIT: Grundelblasen muessen unabhaengig von der Kamera
-  // weiterlaufen. Beim Posenangeln steht die Kamera ueber Wasser, die Blasen
-  // steigen darunter aber real weiter und erzeugen erst beim Auftreffen den Ring.
-  // Unter Wasser wird derselbe Pool sichtbar gerendert.
-  updateParticlePool(bubblePool,dt,true);
-  // Mehrere Kamera-/Angel-Übergänge setzen den Pool bewusst auf invisible.
-  // Für die aktive Unterwasseransicht muss er deshalb hier jedes Bild wieder
-  // eindeutig freigegeben werden. Von Land läuft nur die Physik weiter.
-  bubblePool.points.visible=!!(fishMode||anglingUnderwater);
   if(!fishMode&&!anglingUnderwater) return;
   // PERF14: In der Kunstkoederkamera laufen die additiven Caustics deutlich
   // langsamer. Das verhindert das regelmaessige globale Hell/Dunkel-Pumpen,
@@ -21164,8 +21025,7 @@ function updateUnderwaterEffects(dt){
     }
     nextSedimentAt=underwaterFxTime+5+Math.random()*6.5;
   }
-  // bubblePool wurde bereits vor dem Kamera-Gate aktualisiert, damit dieselben
-  // Blasen auch beim Posenangeln ihren kompletten Weg zur Oberflaeche fortsetzen.
+  updateParticlePool(bubblePool,dt,true);
   updateParticlePool(sedimentPool,dt,false);
   updateParticlePool(bloodPool,dt,false);
   updateBloodClouds(dt);
@@ -22811,7 +22671,7 @@ function updateAnglingFeedUnderwaterVisual(dt,lureUnderwaterActive){
   }
   bedPos.needsUpdate=true;
   anglingFeedBed.material.opacity=.14+maturity*.08+.026*Math.sin(anglingFeedUnderwaterTime*1.4);
-  anglingFeedBottomCrumbGeo.setDrawRange(0,Math.max(120,Math.round(FEED_BOTTOM_CRUMB_COUNT*(.55+.45*maturity))));
+  anglingFeedBottomCrumbGeo.setDrawRange(0,Math.max(18,Math.round(FEED_BOTTOM_CRUMB_COUNT*(.28+.72*maturity))));
   anglingFeedRiseParticleGeo.setDrawRange(0,Math.max(9,Math.round(FEED_RISE_PARTICLE_COUNT*(.20+.80*maturity))));
   for(let i=0;i<FEED_BOTTOM_CRUMB_COUNT;i++){
     const s=anglingFeedBottomSeeds[i],j=i*3;
@@ -23131,15 +22991,9 @@ function updateFishActors(dt){
         const fishW=Math.abs(f.obj.userData.baseFishWidth||f.obj.scale.x||.18);
         const fishH=Math.abs(f.obj.userData.baseFishHeight||f.obj.scale.y||.08);
 
-        // Störe grundeln weiterhin horizontal. Die übrigen Grundfresser bekommen
-        // pro Gründelphase EINEN festen Zufallswinkel. Dadurch stehen nicht alle
-        // wie geklont bei 45°, ohne jemals steiler als bisher zu werden.
-        if(species==='sturgeon'){
-          f.visualPitch=0;
-        }else{
-          if(!Number.isFinite(f.feedPitch))f.feedPitch=-THREE.MathUtils.degToRad(22+Math.random()*23);
-          f.visualPitch=f.feedPitch;
-        }
+        // Störe grundeln horizontal. Karpfen, Spiegelkarpfen, Schleien und
+        // Brassen behalten ihre bisherige 45°-Fresspose.
+        f.visualPitch=species==='sturgeon'?0:-THREE.MathUtils.degToRad(45);
         // Beim ruhigen Gruendeln bleibt die bewaehrte klare Seitenansicht.
         f.visualDepthYaw=0;
 
@@ -23168,9 +23022,14 @@ function updateFishActors(dt){
 
         if(!Number.isFinite(f.feedDustAt))f.feedDustAt=0;
         if(!Number.isFinite(f.feedBubbleAt))f.feedBubbleAt=0;
+        // FIX: Grund-/Sedimentwolken sind reine Unterwassereffekte.
+        // In der Ufer-/Angelperspektive darf der Futterplatz im Hintergrund
+        // weiter simuliert werden, sichtbar bleiben dort aber nur die dezenten
+        // Luftblasen/Oberflaechenringe.
         const canShowFeedingTrace=
           (fishVisualActive&&nearEnough)||
           (anglingMode&&anglingCinematicView==='shore'&&f.obj.position.distanceToSquared(camera.position)<2500);
+        const canShowFeedingDust=fishVisualActive&&nearEnough;
 
         if(canShowFeedingTrace){
           const feedStrength=
@@ -23181,21 +23040,26 @@ function updateFishActors(dt){
           const feedMode=(f.feedSource==='ambient'?'ambient':'feedspot');
           const shoreBubbleHint=anglingMode&&anglingCinematicView==='shore';
 
-          if(fishWorldTime>=f.feedDustAt){
-            const fxX=f.obj.position.x+(Math.random()-.5)*.10;
-            const fxY=f.obj.position.y+(Math.random()-.5)*.10;
+          if(canShowFeedingDust&&fishWorldTime>=f.feedDustAt){
             spawnAnglingBottomDust(
-              fxX,fxY,floor+.018,
-              feedStrength*(feedMode==='feedspot'?.98:1.0)
+              f.obj.position.x+(Math.random()-.5)*.10,
+              f.obj.position.y+(Math.random()-.5)*.10,
+              floor+.018,
+              feedStrength*(feedMode==='feedspot'?.90:1.0)
             );
-            // Staub und Luftblasen haben dieselbe Ursache: der Fisch wühlt den
-            // Boden auf. Deshalb starten beide Effekte jetzt im selben Moment.
+            f.feedDustAt=fishWorldTime+(feedMode==='feedspot'?(2.8+Math.random()*2.1):(2.2+Math.random()*1.9));
+          }
+
+          if(fishWorldTime>=f.feedBubbleAt){
             spawnGroundFeedingBubbles(
-              fxX+(Math.random()-.5)*.05,fxY+(Math.random()-.5)*.05,
-              floor+.020,feedStrength,shoreBubbleHint,feedMode
+              f.obj.position.x+(Math.random()-.5)*.08,
+              f.obj.position.y+(Math.random()-.5)*.08,
+              floor+.020,
+              feedStrength,
+              shoreBubbleHint,
+              feedMode
             );
-            f.feedDustAt=fishWorldTime+(feedMode==='feedspot'?(3.6+Math.random()*2.0):(2.8+Math.random()*1.8));
-            f.feedBubbleAt=f.feedDustAt;
+            f.feedBubbleAt=fishWorldTime+(feedMode==='feedspot'?(4.6+Math.random()*2.6):(2.8+Math.random()*2.0));
           }
         }
       }
@@ -23216,8 +23080,7 @@ function updateFishActors(dt){
           // 4–7 Sekunden ruhig grundeln statt pro Frame zwischen Schwimmen und
           // 45°-Pose hin- und herzuschalten.
           f.feedBottomUntil=fishWorldTime+4.0+Math.random()*3.0;
-          f.feedPitch=species==='sturgeon'?0:-THREE.MathUtils.degToRad(22+Math.random()*23);
-          f.visualPitch=f.feedPitch;
+          f.visualPitch=species==='sturgeon'?0:-THREE.MathUtils.degToRad(45);
           f.pause=0;
           f.feedSource='feedspot';
           f.feedDustAt=fishWorldTime+.9+Math.random()*1.1;
@@ -23235,8 +23098,7 @@ function updateFishActors(dt){
       // Futterplatz immer mal wieder kurz am Grund gründeln.
       if(ambientBottomGrazer&&ambientBottomReady&&Math.random()<.55){
         f.feedBottomUntil=fishWorldTime+3.2+Math.random()*3.0;
-        f.feedPitch=species==='sturgeon'?0:-THREE.MathUtils.degToRad(22+Math.random()*23);
-        f.visualPitch=f.feedPitch;
+        f.visualPitch=species==='sturgeon'?0:-THREE.MathUtils.degToRad(45);
         f.pause=0;
         f.feedSource='ambient';
         f.feedDustAt=0; // erste Staubwolke sofort
@@ -23279,13 +23141,8 @@ function updateFishActors(dt){
       if(!Number.isFinite(f.sideFlipCandidateSince))f.sideFlipCandidateSince=0;
       if(!Number.isFinite(f.sideFlipCandidate))f.sideFlipCandidate=0;
 
-      // Kopfseite mit echter Hysterese: Bei einer klaren Richtungsänderung muss
-      // der Fisch schnell genug drehen, sonst schwimmt die Fototextur sichtbar
-      // rückwärts. Nahe der Frontalansicht bleibt die bisherige Seite dagegen
-      // stabil und kann nicht frameweise hin und her springen.
-      const desiredSide=screenX>.18?-1:(screenX<-.18?1:0);
+      const desiredSide=screenX>.14?-1:(screenX<-.14?1:0);
       const wantsFlip=desiredSide!==0&&desiredSide!==f.screenSide;
-      const strongOpposite=Math.abs(screenX)>.42;
 
       if(wantsFlip){
         if(f.sideFlipCandidate!==desiredSide){
@@ -23293,16 +23150,15 @@ function updateFishActors(dt){
           f.sideFlipCandidateSince=fishWorldTime;
         }else if(
           fishWorldTime>=f.sideFlipCooldownUntil &&
-          fishWorldTime-f.sideFlipCandidateSince>=(strongOpposite?.12:.28)
+          fishWorldTime-f.sideFlipCandidateSince>=.62
         ){
           f.screenSide=desiredSide;
-          f.sideFlipCooldownUntil=fishWorldTime+(strongOpposite?.32:.55);
+          f.sideFlipCooldownUntil=fishWorldTime+1.10;
           f.sideFlipCandidate=0;
           f.sideFlipCandidateSince=0;
         }
-      }else if(Math.abs(screenX)>.08){
-        // Nur bei einer wirklich erkennbaren Bewegungsrichtung Kandidaten löschen.
-        // Im frontalen Totbereich bleibt die aktuelle Kopfseite unangetastet.
+      }else{
+        // Gleiche Richtung oder fast frontal: aktuelle Ausrichtung beibehalten.
         f.sideFlipCandidate=0;
         f.sideFlipCandidateSince=0;
       }
@@ -23312,15 +23168,15 @@ function updateFishActors(dt){
       // Hechte ändern bei der Jagd ihre vertikale Bewegungsrichtung sehr häufig.
       // Ihre Fotofläche folgt dem weiterhin, aber deutlich gedämpfter, damit der
       // Kopf nicht mehr bei jedem kleinen Kurswechsel hysterisch nickt.
-      const predatorPitchStable=['pike','zander','perch','catfish'].includes(species);
-      const pitchLimit=predatorPitchStable
-        ?THREE.MathUtils.degToRad(6)
+      const pikePitchStable=species==='pike';
+      const pitchLimit=pikePitchStable
+        ?THREE.MathUtils.degToRad(7)
         :(strictBottomFish.has(species)?THREE.MathUtils.degToRad(8):MAX_FISH_PITCH);
       let targetPitch=isLureHunter?0:THREE.MathUtils.clamp(
         Math.atan2(fishMoveDelta.z,Math.max(.0001,horizontalSpeed)),
         -pitchLimit,pitchLimit
       );
-      if(predatorPitchStable)targetPitch*=.52;
+      if(pikePitchStable)targetPitch*=.62;
       // P63: Grundeln bleiben optisch immer horizontal. Ihre Bodennähe wird
       // ausschließlich über die Z-Position geregelt, nicht über Kopfneigung.
       if(species==='goby')targetPitch=0;
@@ -23329,14 +23185,14 @@ function updateFishActors(dt){
       // aber nicht mehr jeden winzigen Richtungswechsel sofort sichtbar mitmachen.
       // Gerade bei Jagd und Bodenkorrekturen wechselte das Vorzeichen der Z-Richtung
       // zuvor frameweise und ließ den Kopf unnatürlich hoch/runter zittern.
-      const pitchDeadband=THREE.MathUtils.degToRad(predatorPitchStable?3.8:(strictBottomFish.has(species)?3.2:1.8));
+      const pitchDeadband=THREE.MathUtils.degToRad(pikePitchStable?3.4:(strictBottomFish.has(species)?3.2:1.8));
       if(Math.abs(targetPitch)<pitchDeadband)targetPitch=0;
       if(!Number.isFinite(f.visualPitch))f.visualPitch=0;
 
-      const pitchLambda=predatorPitchStable?1.55:((isHunter||isLureHunter)?4.8:(isFleeing?4.0:2.2));
+      const pitchLambda=pikePitchStable?2.0:((isHunter||isLureHunter)?4.8:(isFleeing?4.0:2.2));
       const pitchBlend=1-Math.exp(-pitchLambda*Math.max(.001,step));
       const blendedPitch=THREE.MathUtils.lerp(f.visualPitch,targetPitch,pitchBlend);
-      const maxPitchRate=predatorPitchStable?.105:((isHunter||isLureHunter)?.66:(isFleeing?.56:.28)); // P58: ruhiger, kein Kopf-Pumpen
+      const maxPitchRate=pikePitchStable?.15:((isHunter||isLureHunter)?.66:(isFleeing?.56:.28)); // P58: ruhiger, kein Kopf-Pumpen
       const maxPitchStep=maxPitchRate*Math.max(.001,step);
       f.visualPitch+=THREE.MathUtils.clamp(
         blendedPitch-f.visualPitch,
@@ -23353,13 +23209,11 @@ function updateFishActors(dt){
       const lateralMotion=Math.abs(screenX);
       const depthShare=Math.abs(depthMotion)/Math.max(.001,Math.abs(depthMotion)+lateralMotion);
       const depthTurn=THREE.MathUtils.smoothstep(depthShare,.16,.94);
-      const targetDepthYaw=Math.abs(depthMotion)<.14
+      const targetDepthYaw=Math.abs(depthMotion)<.08
         ?0
         :-f.screenSide*Math.sign(depthMotion)*MAX_FISH_DEPTH_YAW*depthTurn;
       if(!Number.isFinite(f.visualDepthYaw))f.visualDepthYaw=0;
-      // Tiefendrehung bewusst ruhiger. Kleine Kurskorrekturen dürfen die
-      // Billboard-Fläche nicht mehr sichtbar links/rechts schaukeln lassen.
-      const yawLambda=(isHunter||isLureHunter)?3.4:(isFleeing?3.2:2.15);
+      const yawLambda=(isHunter||isLureHunter)?5.2:(isFleeing?4.4:2.7);
       f.visualDepthYaw=THREE.MathUtils.lerp(
         f.visualDepthYaw,targetDepthYaw,
         1-Math.exp(-yawLambda*Math.max(.001,step))
@@ -23453,17 +23307,11 @@ const anglingFeedBedGeo=new THREE.CircleGeometry(1,96);
 const anglingFeedBedBaseXY=new Float32Array(anglingFeedBedGeo.attributes.position.array.length);
 anglingFeedBedBaseXY.set(anglingFeedBedGeo.attributes.position.array);
 const anglingFeedBed=new THREE.Mesh(anglingFeedBedGeo,anglingFeedBedMat);anglingFeedBed.visible=true;anglingFeedBed.position.z=0;anglingFeedBed.renderOrder=-2;anglingFeedUnderwaterGroup.add(anglingFeedBed);
-const FEED_BOTTOM_CRUMB_COUNT=240;
+const FEED_BOTTOM_CRUMB_COUNT=68;
 const anglingFeedBottomCrumbPos=new Float32Array(FEED_BOTTOM_CRUMB_COUNT*3);
 const anglingFeedBottomCrumbGeo=new THREE.BufferGeometry();
 anglingFeedBottomCrumbGeo.setAttribute('position',new THREE.BufferAttribute(anglingFeedBottomCrumbPos,3));
-const anglingFeedCrumbCanvas=document.createElement('canvas');anglingFeedCrumbCanvas.width=anglingFeedCrumbCanvas.height=32;
-const anglingFeedCrumbCtx=anglingFeedCrumbCanvas.getContext('2d');
-const anglingFeedCrumbGrad=anglingFeedCrumbCtx.createRadialGradient(16,16,1,16,16,15);
-anglingFeedCrumbGrad.addColorStop(0,'rgba(222,185,92,1)');anglingFeedCrumbGrad.addColorStop(.62,'rgba(190,145,63,.96)');anglingFeedCrumbGrad.addColorStop(1,'rgba(145,104,44,0)');
-anglingFeedCrumbCtx.fillStyle=anglingFeedCrumbGrad;anglingFeedCrumbCtx.fillRect(0,0,32,32);
-const anglingFeedCrumbTexture=new THREE.CanvasTexture(anglingFeedCrumbCanvas);
-const anglingFeedBottomCrumbs=new THREE.Points(anglingFeedBottomCrumbGeo,new THREE.PointsMaterial({map:anglingFeedCrumbTexture,color:0xffffff,size:.042,sizeAttenuation:true,transparent:true,opacity:.94,alphaTest:.08,depthWrite:false}));
+const anglingFeedBottomCrumbs=new THREE.Points(anglingFeedBottomCrumbGeo,new THREE.PointsMaterial({color:0xc49d4f,size:.06,sizeAttenuation:true,transparent:true,opacity:.88,depthWrite:false}));
 anglingFeedBottomCrumbs.renderOrder=8;anglingFeedUnderwaterGroup.add(anglingFeedBottomCrumbs);
 const FEED_RISE_PARTICLE_COUNT=46;
 const anglingFeedRiseParticlePos=new Float32Array(FEED_RISE_PARTICLE_COUNT*3);
@@ -27423,14 +27271,14 @@ const ANGLING_POPULATION={
   sturgeon:3,zander:4,eel:8,tench:20,bream:30,koi:1,perch:50,sunfish:70,goby:160
 };
 const ANGLING_LURE_CATALOG={
-  spinner_basic:{name:'Blinker Standard',icon:'spinner_basic',type:'spinner',price:15,desc:'Solider Allrounder für Raubfische.',tag:'Standard',boost:{}},
-  softbait_basic:{name:'Gummifisch Standard',icon:'softbait_basic',type:'softbait',price:15,desc:'Grundnah stark, besonders auf Zander.',tag:'Standard',boost:{}},
-  spinner_premium:{name:'Blinker Premium',icon:'spinner_premium',type:'spinner',price:25,desc:'Etwas auffälliger und insgesamt fängiger.',tag:'+15 % Attraktivität',boost:{pike:1.15,zander:1.15,perch:1.15,catfish:1.15}},
-  softbait_premium:{name:'Gummifisch Premium',icon:'softbait_premium',type:'softbait',price:25,desc:'Mehr Aktion und etwas höhere Raubfischchance.',tag:'+15 % Attraktivität',boost:{pike:1.15,zander:1.15,perch:1.15,catfish:1.15}},
-  pike_special:{name:'Hecht-Spezial',icon:'pike_special',type:'spinner',price:40,desc:'Gezielt auf Hecht abgestimmt.',tag:'Hecht ++',boost:{pike:1.65,zander:.82,perch:.92,catfish:.70}},
-  zander_special:{name:'Zander-Spezial',icon:'zander_special',type:'softbait',price:40,desc:'Grundnaher Spezialköder für Zander.',tag:'Zander ++',boost:{zander:1.70,pike:.86,perch:.90,catfish:.88}},
-  perch_special:{name:'Barsch-Spezial',icon:'perch_special',type:'spinner',price:35,desc:'Kompakt und aggressiv für Barsche.',tag:'Barsch ++',boost:{perch:1.75,pike:.88,zander:.82,catfish:.55}},
-  catfish_special:{name:'Wels-Spezial',icon:'catfish_special',type:'softbait',price:40,desc:'Große Silhouette für Wels.',tag:'Wels ++',boost:{catfish:2.05,zander:.82,pike:.82,perch:.55}}
+  spinner_basic:{name:'Blinker Standard',icon:'spinner_basic',type:'spinner',price:20,desc:'Solider Allrounder für Raubfische.',tag:'Standard',boost:{}},
+  softbait_basic:{name:'Gummifisch Standard',icon:'softbait_basic',type:'softbait',price:20,desc:'Grundnah stark, besonders auf Zander.',tag:'Standard',boost:{}},
+  spinner_premium:{name:'Blinker Premium',icon:'spinner_premium',type:'spinner',price:35,desc:'Etwas auffälliger und insgesamt fängiger.',tag:'+15 % Attraktivität',boost:{pike:1.15,zander:1.15,perch:1.15,catfish:1.15}},
+  softbait_premium:{name:'Gummifisch Premium',icon:'softbait_premium',type:'softbait',price:35,desc:'Mehr Aktion und etwas höhere Raubfischchance.',tag:'+15 % Attraktivität',boost:{pike:1.15,zander:1.15,perch:1.15,catfish:1.15}},
+  pike_special:{name:'Hecht-Spezial',icon:'pike_special',type:'spinner',price:50,desc:'Gezielt auf Hecht abgestimmt.',tag:'Hecht ++',boost:{pike:1.65,zander:.82,perch:.92,catfish:.70}},
+  zander_special:{name:'Zander-Spezial',icon:'zander_special',type:'softbait',price:50,desc:'Grundnaher Spezialköder für Zander.',tag:'Zander ++',boost:{zander:1.70,pike:.86,perch:.90,catfish:.88}},
+  perch_special:{name:'Barsch-Spezial',icon:'perch_special',type:'spinner',price:45,desc:'Kompakt und aggressiv für Barsche.',tag:'Barsch ++',boost:{perch:1.75,pike:.88,zander:.82,catfish:.55}},
+  catfish_special:{name:'Wels-Spezial',icon:'catfish_special',type:'softbait',price:55,desc:'Große Silhouette für Wels.',tag:'Wels ++',boost:{catfish:2.05,zander:.82,pike:.82,perch:.55}}
 };
 const ANGLING_EQUIPMENT_CATALOG={
   rod_standard:{
@@ -27556,9 +27404,9 @@ function anglingApplyActiveRodAppearance(){
 }
 
 const ANGLING_FEED_CATALOG={
-  cheap:{name:'Lockfutter günstig',price:50,tag:'10 Min. · guter Effekt',desc:'Einfaches Lockfutter. Erhöht Aktivität und Bisschance am Futterplatz deutlich.',bite:1.45,attract:1.22,predator:1.08,radius:2.6},
-  normal:{name:'Lockfutter normal',price:80,tag:'10 Min. · starker Effekt',desc:'Kräftiger Futtermix. Baut einen klaren Futterplatz auf und zieht Fische spürbar an.',bite:1.80,attract:1.42,predator:1.13,radius:2.9},
-  premium:{name:'Lockfutter Premium',price:120,tag:'10 Min. · sehr starker Effekt',desc:'Hochwertiger Futtermix. Maximale Lockwirkung und deutlich erhöhte Aktivität am Spot.',bite:2.25,attract:1.68,predator:1.20,radius:3.2}
+  cheap:{name:'Lockfutter günstig',price:100,tag:'10 Min. · guter Effekt',desc:'Einfaches Lockfutter. Erhöht Aktivität und Bisschance am Futterplatz deutlich.',bite:1.45,attract:1.22,predator:1.08,radius:2.6},
+  normal:{name:'Lockfutter normal',price:165,tag:'10 Min. · starker Effekt',desc:'Kräftiger Futtermix. Baut einen klaren Futterplatz auf und zieht Fische spürbar an.',bite:1.80,attract:1.42,predator:1.13,radius:2.9},
+  premium:{name:'Lockfutter Premium',price:260,tag:'10 Min. · sehr starker Effekt',desc:'Hochwertiger Futtermix. Maximale Lockwirkung und deutlich erhöhte Aktivität am Spot.',bite:2.25,attract:1.68,predator:1.20,radius:3.2}
 };
 const ANGLING_FEED_DURATION=10*60*1000;
 const ANGLING_FEED_BUILDUP=4*60*1000;
@@ -29822,8 +29670,8 @@ function buildAnglingHallOfFameSlides(){
   const slides=[{
     kicker:'AC 1956 · VEREINSWEIHER',
     title:'Hall of Fame',
-    value:'Die Besten am Weiher',
-    detail:'Gesamtwertung, Rekorde, Artenvielfalt, Erfahrung und Aktivität – mit den ersten drei Plätzen jeder Disziplin.',
+    value:'Rekorde, Fortschritt und große Momente',
+    detail:'Nicht nur der längste Fisch zählt: Hier geht es auch um Fangqualität, Artenvielfalt, Erfahrung und Ausdauer.',
     fireworks:3
   }];
 
@@ -29831,68 +29679,107 @@ function buildAnglingHallOfFameSlides(){
   const rows=(anglingHallOfFameRows||[]).slice().sort(
     (a,b)=>(Number(b.lengthCm ?? b.cm)||0)-(Number(a.lengthCm ?? a.cm)||0)
   );
-  const medals=['🥇','🥈','🥉'];
-  const asArray=(primary,fallback)=>{
-    if(Array.isArray(primary)&&primary.length)return primary.slice(0,3);
-    return fallback?[fallback]:[];
-  };
-  const rankingSlide=(kicker,title,ranking,valueFn,detail,fireworks=2)=>{
-    if(!ranking.length)return;
+
+  // Spektakulärster Einzelfang bleibt als eigene Disziplin erhalten.
+  const biggest=hof?.biggestCatch||rows[0]||null;
+  if(biggest){
+    const rawSpecies=String(biggest.species||'');
+    const species=ANGLING_LEADERBOARD_API_TO_SPECIES[rawSpecies]||rawSpecies;
+    const cm=Number(biggest.lengthCm ?? biggest.cm)||0;
+    const kg=Number(biggest.weightKg ?? biggest.kg)||0;
     slides.push({
-      kicker,title,value:'',
-      ranking:ranking.slice(0,3).map((r,i)=>({
-        medal:medals[i]||((i+1)+'.'),
-        name:String(r?.name||'Anonym').slice(0,30),
-        value:valueFn(r,i)
-      })),
-      detail,fireworks
+      kicker:'🐟 GRÖSSTER VERÖFFENTLICHTER FANG',
+      title:String(biggest.name||'Anonym').slice(0,30),
+      value:(fishDisplayNames[species]||rawSpecies||'Fisch')+' · '+formatAnglingLength(cm)+(kg?' · '+formatAnglingWeight(kg):''),
+      detail:'Der aktuell längste freiwillig veröffentlichte Fang am Vereinsweiher.',
+      fireworks:3
     });
-  };
+  }
 
-  const overall=Array.isArray(hof?.overall)?hof.overall.slice(0,3):[];
-  rankingSlide(
-    '🏆 WEIHERMEISTER · GESAMTWERTUNG','Die Gesamtwertung',overall,
-    r=>Number(r.score||0).toLocaleString('de-DE',{minimumFractionDigits:1,maximumFractionDigits:1})+' P · '+(Number(r.speciesCount)||0)+'/'+(Number(r.speciesTotal)||16)+' Arten',
-    '50 % Fangqualität · 20 % Artenvielfalt · 20 % Erfahrung · 10 % Aktivität',4
-  );
+  // V14: echte kombinierte Gesamtwertung.
+  const overall=Array.isArray(hof?.overall)?hof.overall:[];
+  overall.slice(0,3).forEach((r,i)=>{
+    const medals=['🏆','🥈','🥉'];
+    slides.push({
+      kicker:i===0
+        ?'🏆 WEIHERMEISTER · GESAMTWERTUNG'
+        :(medals[i]+' GESAMTWERTUNG · PLATZ '+(i+1)),
+      title:String(r.name||'Anonym').slice(0,30),
+      value:Number(r.score||0).toLocaleString('de-DE',{minimumFractionDigits:1,maximumFractionDigits:1})+
+        ' Punkte · '+(Number(r.speciesCount)||0)+'/'+(Number(r.speciesTotal)||16)+' Arten',
+      detail:
+        (Number(r.lifetimeXp)||0).toLocaleString('de-DE')+' Gesamt-EP · '+
+        (Number(r.totalCatches)||0).toLocaleString('de-DE')+' Fänge · Fangqualität '+
+        Number(r.qualityPercent||0).toLocaleString('de-DE',{maximumFractionDigits:0})+' %',
+      fireworks:i===0?4:2
+    });
+  });
 
-  rankingSlide(
-    '🎯 REKORDJÄGER','Die stärksten Artenrekorde',
-    asArray(hof?.recordHunterTop3,hof?.recordHunter),
-    r=>Number(r.qualityPercent||0).toLocaleString('de-DE',{maximumFractionDigits:0})+' %',
-    'Gewertet werden die fünf stärksten veröffentlichten Artenrekorde relativ zur jeweiligen Fischart.'
-  );
-  rankingSlide(
-    '🌐 ALLROUNDER','Die vielseitigsten Angler',
-    asArray(hof?.allrounderTop3,hof?.allrounder),
-    r=>(Number(r.speciesCount)||0)+'/'+(Number(r.speciesTotal)||16)+' Arten',
-    'Hier zählt, wie viele unterschiedliche Fischarten mit veröffentlichtem Bestfang vertreten sind.'
-  );
-  rankingSlide(
-    '⭐ ERFAHRUNG','Die erfahrensten Angler',
-    asArray(hof?.experiencedTop3,hof?.experienced),
-    r=>(Number(r.lifetimeXp)||0).toLocaleString('de-DE')+' Gesamt-EP',
-    'Ausgegebene EP bleiben erhalten: Entscheidend ist die gesamte gesammelte Spielerfahrung.'
-  );
-  rankingSlide(
-    '🎣 AKTIVITÄT','Die fleißigsten Angler',
-    asArray(hof?.activeTop3,hof?.active),
-    r=>(Number(r.totalCatches)||0).toLocaleString('de-DE')+' Fänge',
-    'Gewertet wird die Gesamtzahl der im Cloud-Spielstand registrierten Fänge.'
-  );
+  function addCategory(entry,kicker,value,detail,fireworks=1){
+    if(!entry)return;
+    slides.push({
+      kicker,
+      title:String(entry.name||'Anonym').slice(0,30),
+      value,
+      detail,
+      fireworks
+    });
+  }
 
-  let biggestTop=asArray(hof?.biggestCatchesTop3,hof?.biggestCatch);
-  if(!biggestTop.length)biggestTop=rows.slice(0,3);
-  rankingSlide(
-    '🐟 GRÖSSTE VERÖFFENTLICHTE FÄNGE','Die größten Einzelfänge',biggestTop,
-    r=>{
-      const rawSpecies=String(r?.species||'');
-      const species=ANGLING_LEADERBOARD_API_TO_SPECIES[rawSpecies]||rawSpecies;
-      const cm=Number(r?.lengthCm ?? r?.cm)||0;
-      return (fishDisplayNames[species]||rawSpecies||'Fisch')+' · '+formatAnglingLength(cm);
-    },
-    'Die drei aktuell längsten freiwillig veröffentlichten Fänge am Vereinsweiher.',3
-  );
+  if(hof?.recordHunter){
+    addCategory(
+      hof.recordHunter,
+      '🎯 REKORDJÄGER',
+      Number(hof.recordHunter.qualityPercent||0).toLocaleString('de-DE',{maximumFractionDigits:0})+' % Fangqualität',
+      'Bewertet werden die fünf stärksten veröffentlichten Artenrekorde relativ zur jeweiligen Fischart.',
+      2
+    );
+  }
+
+  if(hof?.allrounder){
+    addCategory(
+      hof.allrounder,
+      '🌐 ALLROUNDER',
+      (Number(hof.allrounder.speciesCount)||0)+' von '+(Number(hof.allrounder.speciesTotal)||16)+' Arten',
+      'Wer viele unterschiedliche Arten stark befischt, wird hier belohnt.',
+      2
+    );
+  }
+
+  if(hof?.experienced){
+    addCategory(
+      hof.experienced,
+      '⭐ ERFAHRENSTER ANGLER',
+      (Number(hof.experienced.lifetimeXp)||0).toLocaleString('de-DE')+' Gesamt-EP',
+      'Ausgegebene EP zählen weiterhin: Entscheidend ist die gesamte Spielerfahrung.',
+      1
+    );
+  }
+
+  if(hof?.active){
+    addCategory(
+      hof.active,
+      '🎣 FLEISSIGSTER ANGLER',
+      (Number(hof.active.totalCatches)||0).toLocaleString('de-DE')+' Fänge',
+      'Die Gesamtzahl aller im Cloud-Spielstand registrierten Fänge.',
+      1
+    );
+  }
+
+  // Fallback auf die alte Bestenliste, solange V14 noch nicht bereitgestellt ist.
+  if(!overall.length){
+    rows.slice(0,3).forEach((r,i)=>{
+      const species=ANGLING_LEADERBOARD_API_TO_SPECIES[r.species]||r.species;
+      const cm=Number(r.lengthCm ?? r.cm)||0,kg=Number(r.weightKg ?? r.kg)||0;
+      slides.push({
+        kicker:i===0?'🏆 GRÖSSTER ÖFFENTLICHER FANG':'TOP '+(i+1)+' · BESTENLISTE',
+        title:String(r.name||'Anonym').slice(0,30),
+        value:(fishDisplayNames[species]||species||'Fisch')+' · '+formatAnglingLength(cm)+(kg?' · '+formatAnglingWeight(kg):''),
+        detail:'Übergangsanzeige der bisherigen öffentlichen Bestenliste.',
+        fireworks:i===0?3:1
+      });
+    });
+  }
 
   const koiCatchers=Array.isArray(hof?.koiCatchers)&&hof.koiCatchers.length
     ? hof.koiCatchers
@@ -29909,42 +29796,83 @@ function buildAnglingHallOfFameSlides(){
         });
         return out;
       })();
-  if(koiCatchers.length){
+
+  koiCatchers.forEach((r,index)=>{
+    const cm=Number(r.lengthCm ?? r.cm)||70;
+    const kg=Number(r.weightKg ?? r.kg)||anglingEstimatedKg('koi',cm);
+    const count=koiCatchers.length;
     slides.push({
-      kicker:'🏅 GELBER KOI · EHRENTAFEL',
-      title:koiCatchers.length===1?'Ein besonderer Fang':koiCatchers.length+' eingetragene Fänger',
-      value:koiCatchers.map(r=>String(r.name||'Anonym').slice(0,30)).join(' · '),
-      detail:'Öffentlich eingetragene Fänger des einzigen gelben Koi im Vereinsweiher.',
+      kicker:'🏅 FÄNGER DES GELBEN KOI'+(count>1?' · '+(index+1)+'/'+count:''),
+      title:String(r.name||'Anonym').slice(0,30),
+      value:'Gelber Koi · '+formatAnglingLength(cm)+(kg?' · '+formatAnglingWeight(kg):''),
+      detail:count===1
+        ?'Der öffentlich eingetragene Fänger des einzigen gelben Koi im Vereinsweiher.'
+        :'Einer von '+count+' öffentlich eingetragenen Fängern des einzigen gelben Koi im Vereinsweiher.',
       fireworks:3
     });
-  }
+  });
 
-  // Eine einzige persönliche Zusammenfassung statt fünf teilweise doppelter Folien.
   const info=anglingLevelInfo();
-  const best=anglingHallOfFameBestLocalRecord();
-  const speciesRecords=Object.keys(anglingProgress?.records||{}).filter(k=>anglingProgress.records[k]).length;
-  const speciesTotal=Object.keys(ANGLING_POPULATION||{}).length;
-  const summary=[
-    (Number(anglingProgress.lifetimeXp)||0).toLocaleString('de-DE')+' Gesamt-EP',
-    (Number(anglingProgress.totalCatches)||0).toLocaleString('de-DE')+' Fänge',
-    speciesRecords+'/'+speciesTotal+' Arten'
-  ];
   slides.push({
     kicker:'DEIN ANGLER',
     title:'Stufe '+info.current.level+' · '+info.current.title,
-    value:summary.join(' · '),
-    detail:(best?'Bestfang '+(fishDisplayNames[best.species]||best.species)+' '+formatAnglingLength(best.cm)+' · ':'')+
-      (info.next?(info.span-info.within).toLocaleString('de-DE')+' EP bis „'+info.next.title+'“.':'Höchste Anglerstufe erreicht.'),
+    value:info.next
+      ?(info.within.toLocaleString('de-DE')+' / '+info.span.toLocaleString('de-DE')+' Gesamt-EP')
+      :'Höchste Anglerstufe erreicht',
+    detail:info.next
+      ?((info.span-info.within).toLocaleString('de-DE')+' EP bis „'+info.next.title+'“.')
+      :'Du hast den Weihermeister-Level erreicht.',
     progress:info.progress,
     fireworks:info.progress>.85?2:0
   });
 
-  slides.push({
-    kicker:'AC 1956 · HALL OF FAME',
-    title:'Petri Heil!',
-    value:'Jeder Fang kann die Rangliste verändern.',
-    detail:'Gewertet werden ausschließlich freiwillig veröffentlichte Rekorde und freigegebene Spielstände.',
+  const best=anglingHallOfFameBestLocalRecord();
+  if(best)slides.push({
+    kicker:'DEIN PERSÖNLICHER REKORD',
+    title:fishDisplayNames[best.species]||best.species,
+    value:formatAnglingLength(best.cm)+(best.kg?' · '+formatAnglingWeight(best.kg):''),
+    detail:'Dein aktuell längster lokal gespeicherter Bestfang.',
     fireworks:2
+  });
+
+  const speciesRecords=Object.keys(anglingProgress?.records||{}).filter(k=>anglingProgress.records[k]).length;
+  const speciesTotal=Object.keys(ANGLING_POPULATION||{}).length;
+  slides.push({
+    kicker:'DEINE ARTENVIELFALT',
+    title:speciesRecords+' von '+speciesTotal+' Fischarten',
+    value:speciesRecords>=speciesTotal?'Alle Arten am Weiher gefangen':(speciesTotal-speciesRecords)+' Arten fehlen noch',
+    detail:'Jede erstmals gefangene Art erweitert deine persönliche Sammlung.',
+    progress:speciesTotal?speciesRecords/speciesTotal:0,
+    fireworks:speciesRecords>=speciesTotal?3:0
+  });
+
+  const catchStats=new Map();
+  for(const caught of (anglingProgress?.catches||[])){
+    if(!caught?.species)continue;
+    const stat=catchStats.get(caught.species)||{species:caught.species,count:0,totalCm:0,bestCm:0};
+    const cm=Math.max(0,Number(caught.cm)||0);
+    stat.count++;stat.totalCm+=cm;stat.bestCm=Math.max(stat.bestCm,cm);
+    catchStats.set(caught.species,stat);
+  }
+  const favorite=[...catchStats.values()].sort((a,b)=>b.count-a.count||b.bestCm-a.bestCm)[0];
+  if(favorite){
+    const avgCm=favorite.count?favorite.totalCm/favorite.count:0;
+    slides.push({
+      kicker:'DEIN LIEBLINGSFISCH',
+      title:fishDisplayNames[favorite.species]||favorite.species,
+      value:favorite.count.toLocaleString('de-DE')+'-mal im Fangbuch',
+      detail:'Ø '+formatAnglingLength(avgCm)+' · Bestmaß '+formatAnglingLength(favorite.bestCm)+' · Aus den letzten bis zu 100 Fängen.',
+      fireworks:favorite.count>=10?1:0
+    });
+  }
+
+  slides.push({
+    kicker:'DEINE BILANZ',
+    title:(Number(anglingProgress.totalCatches)||0).toLocaleString('de-DE')+' gefangene Fische',
+    value:speciesRecords+' persönliche Artenrekorde',
+    detail:'Gesamt-EP: '+(Number(anglingProgress.lifetimeXp)||0).toLocaleString('de-DE')+
+      ' · Verfügbare EP: '+(Number(anglingProgress.xp)||0).toLocaleString('de-DE'),
+    fireworks:1
   });
 
   anglingHallOfFameSlides=slides;
@@ -30000,18 +29928,6 @@ function showAnglingHallOfFameSlide(index){
     anglingHallOfFameKicker.textContent=slide.kicker||'';
     anglingHallOfFameTitle.textContent=slide.title||'';
     anglingHallOfFameValue.textContent=slide.value||'';
-    if(anglingHallOfFameRankingEl){
-      anglingHallOfFameRankingEl.replaceChildren();
-      const ranking=Array.isArray(slide.ranking)?slide.ranking:[];
-      ranking.forEach(row=>{
-        const line=document.createElement('div');line.className='angling-hof-rank-row';
-        const medal=document.createElement('span');medal.className='angling-hof-rank-medal';medal.textContent=row.medal||'';
-        const name=document.createElement('strong');name.className='angling-hof-rank-name';name.textContent=row.name||'Anonym';
-        const value=document.createElement('span');value.className='angling-hof-rank-value';value.textContent=row.value||'';
-        line.append(medal,name,value);anglingHallOfFameRankingEl.appendChild(line);
-      });
-      anglingHallOfFameRankingEl.classList.toggle('show',ranking.length>0);
-    }
     anglingHallOfFameDetail.textContent=slide.detail||'';
     const progress=Number(slide.progress);
     if(Number.isFinite(progress)){
@@ -30075,17 +29991,6 @@ function syncAnglingHallOfFameOverlayLayout(rect=getAnglingHallOfFameViewportRec
     localBottom=Math.max(localBottom,rect.height-flagTip.y+14);
   }
   localBottom=Math.min(localBottom,Math.max(20,rect.height-190));
-  // Auf Telefonen darf die Karte trotz Fahnenfreihaltung nicht in die obere
-  // Navigation wandern. Die eigentliche Absicherung erfolgt über die kompaktere
-  // mobile Top-3-Karte; diese Grenze verhindert extreme Projektionslagen.
-  if(document.documentElement.classList.contains('aczo-phone-layout')){
-    const cardH=anglingHallOfFameCard?.offsetHeight||0;
-    const safeTop=Math.max(104,Math.min(150,rect.height*.12));
-    if(cardH>0){
-      const maxBottom=Math.max(20,rect.height-safeTop-cardH);
-      localBottom=Math.min(localBottom,maxBottom);
-    }
-  }
   anglingHallOfFame.style.setProperty('--hof-card-x',Math.round(rect.left+localCardX)+'px');
   anglingHallOfFame.style.setProperty('--hof-card-bottom',Math.round(Math.max(0,innerHeight-rect.bottom)+localBottom)+'px');
 }
@@ -32193,50 +32098,50 @@ function anglingLocalDayKey(ts=Date.now()){
 }
 
 const ANGLING_DAILY_QUEST_KEY='aczo56-angling-daily-quests-v1';
-const ANGLING_DAILY_QUEST_BONUS_EP=50;
+const ANGLING_DAILY_QUEST_BONUS_EP=25;
 const ANGLING_DAILY_QUEST_PREDATORS=new Set(['pike','zander','catfish','eel','perch']);
 const ANGLING_DAILY_QUEST_PEACEFUL=new Set(['roach','rudd','bream','tench','carp','mirrorcarp','grasscarp','koi']);
 const ANGLING_DAILY_QUESTS=[
   // LEICHT – bewusst unterschiedliche Spielideen, nicht nur kleinere Zahlen derselben Aufgabe.
-  {id:'l_catch2',difficulty:'light',category:'volume',family:'catch-count',title:'Erster Erfolg',desc:'Fange 2 Fische.',reward:20,kind:'count',target:2},
-  {id:'l_species2',difficulty:'light',category:'variety',family:'species-variety',title:'Artenwechsel',desc:'Fange 2 verschiedene Fischarten.',reward:25,kind:'uniqueSpecies',target:2},
-  {id:'l_natural1',difficulty:'light',category:'method',family:'natural-method',title:'Natur pur',desc:'Fange einen Fisch mit Naturköder.',reward:20,kind:'naturalCount',target:1},
-  {id:'l_worm1',difficulty:'light',category:'bait',family:'specific-bait',title:'Wurmklassiker',desc:'Fange einen Fisch mit Wurm.',reward:20,kind:'baitCount',target:1,baits:['worm']},
-  {id:'l_feed1',difficulty:'light',category:'tactic',family:'feed-tactic',title:'Gut vorbereitet',desc:'Fange einen Fisch innerhalb eines aktiven Futterplatzes.',reward:25,kind:'feedCount',target:1,onFeed:true},
-  {id:'l_nofeed1',difficulty:'light',category:'tactic',family:'feed-tactic',title:'Ohne Lockfutter',desc:'Fange einen Fisch außerhalb eines aktiven Futterplatzes.',reward:25,kind:'feedCount',target:1,onFeed:false},
-  {id:'l_depth25',difficulty:'light',category:'depth',family:'depth',title:'Etwas tiefer',desc:'Fange einen Fisch aus mindestens 2,5 m Tiefe.',reward:25,kind:'depthCount',target:1,minDepth:2.5},
-  {id:'l_size35',difficulty:'light',category:'size',family:'size',title:'Solider Fang',desc:'Fange einen Fisch über 35 cm.',reward:25,kind:'sizeCount',target:1,minCm:35},
-  {id:'l_silver',difficulty:'light',category:'target',family:'fish-target',fishTheme:true,title:'Silber im Kescher',desc:'Fange ein Rotauge oder eine Rotfeder.',reward:25,kind:'targetSpecies',target:1,species:['roach','rudd']},
-  {id:'l_ufersmall',difficulty:'light',category:'target',family:'fish-target',fishTheme:true,title:'Uferbewohner',desc:'Fange eine Grundel oder einen Sonnenbarsch.',reward:20,kind:'targetSpecies',target:1,species:['goby','sunfish']},
-  {id:'l_perch',difficulty:'light',category:'target',family:'fish-target',fishTheme:true,title:'Stachelritter',desc:'Fange einen Flussbarsch.',reward:25,kind:'targetSpecies',target:1,species:['perch']},
+  {id:'l_catch2',difficulty:'light',category:'volume',family:'catch-count',title:'Erster Erfolg',desc:'Fange 2 Fische.',reward:10,kind:'count',target:2},
+  {id:'l_species2',difficulty:'light',category:'variety',family:'species-variety',title:'Artenwechsel',desc:'Fange 2 verschiedene Fischarten.',reward:15,kind:'uniqueSpecies',target:2},
+  {id:'l_natural1',difficulty:'light',category:'method',family:'natural-method',title:'Natur pur',desc:'Fange einen Fisch mit Naturköder.',reward:10,kind:'naturalCount',target:1},
+  {id:'l_worm1',difficulty:'light',category:'bait',family:'specific-bait',title:'Wurmklassiker',desc:'Fange einen Fisch mit Wurm.',reward:10,kind:'baitCount',target:1,baits:['worm']},
+  {id:'l_feed1',difficulty:'light',category:'tactic',family:'feed-tactic',title:'Gut vorbereitet',desc:'Fange einen Fisch innerhalb eines aktiven Futterplatzes.',reward:15,kind:'feedCount',target:1,onFeed:true},
+  {id:'l_nofeed1',difficulty:'light',category:'tactic',family:'feed-tactic',title:'Ohne Lockfutter',desc:'Fange einen Fisch außerhalb eines aktiven Futterplatzes.',reward:15,kind:'feedCount',target:1,onFeed:false},
+  {id:'l_depth25',difficulty:'light',category:'depth',family:'depth',title:'Etwas tiefer',desc:'Fange einen Fisch aus mindestens 2,5 m Tiefe.',reward:15,kind:'depthCount',target:1,minDepth:2.5},
+  {id:'l_size35',difficulty:'light',category:'size',family:'size',title:'Solider Fang',desc:'Fange einen Fisch über 35 cm.',reward:15,kind:'sizeCount',target:1,minCm:35},
+  {id:'l_silver',difficulty:'light',category:'target',family:'fish-target',fishTheme:true,title:'Silber im Kescher',desc:'Fange ein Rotauge oder eine Rotfeder.',reward:15,kind:'targetSpecies',target:1,species:['roach','rudd']},
+  {id:'l_ufersmall',difficulty:'light',category:'target',family:'fish-target',fishTheme:true,title:'Uferbewohner',desc:'Fange eine Grundel oder einen Sonnenbarsch.',reward:10,kind:'targetSpecies',target:1,species:['goby','sunfish']},
+  {id:'l_perch',difficulty:'light',category:'target',family:'fish-target',fishTheme:true,title:'Stachelritter',desc:'Fange einen Flussbarsch.',reward:15,kind:'targetSpecies',target:1,species:['perch']},
 
   // MITTEL
-  {id:'m_species3',difficulty:'medium',category:'variety',family:'species-variety',title:'Bunter Kescher',desc:'Fange 3 verschiedene Fischarten.',reward:35,kind:'uniqueSpecies',target:3},
-  {id:'m_natural2',difficulty:'medium',category:'method',family:'natural-method',title:'Naturköder-Session',desc:'Fange 2 Fische mit Naturködern.',reward:35,kind:'naturalCount',target:2},
-  {id:'m_baits2',difficulty:'medium',category:'bait',family:'bait-variety',title:'Köderwechsel',desc:'Fange Fische mit 2 unterschiedlichen Ködern.',reward:35,kind:'uniqueBaits',target:2},
-  {id:'m_predator1',difficulty:'medium',category:'fishgroup',family:'predator-group',fishTheme:true,title:'Raubfischkontakt',desc:'Fange einen Raubfisch.',reward:35,kind:'groupCount',target:1,group:'predator'},
-  {id:'m_peace2',difficulty:'medium',category:'fishgroup',family:'peaceful-group',fishTheme:true,title:'Friedfischrunde',desc:'Fange 2 Friedfische.',reward:35,kind:'groupCount',target:2,group:'peaceful'},
-  {id:'m_artificial1',difficulty:'medium',category:'method',family:'artificial-method',title:'Aktiv gesucht',desc:'Fange einen Fisch mit Kunstköder.',reward:35,kind:'artificialCount',target:1},
-  {id:'m_depth4',difficulty:'medium',category:'depth',family:'depth',title:'Tiefe gesucht',desc:'Fange einen Fisch aus mindestens 4,0 m Tiefe.',reward:35,kind:'depthCount',target:1,minDepth:4},
-  {id:'m_size50',difficulty:'medium',category:'size',family:'size',title:'Halber Meter',desc:'Fange einen Fisch über 50 cm.',reward:35,kind:'sizeCount',target:1,minCm:50},
-  {id:'m_spots2',difficulty:'medium',category:'tactic',family:'spot-tactic',title:'Zwei Plätze',desc:'Fange jeweils einen Fisch an 2 deutlich unterschiedlichen Angelstellen.',reward:35,kind:'uniqueSpots',target:2},
-  {id:'m_bream',difficulty:'medium',category:'target',family:'fish-target',fishTheme:true,title:'Breit gebaut',desc:'Fange eine Brasse.',reward:35,kind:'targetSpecies',target:1,species:['bream']},
-  {id:'m_tench',difficulty:'medium',category:'target',family:'fish-target',fishTheme:true,title:'Goldgrün',desc:'Fange eine Schleie.',reward:40,kind:'targetSpecies',target:1,species:['tench']},
-  {id:'m_carp',difficulty:'medium',category:'target',family:'fish-target',fishTheme:true,title:'Karpfenzeit',desc:'Fange einen Schuppen-, Spiegel- oder Graskarpfen.',reward:40,kind:'targetSpecies',target:1,species:['carp','mirrorcarp','grasscarp']},
-  {id:'m_perch_lure',difficulty:'medium',category:'target',family:'fish-target',fishTheme:true,title:'Barsch aktiv',desc:'Fange einen Flussbarsch mit Kunstköder.',reward:40,kind:'targetMethod',target:1,species:['perch'],method:'artificial'},
+  {id:'m_species3',difficulty:'medium',category:'variety',family:'species-variety',title:'Bunter Kescher',desc:'Fange 3 verschiedene Fischarten.',reward:20,kind:'uniqueSpecies',target:3},
+  {id:'m_natural2',difficulty:'medium',category:'method',family:'natural-method',title:'Naturköder-Session',desc:'Fange 2 Fische mit Naturködern.',reward:20,kind:'naturalCount',target:2},
+  {id:'m_baits2',difficulty:'medium',category:'bait',family:'bait-variety',title:'Köderwechsel',desc:'Fange Fische mit 2 unterschiedlichen Ködern.',reward:20,kind:'uniqueBaits',target:2},
+  {id:'m_predator1',difficulty:'medium',category:'fishgroup',family:'predator-group',fishTheme:true,title:'Raubfischkontakt',desc:'Fange einen Raubfisch.',reward:20,kind:'groupCount',target:1,group:'predator'},
+  {id:'m_peace2',difficulty:'medium',category:'fishgroup',family:'peaceful-group',fishTheme:true,title:'Friedfischrunde',desc:'Fange 2 Friedfische.',reward:20,kind:'groupCount',target:2,group:'peaceful'},
+  {id:'m_artificial1',difficulty:'medium',category:'method',family:'artificial-method',title:'Aktiv gesucht',desc:'Fange einen Fisch mit Kunstköder.',reward:20,kind:'artificialCount',target:1},
+  {id:'m_depth4',difficulty:'medium',category:'depth',family:'depth',title:'Tiefe gesucht',desc:'Fange einen Fisch aus mindestens 4,0 m Tiefe.',reward:20,kind:'depthCount',target:1,minDepth:4},
+  {id:'m_size50',difficulty:'medium',category:'size',family:'size',title:'Halber Meter',desc:'Fange einen Fisch über 50 cm.',reward:20,kind:'sizeCount',target:1,minCm:50},
+  {id:'m_spots2',difficulty:'medium',category:'tactic',family:'spot-tactic',title:'Zwei Plätze',desc:'Fange jeweils einen Fisch an 2 deutlich unterschiedlichen Angelstellen.',reward:20,kind:'uniqueSpots',target:2},
+  {id:'m_bream',difficulty:'medium',category:'target',family:'fish-target',fishTheme:true,title:'Breit gebaut',desc:'Fange eine Brasse.',reward:20,kind:'targetSpecies',target:1,species:['bream']},
+  {id:'m_tench',difficulty:'medium',category:'target',family:'fish-target',fishTheme:true,title:'Goldgrün',desc:'Fange eine Schleie.',reward:25,kind:'targetSpecies',target:1,species:['tench']},
+  {id:'m_carp',difficulty:'medium',category:'target',family:'fish-target',fishTheme:true,title:'Karpfenzeit',desc:'Fange einen Schuppen-, Spiegel- oder Graskarpfen.',reward:25,kind:'targetSpecies',target:1,species:['carp','mirrorcarp','grasscarp']},
+  {id:'m_perch_lure',difficulty:'medium',category:'target',family:'fish-target',fishTheme:true,title:'Barsch aktiv',desc:'Fange einen Flussbarsch mit Kunstköder.',reward:25,kind:'targetMethod',target:1,species:['perch'],method:'artificial'},
 
   // SCHWER
-  {id:'h_species4',difficulty:'hard',category:'variety',family:'species-variety',title:'Artenkenner',desc:'Fange 4 verschiedene Fischarten.',reward:50,kind:'uniqueSpecies',target:4},
-  {id:'h_size70',difficulty:'hard',category:'size',family:'size',title:'Großer Fang',desc:'Fange einen Fisch über 70 cm.',reward:50,kind:'sizeCount',target:1,minCm:70},
-  {id:'h_predators2',difficulty:'hard',category:'fishgroup',family:'predator-group',fishTheme:true,title:'Räuber unterwegs',desc:'Fange 2 Raubfische.',reward:50,kind:'groupCount',target:2,group:'predator'},
-  {id:'h_baits3',difficulty:'hard',category:'bait',family:'bait-variety',title:'Köderkiste genutzt',desc:'Fange Fische mit 3 unterschiedlichen Ködern.',reward:50,kind:'uniqueBaits',target:3},
-  {id:'h_allround',difficulty:'hard',category:'method',family:'mixed-method',title:'Allround-Angler',desc:'Fange mindestens einen Fisch mit Naturköder und einen mit Kunstköder.',reward:50,kind:'allroundMethods',target:2},
-  {id:'h_depth4x2',difficulty:'hard',category:'depth',family:'depth',title:'Tiefenjäger',desc:'Fange 2 Fische aus mindestens 4,0 m Tiefe.',reward:50,kind:'depthCount',target:2,minDepth:4},
-  {id:'h_mobile',difficulty:'hard',category:'tactic',family:'spot-tactic',title:'Mobil bleiben',desc:'Fange 3 Fische an mindestens 2 deutlich unterschiedlichen Angelstellen.',reward:50,kind:'catchesAcrossSpots',target:3,minSpots:2},
-  {id:'h_big_nofeed',difficulty:'hard',category:'tactic',family:'feed-tactic',title:'Groß ohne Futter',desc:'Fange einen Fisch über 60 cm außerhalb eines aktiven Futterplatzes.',reward:60,kind:'sizeNoFeed',target:1,minCm:60},
-  {id:'h_baitfish_predator',difficulty:'hard',category:'method',family:'baitfish-method',fishTheme:true,title:'Raubfischansitz',desc:'Fange einen Raubfisch mit Köderfisch.',reward:60,kind:'groupMethod',target:1,group:'predator',method:'baitfish'},
-  {id:'h_pike_zander',difficulty:'hard',category:'target',family:'fish-target',fishTheme:true,title:'Räuber im Fokus',desc:'Fange einen Hecht oder Zander.',reward:50,kind:'targetSpecies',target:1,species:['pike','zander']},
-  {id:'h_catch5',difficulty:'hard',category:'volume',family:'catch-count',title:'Guter Angeltag',desc:'Fange insgesamt 5 Fische.',reward:50,kind:'count',target:5}
+  {id:'h_species4',difficulty:'hard',category:'variety',family:'species-variety',title:'Artenkenner',desc:'Fange 4 verschiedene Fischarten.',reward:30,kind:'uniqueSpecies',target:4},
+  {id:'h_size70',difficulty:'hard',category:'size',family:'size',title:'Großer Fang',desc:'Fange einen Fisch über 70 cm.',reward:30,kind:'sizeCount',target:1,minCm:70},
+  {id:'h_predators2',difficulty:'hard',category:'fishgroup',family:'predator-group',fishTheme:true,title:'Räuber unterwegs',desc:'Fange 2 Raubfische.',reward:30,kind:'groupCount',target:2,group:'predator'},
+  {id:'h_baits3',difficulty:'hard',category:'bait',family:'bait-variety',title:'Köderkiste genutzt',desc:'Fange Fische mit 3 unterschiedlichen Ködern.',reward:30,kind:'uniqueBaits',target:3},
+  {id:'h_allround',difficulty:'hard',category:'method',family:'mixed-method',title:'Allround-Angler',desc:'Fange mindestens einen Fisch mit Naturköder und einen mit Kunstköder.',reward:30,kind:'allroundMethods',target:2},
+  {id:'h_depth4x2',difficulty:'hard',category:'depth',family:'depth',title:'Tiefenjäger',desc:'Fange 2 Fische aus mindestens 4,0 m Tiefe.',reward:30,kind:'depthCount',target:2,minDepth:4},
+  {id:'h_mobile',difficulty:'hard',category:'tactic',family:'spot-tactic',title:'Mobil bleiben',desc:'Fange 3 Fische an mindestens 2 deutlich unterschiedlichen Angelstellen.',reward:30,kind:'catchesAcrossSpots',target:3,minSpots:2},
+  {id:'h_big_nofeed',difficulty:'hard',category:'tactic',family:'feed-tactic',title:'Groß ohne Futter',desc:'Fange einen Fisch über 60 cm außerhalb eines aktiven Futterplatzes.',reward:35,kind:'sizeNoFeed',target:1,minCm:60},
+  {id:'h_baitfish_predator',difficulty:'hard',category:'method',family:'baitfish-method',fishTheme:true,title:'Raubfischansitz',desc:'Fange einen Raubfisch mit Köderfisch.',reward:35,kind:'groupMethod',target:1,group:'predator',method:'baitfish'},
+  {id:'h_pike_zander',difficulty:'hard',category:'target',family:'fish-target',fishTheme:true,title:'Räuber im Fokus',desc:'Fange einen Hecht oder Zander.',reward:30,kind:'targetSpecies',target:1,species:['pike','zander']},
+  {id:'h_catch5',difficulty:'hard',category:'volume',family:'catch-count',title:'Guter Angeltag',desc:'Fange insgesamt 5 Fische.',reward:30,kind:'count',target:5}
 ];
 let anglingDailyQuestState=null;
 let anglingDailyQuestIntroTimer=0;
@@ -34667,9 +34572,9 @@ function attemptAnglingLanding(){
 }
 
 const ANGLING_EP_REWARD_RANGE={
-  goby:[20,30],roach:[22,32],rudd:[23,33],sunfish:[22,32],perch:[26,38],bream:[30,42],
-  tench:[34,47],eel:[36,50],zander:[48,65],carp:[54,72],mirrorcarp:[60,78],pike:[60,84],
-  sturgeon:[72,96],grasscarp:[78,102],catfish:[85,120]
+  goby:[18,27],roach:[19,28],rudd:[20,28],sunfish:[19,28],perch:[22,32],bream:[25,35],
+  tench:[28,38],eel:[30,42],zander:[40,55],carp:[45,60],mirrorcarp:[50,65],pike:[50,70],
+  sturgeon:[60,80],grasscarp:[65,85],catfish:[70,100]
 };
 function anglingEpRewardForCatch(caught){
   if(caught.species==='koi')return caught.snagged?500:1000;
@@ -35132,42 +35037,51 @@ function anglingLureDepthLimits(x,y){
 }
 
 function spawnGroundFeedingBubbles(x,y,z,strength=1,surfaceHint=true,mode='ambient'){
+  bubblePool.points.visible=true;
   const s=THREE.MathUtils.clamp(strength,.45,1.5);
   const feedspot=mode==='feedspot';
 
-  // V1.2: Blasen entstehen zusammen mit dem Gründeln am Boden und müssen den
-  // kompletten Weg bis zur Oberfläche sichtbar zurücklegen. Der frühere Effekt
-  // erzeugte den Oberflächenring sofort, obwohl die eigentliche Blase nach nur
-  // wenigen Sekunden starb und die Oberfläche aus 3–5 m Tiefe nie erreichen konnte.
-  // Futterplatz bewusst zurückhaltend: wenige einzelne Blasen pro Gründelimpuls.
-  // Natürliches Gründeln bleibt überall dezent: pro tatsächlichem Gründelimpuls
-  // nur einzelne Blasen. Der Futterplatz wirkt lebhafter, weil dort mehr Fische
-  // und mehr Gründelereignisse stattfinden, nicht weil jeder Fisch eine Fontäne erzeugt.
-  const count=Math.random()<.62 ? 1 : 2;
-  const surface=anglingSurfaceZ(x,y);
+  // Am Futterplatz soll der Luftaustritt realistischer und zurückhaltender wirken.
+  const count=(feedspot?2:4)+Math.round((feedspot?3:5)*s);
   for(let i=0;i<count;i++){
     const a=Math.random()*Math.PI*2;
-    const side=.006+Math.random()*.018*s;
-    const startZ=z+.025+Math.random()*.055;
-    const rise=.18+Math.random()*.08;
-    const travel=Math.max(.12,surface-startZ);
-    const life=travel/rise+1.4+Math.random()*1.8;
+    const side=(feedspot?.008:.010)+Math.random()*(feedspot?.018:.028)*s;
     spawnPoolParticle(
       bubblePool,
-      x+(Math.random()-.5)*(.12+.07*s),
-      y+(Math.random()-.5)*(.12+.07*s),
-      startZ,
-      // Sichtbare Luftblase: deutlich größer als Sediment-/Futterpartikel.
-      // Unterschiedliche Größen verhindern einen künstlichen Perlenketten-Look.
-      .78+Math.random()*.52,
-      life,
+      x+(Math.random()-.5)*((feedspot?.10:.14)+.06*s),
+      y+(Math.random()-.5)*((feedspot?.10:.14)+.06*s),
+      z+.04+Math.random()*.06,
+      .24+Math.random()*(feedspot?.20:.28),
+      (feedspot?3.2:3.4)+Math.random()*(feedspot?2.6:3.0),
       Math.cos(a)*side,
       Math.sin(a)*side,
-      rise,
-      .94
+      .15+Math.random()*(feedspot?.11:.15),
+      .38
     );
   }
+
+  // Von oben nur ein sehr dezenter, kleiner Luftblasenteppich – keine großen
+  // Platscher. Am Futterplatz nochmals sparsamer.
+  if(surfaceHint){
+    const n=feedspot?(Math.random()<.70?1:2):(2+(Math.random()<.55?1:0));
+    for(let i=0;i<n;i++){
+      anglingFeedingFxPos.set(
+        x+(Math.random()-.5)*((feedspot?.14:.18)+.10*s),
+        y+(Math.random()-.5)*((feedspot?.14:.18)+.10*s),
+        0
+      );
+      spawnAnglingSurfaceEffect(
+        anglingFeedingFxPos,
+        (feedspot?.06:.08)+.07*s,
+        (feedspot?.64:.72)+Math.random()*.20,
+        (feedspot?1.18:1.45)+Math.random()*(feedspot?.45:.75),
+        (feedspot?.09:.12)+Math.random()*.04,
+        (feedspot?.26:.34)+Math.random()*.12
+      );
+    }
+  }
 }
+
 function spawnAnglingBottomDust(x,y,z,strength=1){
   sedimentPool.points.visible=true;
   const s=THREE.MathUtils.clamp(strength,.4,1.6);
@@ -35191,12 +35105,12 @@ function spawnAnglingBottomDust(x,y,z,strength=1){
       x+(Math.random()-.5)*(.26+.10*s),
       y+(Math.random()-.5)*(.26+.10*s),
       z+.02+Math.random()*.09,
-      .82+Math.random()*1.28,
-      5.8+Math.random()*3.2,
+      .72+Math.random()*1.18,
+      2.2+Math.random()*2.4,
       Math.cos(a)*speed,
       Math.sin(a)*speed,
-      .024+Math.random()*.030,
-      .38
+      .012+Math.random()*.040,
+      .30
     );
   }
 }
