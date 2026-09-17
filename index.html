@@ -14469,6 +14469,11 @@ function setFishSubmergedLayers(submerged){
   suspendedWater.visible=submerged;
   bubblePool.points.visible=submerged;
   sedimentPool.points.visible=submerged;
+  // WolkenFix: Nur die großen weichen Gründel-/Sediment-Sprites gehören
+  // ausschließlich in die Unterwasseransicht. Feine Partikel und Blasen bleiben unberührt.
+  if(!submerged && typeof anglingSedimentClouds!=='undefined'){
+    for(const cloud of anglingSedimentClouds) cloud.visible=false;
+  }
   bloodPool.points.visible=submerged;
   underwaterStones.visible=submerged;
   fishBottomClutterGroup.visible=false;
@@ -14874,18 +14879,14 @@ function spawnAnglingSedimentCloud(x,y,z,strength=1){
   cloud.userData.life=cloud.userData.maxLife=7.6+Math.random()*2.4;
   cloud.userData.startSize=.22+.05*strength;cloud.userData.endSize=1.00+.28*strength;
   cloud.userData.rise=.030+Math.random()*.014; // insgesamt ca. 25–40 cm über Grund
-  cloud.material.rotation=Math.random()*Math.PI;cloud.material.opacity=0;cloud.scale.setScalar(cloud.userData.startSize);cloud.visible=true;
+  cloud.material.rotation=Math.random()*Math.PI;cloud.material.opacity=0;cloud.scale.setScalar(cloud.userData.startSize);cloud.visible=!!window.__aczoUnderwaterSceneActive;
 }
 function updateAnglingSedimentClouds(dt){
-  // MASTER FIX 2026-09-17: Die weichen Gründel-/Sedimentwolken bleiben
-  // ausschließlich in der Unterwasseransicht sichtbar. Ihre Simulation läuft
-  // unverändert weiter; feine Bodenpartikel, Fresswinkel und Luftblasen bleiben
-  // vollständig unangetastet.
-  const showSedimentClouds=!!(fishMode||(anglingMode&&anglingCinematicView==='underwater'));
   for(const cloud of anglingSedimentClouds){
-    if(cloud.userData.life<=0){cloud.visible=false;continue;}
+    if(cloud.userData.life<=0)continue;
     cloud.userData.life-=dt;
     if(cloud.userData.life<=0){cloud.visible=false;cloud.material.opacity=0;continue;}
+    cloud.visible=true;
     const p=1-cloud.userData.life/cloud.userData.maxLife;
     const grow=THREE.MathUtils.smoothstep(p,0,.58);
     cloud.scale.setScalar(THREE.MathUtils.lerp(cloud.userData.startSize,cloud.userData.endSize,grow));
@@ -14893,7 +14894,6 @@ function updateAnglingSedimentClouds(dt){
     const fadeIn=THREE.MathUtils.smoothstep(p,0,.24);
     const fadeOut=1-THREE.MathUtils.smoothstep(p,.64,1);
     cloud.material.opacity=.70*fadeIn*fadeOut;
-    cloud.visible=showSedimentClouds;
   }
 }
 // Große, kräftige Blutwolke: weiterhin nur ein einziges Partikelsystem.
