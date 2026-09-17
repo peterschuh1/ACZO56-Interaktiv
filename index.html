@@ -1971,6 +1971,12 @@ html,body{
 .angling-hof-card h2{margin:6px 0 1px;font-size:clamp(21px,4.2vw,38px);line-height:1.04;font-weight:1000;text-shadow:0 3px 20px rgba(0,0,0,.35)}
 .angling-hof-value{margin-top:7px;font-size:clamp(15px,2.5vw,22px);font-weight:950;color:#f4fff8}
 .angling-hof-detail{margin:7px auto 0;max-width:610px;font-size:11px;line-height:1.45;font-weight:750;color:rgba(239,255,247,.82)}
+.angling-hof-ranking{display:none;margin:10px auto 2px;max-width:470px;text-align:left}
+.angling-hof-ranking.show{display:grid;gap:5px}
+.angling-hof-rank-row{display:grid;grid-template-columns:28px minmax(0,1fr) auto;gap:8px;align-items:center;padding:7px 10px;border-radius:11px;background:rgba(255,255,255,.065);border:1px solid rgba(255,255,255,.12)}
+.angling-hof-rank-row:first-child{background:rgba(255,225,105,.11);border-color:rgba(255,225,105,.30)}
+.angling-hof-rank-medal{font-size:16px;text-align:center}.angling-hof-rank-name{font-size:11px;font-weight:950;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.angling-hof-rank-value{font-size:10px;font-weight:900;color:#f4fff8;text-align:right;white-space:nowrap}
+@media(max-width:680px){.angling-hof-ranking{margin-top:8px}.angling-hof-rank-row{grid-template-columns:24px minmax(0,1fr) auto;padding:6px 8px;gap:6px}.angling-hof-rank-medal{font-size:14px}.angling-hof-rank-name{font-size:9.5px}.angling-hof-rank-value{font-size:8.8px}}
 .angling-hof-progress{height:8px;margin:11px auto 2px;max-width:420px;border-radius:999px;background:rgba(255,255,255,.14);overflow:hidden}
 .angling-hof-progress>span{display:block;height:100%;width:0;border-radius:inherit;background:linear-gradient(90deg,#d6aa42,#fff0a4);transition:width .65s ease}
 .angling-hof-dots{display:flex;justify-content:center;gap:5px;margin-top:11px}.angling-hof-dots i{display:block;width:5px;height:5px;border-radius:50%;background:rgba(255,255,255,.25)}.angling-hof-dots i.on{background:#ffe583;box-shadow:0 0 10px rgba(255,229,131,.72)}
@@ -4314,6 +4320,7 @@ html,body{
        <div id="anglingHallOfFameKicker" class="angling-hof-kicker">VEREINSWEIHER</div>
        <h2 id="anglingHallOfFameTitle">Hall of Fame</h2>
        <div id="anglingHallOfFameValue" class="angling-hof-value"></div>
+       <div id="anglingHallOfFameRanking" class="angling-hof-ranking"></div>
        <div id="anglingHallOfFameDetail" class="angling-hof-detail"></div>
        <div id="anglingHallOfFameProgress" class="angling-hof-progress" style="display:none"><span></span></div>
        <div id="anglingHallOfFameDots" class="angling-hof-dots"></div>
@@ -4822,7 +4829,7 @@ Bitte gefundene Darstellungs-, Steuerungs- oder Spielfehler mit Gerät, Browser 
            • Angelspiel, Fischkontakt, Hänger- und Kollisionsverhalten weiter verfeinert<br>
            • Besucher, Fahrzeuge und Bewegungsabläufe in der Umgebung überarbeitet<br>
            • EP-System, Tagesaufgaben sowie Lockfutter- und Köderpreise neu ausbalanciert<br>
-           • Neue Animationen und versteckte Easter Eggs ergänzt<br>
+           • Neue Animationen und versteckte Easter Eggs ergänzt<br>           • Hall of Fame mit Top-3-Vereinswertungen und kompakter persönlicher Übersicht überarbeitet<br>
            • Zahlreiche Detailkorrekturen an Darstellung, Bedienung und Spielablauf
          </div>
        </details>
@@ -5516,6 +5523,7 @@ const anglingHallOfFameKicker=document.getElementById('anglingHallOfFameKicker')
 const anglingHallOfFameTitle=document.getElementById('anglingHallOfFameTitle');
 const anglingHallOfFameValue=document.getElementById('anglingHallOfFameValue');
 const anglingHallOfFameDetail=document.getElementById('anglingHallOfFameDetail');
+const anglingHallOfFameRankingEl=document.getElementById('anglingHallOfFameRanking');
 const anglingHallOfFameProgress=document.getElementById('anglingHallOfFameProgress');
 const anglingHallOfFameDots=document.getElementById('anglingHallOfFameDots');
 const anglingHallOfFameCredit=document.getElementById('anglingHallOfFameCredit');
@@ -29760,8 +29768,8 @@ function buildAnglingHallOfFameSlides(){
   const slides=[{
     kicker:'AC 1956 · VEREINSWEIHER',
     title:'Hall of Fame',
-    value:'Rekorde, Fortschritt und große Momente',
-    detail:'Nicht nur der längste Fisch zählt: Hier geht es auch um Fangqualität, Artenvielfalt, Erfahrung und Ausdauer.',
+    value:'Die Besten am Weiher',
+    detail:'Gesamtwertung, Rekorde, Artenvielfalt, Erfahrung und Aktivität – mit den ersten drei Plätzen jeder Disziplin.',
     fireworks:3
   }];
 
@@ -29769,107 +29777,68 @@ function buildAnglingHallOfFameSlides(){
   const rows=(anglingHallOfFameRows||[]).slice().sort(
     (a,b)=>(Number(b.lengthCm ?? b.cm)||0)-(Number(a.lengthCm ?? a.cm)||0)
   );
-
-  // Spektakulärster Einzelfang bleibt als eigene Disziplin erhalten.
-  const biggest=hof?.biggestCatch||rows[0]||null;
-  if(biggest){
-    const rawSpecies=String(biggest.species||'');
-    const species=ANGLING_LEADERBOARD_API_TO_SPECIES[rawSpecies]||rawSpecies;
-    const cm=Number(biggest.lengthCm ?? biggest.cm)||0;
-    const kg=Number(biggest.weightKg ?? biggest.kg)||0;
+  const medals=['🥇','🥈','🥉'];
+  const asArray=(primary,fallback)=>{
+    if(Array.isArray(primary)&&primary.length)return primary.slice(0,3);
+    return fallback?[fallback]:[];
+  };
+  const rankingSlide=(kicker,title,ranking,valueFn,detail,fireworks=2)=>{
+    if(!ranking.length)return;
     slides.push({
-      kicker:'🐟 GRÖSSTER VERÖFFENTLICHTER FANG',
-      title:String(biggest.name||'Anonym').slice(0,30),
-      value:(fishDisplayNames[species]||rawSpecies||'Fisch')+' · '+formatAnglingLength(cm)+(kg?' · '+formatAnglingWeight(kg):''),
-      detail:'Der aktuell längste freiwillig veröffentlichte Fang am Vereinsweiher.',
-      fireworks:3
+      kicker,title,value:'',
+      ranking:ranking.slice(0,3).map((r,i)=>({
+        medal:medals[i]||((i+1)+'.'),
+        name:String(r?.name||'Anonym').slice(0,30),
+        value:valueFn(r,i)
+      })),
+      detail,fireworks
     });
-  }
+  };
 
-  // V14: echte kombinierte Gesamtwertung.
-  const overall=Array.isArray(hof?.overall)?hof.overall:[];
-  overall.slice(0,3).forEach((r,i)=>{
-    const medals=['🏆','🥈','🥉'];
-    slides.push({
-      kicker:i===0
-        ?'🏆 WEIHERMEISTER · GESAMTWERTUNG'
-        :(medals[i]+' GESAMTWERTUNG · PLATZ '+(i+1)),
-      title:String(r.name||'Anonym').slice(0,30),
-      value:Number(r.score||0).toLocaleString('de-DE',{minimumFractionDigits:1,maximumFractionDigits:1})+
-        ' Punkte · '+(Number(r.speciesCount)||0)+'/'+(Number(r.speciesTotal)||16)+' Arten',
-      detail:
-        (Number(r.lifetimeXp)||0).toLocaleString('de-DE')+' Gesamt-EP · '+
-        (Number(r.totalCatches)||0).toLocaleString('de-DE')+' Fänge · Fangqualität '+
-        Number(r.qualityPercent||0).toLocaleString('de-DE',{maximumFractionDigits:0})+' %',
-      fireworks:i===0?4:2
-    });
-  });
+  const overall=Array.isArray(hof?.overall)?hof.overall.slice(0,3):[];
+  rankingSlide(
+    '🏆 WEIHERMEISTER · GESAMTWERTUNG','Die Gesamtwertung',overall,
+    r=>Number(r.score||0).toLocaleString('de-DE',{minimumFractionDigits:1,maximumFractionDigits:1})+' P · '+(Number(r.speciesCount)||0)+'/'+(Number(r.speciesTotal)||16)+' Arten',
+    '50 % Fangqualität · 20 % Artenvielfalt · 20 % Erfahrung · 10 % Aktivität',4
+  );
 
-  function addCategory(entry,kicker,value,detail,fireworks=1){
-    if(!entry)return;
-    slides.push({
-      kicker,
-      title:String(entry.name||'Anonym').slice(0,30),
-      value,
-      detail,
-      fireworks
-    });
-  }
+  rankingSlide(
+    '🎯 REKORDJÄGER','Die stärksten Artenrekorde',
+    asArray(hof?.recordHunterTop3,hof?.recordHunter),
+    r=>Number(r.qualityPercent||0).toLocaleString('de-DE',{maximumFractionDigits:0})+' %',
+    'Gewertet werden die fünf stärksten veröffentlichten Artenrekorde relativ zur jeweiligen Fischart.'
+  );
+  rankingSlide(
+    '🌐 ALLROUNDER','Die vielseitigsten Angler',
+    asArray(hof?.allrounderTop3,hof?.allrounder),
+    r=>(Number(r.speciesCount)||0)+'/'+(Number(r.speciesTotal)||16)+' Arten',
+    'Hier zählt, wie viele unterschiedliche Fischarten mit veröffentlichtem Bestfang vertreten sind.'
+  );
+  rankingSlide(
+    '⭐ ERFAHRUNG','Die erfahrensten Angler',
+    asArray(hof?.experiencedTop3,hof?.experienced),
+    r=>(Number(r.lifetimeXp)||0).toLocaleString('de-DE')+' Gesamt-EP',
+    'Ausgegebene EP bleiben erhalten: Entscheidend ist die gesamte gesammelte Spielerfahrung.'
+  );
+  rankingSlide(
+    '🎣 AKTIVITÄT','Die fleißigsten Angler',
+    asArray(hof?.activeTop3,hof?.active),
+    r=>(Number(r.totalCatches)||0).toLocaleString('de-DE')+' Fänge',
+    'Gewertet wird die Gesamtzahl der im Cloud-Spielstand registrierten Fänge.'
+  );
 
-  if(hof?.recordHunter){
-    addCategory(
-      hof.recordHunter,
-      '🎯 REKORDJÄGER',
-      Number(hof.recordHunter.qualityPercent||0).toLocaleString('de-DE',{maximumFractionDigits:0})+' % Fangqualität',
-      'Bewertet werden die fünf stärksten veröffentlichten Artenrekorde relativ zur jeweiligen Fischart.',
-      2
-    );
-  }
-
-  if(hof?.allrounder){
-    addCategory(
-      hof.allrounder,
-      '🌐 ALLROUNDER',
-      (Number(hof.allrounder.speciesCount)||0)+' von '+(Number(hof.allrounder.speciesTotal)||16)+' Arten',
-      'Wer viele unterschiedliche Arten stark befischt, wird hier belohnt.',
-      2
-    );
-  }
-
-  if(hof?.experienced){
-    addCategory(
-      hof.experienced,
-      '⭐ ERFAHRENSTER ANGLER',
-      (Number(hof.experienced.lifetimeXp)||0).toLocaleString('de-DE')+' Gesamt-EP',
-      'Ausgegebene EP zählen weiterhin: Entscheidend ist die gesamte Spielerfahrung.',
-      1
-    );
-  }
-
-  if(hof?.active){
-    addCategory(
-      hof.active,
-      '🎣 FLEISSIGSTER ANGLER',
-      (Number(hof.active.totalCatches)||0).toLocaleString('de-DE')+' Fänge',
-      'Die Gesamtzahl aller im Cloud-Spielstand registrierten Fänge.',
-      1
-    );
-  }
-
-  // Fallback auf die alte Bestenliste, solange V14 noch nicht bereitgestellt ist.
-  if(!overall.length){
-    rows.slice(0,3).forEach((r,i)=>{
-      const species=ANGLING_LEADERBOARD_API_TO_SPECIES[r.species]||r.species;
-      const cm=Number(r.lengthCm ?? r.cm)||0,kg=Number(r.weightKg ?? r.kg)||0;
-      slides.push({
-        kicker:i===0?'🏆 GRÖSSTER ÖFFENTLICHER FANG':'TOP '+(i+1)+' · BESTENLISTE',
-        title:String(r.name||'Anonym').slice(0,30),
-        value:(fishDisplayNames[species]||species||'Fisch')+' · '+formatAnglingLength(cm)+(kg?' · '+formatAnglingWeight(kg):''),
-        detail:'Übergangsanzeige der bisherigen öffentlichen Bestenliste.',
-        fireworks:i===0?3:1
-      });
-    });
-  }
+  let biggestTop=asArray(hof?.biggestCatchesTop3,hof?.biggestCatch);
+  if(!biggestTop.length)biggestTop=rows.slice(0,3);
+  rankingSlide(
+    '🐟 GRÖSSTE VERÖFFENTLICHTE FÄNGE','Die größten Einzelfänge',biggestTop,
+    r=>{
+      const rawSpecies=String(r?.species||'');
+      const species=ANGLING_LEADERBOARD_API_TO_SPECIES[rawSpecies]||rawSpecies;
+      const cm=Number(r?.lengthCm ?? r?.cm)||0;
+      return (fishDisplayNames[species]||rawSpecies||'Fisch')+' · '+formatAnglingLength(cm);
+    },
+    'Die drei aktuell längsten freiwillig veröffentlichten Fänge am Vereinsweiher.',3
+  );
 
   const koiCatchers=Array.isArray(hof?.koiCatchers)&&hof.koiCatchers.length
     ? hof.koiCatchers
@@ -29886,83 +29855,42 @@ function buildAnglingHallOfFameSlides(){
         });
         return out;
       })();
-
-  koiCatchers.forEach((r,index)=>{
-    const cm=Number(r.lengthCm ?? r.cm)||70;
-    const kg=Number(r.weightKg ?? r.kg)||anglingEstimatedKg('koi',cm);
-    const count=koiCatchers.length;
+  if(koiCatchers.length){
     slides.push({
-      kicker:'🏅 FÄNGER DES GELBEN KOI'+(count>1?' · '+(index+1)+'/'+count:''),
-      title:String(r.name||'Anonym').slice(0,30),
-      value:'Gelber Koi · '+formatAnglingLength(cm)+(kg?' · '+formatAnglingWeight(kg):''),
-      detail:count===1
-        ?'Der öffentlich eingetragene Fänger des einzigen gelben Koi im Vereinsweiher.'
-        :'Einer von '+count+' öffentlich eingetragenen Fängern des einzigen gelben Koi im Vereinsweiher.',
+      kicker:'🏅 GELBER KOI · EHRENTAFEL',
+      title:koiCatchers.length===1?'Ein besonderer Fang':koiCatchers.length+' eingetragene Fänger',
+      value:koiCatchers.map(r=>String(r.name||'Anonym').slice(0,30)).join(' · '),
+      detail:'Öffentlich eingetragene Fänger des einzigen gelben Koi im Vereinsweiher.',
       fireworks:3
     });
-  });
+  }
 
+  // Eine einzige persönliche Zusammenfassung statt fünf teilweise doppelter Folien.
   const info=anglingLevelInfo();
+  const best=anglingHallOfFameBestLocalRecord();
+  const speciesRecords=Object.keys(anglingProgress?.records||{}).filter(k=>anglingProgress.records[k]).length;
+  const speciesTotal=Object.keys(ANGLING_POPULATION||{}).length;
+  const summary=[
+    (Number(anglingProgress.lifetimeXp)||0).toLocaleString('de-DE')+' Gesamt-EP',
+    (Number(anglingProgress.totalCatches)||0).toLocaleString('de-DE')+' Fänge',
+    speciesRecords+'/'+speciesTotal+' Arten'
+  ];
   slides.push({
     kicker:'DEIN ANGLER',
     title:'Stufe '+info.current.level+' · '+info.current.title,
-    value:info.next
-      ?(info.within.toLocaleString('de-DE')+' / '+info.span.toLocaleString('de-DE')+' Gesamt-EP')
-      :'Höchste Anglerstufe erreicht',
-    detail:info.next
-      ?((info.span-info.within).toLocaleString('de-DE')+' EP bis „'+info.next.title+'“.')
-      :'Du hast den Weihermeister-Level erreicht.',
+    value:summary.join(' · '),
+    detail:(best?'Bestfang '+(fishDisplayNames[best.species]||best.species)+' '+formatAnglingLength(best.cm)+' · ':'')+
+      (info.next?(info.span-info.within).toLocaleString('de-DE')+' EP bis „'+info.next.title+'“.':'Höchste Anglerstufe erreicht.'),
     progress:info.progress,
     fireworks:info.progress>.85?2:0
   });
 
-  const best=anglingHallOfFameBestLocalRecord();
-  if(best)slides.push({
-    kicker:'DEIN PERSÖNLICHER REKORD',
-    title:fishDisplayNames[best.species]||best.species,
-    value:formatAnglingLength(best.cm)+(best.kg?' · '+formatAnglingWeight(best.kg):''),
-    detail:'Dein aktuell längster lokal gespeicherter Bestfang.',
+  slides.push({
+    kicker:'AC 1956 · HALL OF FAME',
+    title:'Petri Heil!',
+    value:'Jeder Fang kann die Rangliste verändern.',
+    detail:'Gewertet werden ausschließlich freiwillig veröffentlichte Rekorde und freigegebene Spielstände.',
     fireworks:2
-  });
-
-  const speciesRecords=Object.keys(anglingProgress?.records||{}).filter(k=>anglingProgress.records[k]).length;
-  const speciesTotal=Object.keys(ANGLING_POPULATION||{}).length;
-  slides.push({
-    kicker:'DEINE ARTENVIELFALT',
-    title:speciesRecords+' von '+speciesTotal+' Fischarten',
-    value:speciesRecords>=speciesTotal?'Alle Arten am Weiher gefangen':(speciesTotal-speciesRecords)+' Arten fehlen noch',
-    detail:'Jede erstmals gefangene Art erweitert deine persönliche Sammlung.',
-    progress:speciesTotal?speciesRecords/speciesTotal:0,
-    fireworks:speciesRecords>=speciesTotal?3:0
-  });
-
-  const catchStats=new Map();
-  for(const caught of (anglingProgress?.catches||[])){
-    if(!caught?.species)continue;
-    const stat=catchStats.get(caught.species)||{species:caught.species,count:0,totalCm:0,bestCm:0};
-    const cm=Math.max(0,Number(caught.cm)||0);
-    stat.count++;stat.totalCm+=cm;stat.bestCm=Math.max(stat.bestCm,cm);
-    catchStats.set(caught.species,stat);
-  }
-  const favorite=[...catchStats.values()].sort((a,b)=>b.count-a.count||b.bestCm-a.bestCm)[0];
-  if(favorite){
-    const avgCm=favorite.count?favorite.totalCm/favorite.count:0;
-    slides.push({
-      kicker:'DEIN LIEBLINGSFISCH',
-      title:fishDisplayNames[favorite.species]||favorite.species,
-      value:favorite.count.toLocaleString('de-DE')+'-mal im Fangbuch',
-      detail:'Ø '+formatAnglingLength(avgCm)+' · Bestmaß '+formatAnglingLength(favorite.bestCm)+' · Aus den letzten bis zu 100 Fängen.',
-      fireworks:favorite.count>=10?1:0
-    });
-  }
-
-  slides.push({
-    kicker:'DEINE BILANZ',
-    title:(Number(anglingProgress.totalCatches)||0).toLocaleString('de-DE')+' gefangene Fische',
-    value:speciesRecords+' persönliche Artenrekorde',
-    detail:'Gesamt-EP: '+(Number(anglingProgress.lifetimeXp)||0).toLocaleString('de-DE')+
-      ' · Verfügbare EP: '+(Number(anglingProgress.xp)||0).toLocaleString('de-DE'),
-    fireworks:1
   });
 
   anglingHallOfFameSlides=slides;
@@ -30018,6 +29946,18 @@ function showAnglingHallOfFameSlide(index){
     anglingHallOfFameKicker.textContent=slide.kicker||'';
     anglingHallOfFameTitle.textContent=slide.title||'';
     anglingHallOfFameValue.textContent=slide.value||'';
+    if(anglingHallOfFameRankingEl){
+      anglingHallOfFameRankingEl.replaceChildren();
+      const ranking=Array.isArray(slide.ranking)?slide.ranking:[];
+      ranking.forEach(row=>{
+        const line=document.createElement('div');line.className='angling-hof-rank-row';
+        const medal=document.createElement('span');medal.className='angling-hof-rank-medal';medal.textContent=row.medal||'';
+        const name=document.createElement('strong');name.className='angling-hof-rank-name';name.textContent=row.name||'Anonym';
+        const value=document.createElement('span');value.className='angling-hof-rank-value';value.textContent=row.value||'';
+        line.append(medal,name,value);anglingHallOfFameRankingEl.appendChild(line);
+      });
+      anglingHallOfFameRankingEl.classList.toggle('show',ranking.length>0);
+    }
     anglingHallOfFameDetail.textContent=slide.detail||'';
     const progress=Number(slide.progress);
     if(Number.isFinite(progress)){
