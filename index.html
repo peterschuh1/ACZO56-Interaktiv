@@ -14390,17 +14390,6 @@ function setFishSubmergedLayers(submerged){
   suspendedWater.visible=submerged;
   bubblePool.points.visible=submerged;
   sedimentPool.points.visible=submerged;
-  // FIX: weiche Grundwolken duerfen niemals durch die Wasseroberflaeche in
-  // der normalen Angelperspektive sichtbar bleiben. Beim Auftauchen werden
-  // laufende Wolken verworfen; neue entstehen erst wieder unter Wasser.
-  if(!submerged&&typeof anglingSedimentClouds!=='undefined'){
-    anglingSedimentClouds.forEach(cloud=>{
-      cloud.visible=false;
-      cloud.material.opacity=0;
-      cloud.userData.life=0;
-      cloud.userData.maxLife=0;
-    });
-  }
   bloodPool.points.visible=submerged;
   underwaterStones.visible=submerged;
   fishBottomClutterGroup.visible=false;
@@ -14759,14 +14748,21 @@ function spawnAnglingSedimentCloud(x,y,z,strength=1){
   cloud.material.rotation=Math.random()*Math.PI;cloud.material.opacity=0;cloud.scale.setScalar(cloud.userData.startSize);cloud.visible=true;
 }
 function updateAnglingSedimentClouds(dt){
+  // FIX V2: Ausschließlich die weichen Sediment-Sprites ausblenden, sobald die
+  // Kamera über Wasser ist. BubblePool, Blasenphysik und Oberflächenringe
+  // werden hier bewusst überhaupt nicht angefasst.
+  const showSedimentClouds=!!window.__aczoUnderwaterSceneActive;
   for(const cloud of anglingSedimentClouds){
-    if(cloud.userData.life<=0)continue;
+    if(cloud.userData.life<=0){cloud.visible=false;continue;}
     cloud.userData.life-=dt;
     if(cloud.userData.life<=0){cloud.visible=false;cloud.material.opacity=0;continue;}
     const p=1-cloud.userData.life/cloud.userData.maxLife;
     cloud.scale.setScalar(THREE.MathUtils.lerp(cloud.userData.startSize,cloud.userData.endSize,1-Math.pow(1-p,2)));
     cloud.position.z+=dt*.012;cloud.material.rotation+=dt*.06;
-    cloud.material.opacity=.64*Math.min(1,p*6)*Math.min(1,cloud.userData.life/1.05);
+    cloud.material.opacity=showSedimentClouds
+      ? .64*Math.min(1,p*6)*Math.min(1,cloud.userData.life/1.05)
+      : 0;
+    cloud.visible=showSedimentClouds;
   }
 }
 // Große, kräftige Blutwolke: weiterhin nur ein einziges Partikelsystem.
@@ -23022,14 +23018,9 @@ function updateFishActors(dt){
 
         if(!Number.isFinite(f.feedDustAt))f.feedDustAt=0;
         if(!Number.isFinite(f.feedBubbleAt))f.feedBubbleAt=0;
-        // FIX: Grund-/Sedimentwolken sind reine Unterwassereffekte.
-        // In der Ufer-/Angelperspektive darf der Futterplatz im Hintergrund
-        // weiter simuliert werden, sichtbar bleiben dort aber nur die dezenten
-        // Luftblasen/Oberflaechenringe.
         const canShowFeedingTrace=
           (fishVisualActive&&nearEnough)||
           (anglingMode&&anglingCinematicView==='shore'&&f.obj.position.distanceToSquared(camera.position)<2500);
-        const canShowFeedingDust=fishVisualActive&&nearEnough;
 
         if(canShowFeedingTrace){
           const feedStrength=
@@ -23040,7 +23031,7 @@ function updateFishActors(dt){
           const feedMode=(f.feedSource==='ambient'?'ambient':'feedspot');
           const shoreBubbleHint=anglingMode&&anglingCinematicView==='shore';
 
-          if(canShowFeedingDust&&fishWorldTime>=f.feedDustAt){
+          if(fishWorldTime>=f.feedDustAt){
             spawnAnglingBottomDust(
               f.obj.position.x+(Math.random()-.5)*.10,
               f.obj.position.y+(Math.random()-.5)*.10,
