@@ -3776,6 +3776,60 @@ html,body{
 .aczo-phone-layout .angling-hof-brand small{font-size:7px!important;letter-spacing:.12em!important}
 .aczo-phone-layout .angling-hof-brand strong{font-size:14px!important;letter-spacing:.035em!important}
 
+
+/* V1.3 HOF MOBILE BOTTOM: unten über dem Hausdach, aber mit reservierter
+   Signaturzone für „Produced by Predatorpit“. Himmel, Feuerwerk und Fahne
+   bleiben frei, die Signatur ebenfalls. */
+.aczo-phone-layout .angling-hof-card{
+  top:auto!important;
+  bottom:max(76px,calc(env(safe-area-inset-bottom) + 58px))!important;
+  transform:translateX(-50%)!important
+}
+
+/* V1.3 HOF MOBILE: Top-3-Karten kompakter halten.
+   Die Karten bleiben weiterhin oberhalb der projizierten Fahnenmastspitze,
+   werden aber nicht mehr so hoch, dass sie unter den Zurück-Button ragen. */
+.aczo-phone-layout .angling-hof-card:has(.angling-hof-ranking.show){
+  padding:10px 12px 10px!important;
+  border-radius:16px!important
+}
+.aczo-phone-layout .angling-hof-card:has(.angling-hof-ranking.show) .angling-hof-kicker{
+  font-size:7.4px!important;
+  line-height:1.05!important;
+  letter-spacing:.14em!important
+}
+.aczo-phone-layout .angling-hof-card:has(.angling-hof-ranking.show) h2{
+  margin:4px 0 0!important;
+  font-size:24px!important;
+  line-height:1!important
+}
+.aczo-phone-layout .angling-hof-card:has(.angling-hof-ranking.show) .angling-hof-ranking{
+  margin:7px auto 1px!important;
+  gap:4px!important
+}
+.aczo-phone-layout .angling-hof-card:has(.angling-hof-ranking.show) .angling-hof-rank-row{
+  grid-template-columns:22px minmax(0,1fr) auto!important;
+  min-height:0!important;
+  padding:5px 8px!important;
+  gap:6px!important;
+  border-radius:10px!important
+}
+.aczo-phone-layout .angling-hof-card:has(.angling-hof-ranking.show) .angling-hof-rank-medal{font-size:13px!important}
+.aczo-phone-layout .angling-hof-card:has(.angling-hof-ranking.show) .angling-hof-rank-name{font-size:9.2px!important}
+.aczo-phone-layout .angling-hof-card:has(.angling-hof-ranking.show) .angling-hof-rank-value{font-size:8.2px!important}
+.aczo-phone-layout .angling-hof-card:has(.angling-hof-ranking.show) .angling-hof-detail{
+  margin-top:6px!important;
+  font-size:8.8px!important;
+  line-height:1.22!important
+}
+.aczo-phone-layout .angling-hof-card:has(.angling-hof-ranking.show) .angling-hof-dots{
+  margin-top:7px!important;
+  gap:4px!important
+}
+.aczo-phone-layout .angling-hof-card:has(.angling-hof-ranking.show) .angling-hof-dots i{
+  width:4px!important;height:4px!important
+}
+
 /* Online-Präsenz ist eine kurze Statusmeldung und kein dauerhaftes HUD. Sie
    erscheint unterhalb der oberen Bedienelemente, auch während eines Drills. */
 .angling-community-toast{top:165px!important}
@@ -30021,6 +30075,17 @@ function syncAnglingHallOfFameOverlayLayout(rect=getAnglingHallOfFameViewportRec
     localBottom=Math.max(localBottom,rect.height-flagTip.y+14);
   }
   localBottom=Math.min(localBottom,Math.max(20,rect.height-190));
+  // Auf Telefonen darf die Karte trotz Fahnenfreihaltung nicht in die obere
+  // Navigation wandern. Die eigentliche Absicherung erfolgt über die kompaktere
+  // mobile Top-3-Karte; diese Grenze verhindert extreme Projektionslagen.
+  if(document.documentElement.classList.contains('aczo-phone-layout')){
+    const cardH=anglingHallOfFameCard?.offsetHeight||0;
+    const safeTop=Math.max(104,Math.min(150,rect.height*.12));
+    if(cardH>0){
+      const maxBottom=Math.max(20,rect.height-safeTop-cardH);
+      localBottom=Math.min(localBottom,maxBottom);
+    }
+  }
   anglingHallOfFame.style.setProperty('--hof-card-x',Math.round(rect.left+localCardX)+'px');
   anglingHallOfFame.style.setProperty('--hof-card-bottom',Math.round(Math.max(0,innerHeight-rect.bottom)+localBottom)+'px');
 }
