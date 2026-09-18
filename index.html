@@ -1569,31 +1569,35 @@ html,body{
 .angling-tension-fill{color:#73d866;background:repeating-linear-gradient(90deg,currentColor 0 6.5%,transparent 6.5% 8.33%)}.angling-stamina-fill{background:#4cb9df;width:100%}
 .angling-distance-fill{
   background-color:#d5b55c;
-  background-image:repeating-linear-gradient(
-    120deg,
-    rgba(45,34,5,.62) 0 5px,
-    rgba(255,239,166,.72) 5px 10px,
-    rgba(45,34,5,.18) 10px 15px,
-    rgba(255,255,255,.08) 15px 20px
+  background-image:linear-gradient(
+    90deg,
+    rgba(255,255,255,0) 0%,
+    rgba(255,247,198,.10) 25%,
+    rgba(255,250,214,.42) 48%,
+    rgba(255,250,214,.42) 52%,
+    rgba(255,247,198,.10) 75%,
+    rgba(255,255,255,0) 100%
   );
-  background-size:40px 100%;
-  background-position:0 0;
+  background-size:180% 100%;
+  background-position:50% 0;
   width:100%;
-  --distance-flow-duration:.8s
+  --distance-flow-duration:1.35s
 }
 .angling-distance-fill.distance-away{
-  animation:anglingDistanceAway var(--distance-flow-duration) linear infinite
+  animation:anglingDistanceAway var(--distance-flow-duration) ease-in-out infinite
 }
 .angling-distance-fill.distance-near{
-  animation:anglingDistanceNear var(--distance-flow-duration) linear infinite
+  animation:anglingDistanceNear var(--distance-flow-duration) ease-in-out infinite
 }
-.angling-distance-fill.distance-fast{filter:contrast(1.16) brightness(1.06)}
+.angling-distance-fill.distance-fast{filter:contrast(1.04) brightness(1.025)}
 @keyframes anglingDistanceAway{
-  from{background-position:0 0}
-  to{background-position:40px 0}
+  from{background-position:115% 0}
+  to{background-position:-15% 0}
 }
 @keyframes anglingDistanceNear{
-  from{background-position:0 0}
+  from{background-position:-15% 0}
+  to{background-position:115% 0}
+}
   to{background-position:-40px 0}
 }to{background-position:0 0}}
 .angling-drill-direction{font-size:13px;color:#ffe777;min-height:18px;font-weight:950}
@@ -26673,6 +26677,7 @@ let anglingFightSizeFactor=.5;
 let anglingDistanceUiPrev=null;
 let anglingDistanceUiSpeed=0;
 let anglingDistanceMotion=0;
+let anglingDistanceFlowState=0;
 let anglingCatchRevealData=null;
 let anglingLastSurfaceEffect=0;
 let anglingAimScreenX=.5;
@@ -34702,6 +34707,8 @@ function beginAnglingDrill(){
   anglingFightSizeFactor=sizeFactor;
   anglingDistanceUiPrev=anglingFightDistance;
   anglingDistanceUiSpeed=0;
+  anglingDistanceMotion=0;
+  anglingDistanceFlowState=0;
   anglingDrillStrength=THREE.MathUtils.clamp((ANGLING_STRENGTH[anglingPendingCatch.species]||.4)*(.72+.36*sizeFactor)*temp.run,.12,1.18);
   anglingFishBurstIndividual=.92+Math.random()*.16;
   anglingFishEnduranceIndividual=.92+Math.random()*.16;
@@ -35717,20 +35724,35 @@ function updateAnglingDrillUi(){
   );
   anglingFightDistanceFill.style.width=(distanceRemaining*100).toFixed(1)+'%';
 
-  // Netto-Schnurbewegung aus der Drillphysik:
-  // positiv = Fisch nimmt Schnur -> Muster nach rechts
-  // negativ = Angler gewinnt Schnur -> Muster nach links.
-  const distanceAway=anglingDistanceMotion>.025;
-  const distanceNear=anglingDistanceMotion<-.025;
+  // Ruhiger Schnurlauf: Richtung erst übernehmen, wenn die Netto-Bewegung
+  // eindeutig ist. Kleine Gegenbewegungen lassen die Animation nicht hektisch
+  // umspringen. 1 = Fisch nimmt Schnur, -1 = Angler gewinnt Schnur.
+  const motionAbs=Math.abs(anglingDistanceMotion);
+  const requestedFlow=anglingDistanceMotion>.055?1:
+    anglingDistanceMotion<-.055?-1:0;
+  if(requestedFlow!==0){
+    if(anglingDistanceFlowState===0 ||
+       requestedFlow===anglingDistanceFlowState ||
+       motionAbs>.14){
+      anglingDistanceFlowState=requestedFlow;
+    }
+  }else if(motionAbs<.018){
+    anglingDistanceFlowState=0;
+  }
+
+  const distanceAway=anglingDistanceFlowState===1;
+  const distanceNear=anglingDistanceFlowState===-1;
   const distanceMoving=distanceAway||distanceNear;
   anglingDistanceUiSpeed=THREE.MathUtils.lerp(
-    anglingDistanceUiSpeed,Math.abs(anglingDistanceMotion),.18
+    anglingDistanceUiSpeed,motionAbs,.075
   );
   anglingFightDistanceFill.classList.toggle('distance-away',distanceAway);
   anglingFightDistanceFill.classList.toggle('distance-near',distanceNear);
-  anglingFightDistanceFill.classList.toggle('distance-fast',distanceMoving&&anglingDistanceUiSpeed>.65);
+  anglingFightDistanceFill.classList.toggle('distance-fast',distanceMoving&&anglingDistanceUiSpeed>.90);
+  // Bewusst deutlich langsamer als zuvor. Selbst starke Fluchten bleiben
+  // visuell ruhig; Tempo wird erkennbar, ohne dass der Balken flimmert.
   const flowDuration=THREE.MathUtils.clamp(
-    .92/(.38+anglingDistanceUiSpeed*1.85),.14,1.05
+    1.65/(.72+anglingDistanceUiSpeed*.72),.72,1.75
   );
   anglingFightDistanceFill.style.setProperty(
     '--distance-flow-duration',flowDuration.toFixed(3)+'s'
