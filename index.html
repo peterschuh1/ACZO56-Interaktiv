@@ -1567,18 +1567,15 @@ html,body{
 .angling-drill-bar{height:11px;border-radius:999px;background:rgba(255,255,255,.20);overflow:hidden}
 .angling-drill-fill{display:block;height:100%;width:50%;min-width:2px;border-radius:inherit;transition:width .10s linear,background .12s linear}
 .angling-tension-fill{color:#73d866;background:repeating-linear-gradient(90deg,currentColor 0 6.5%,transparent 6.5% 8.33%)}.angling-stamina-fill{background:#4cb9df;width:100%}
-.angling-distance-fill{
-  background-color:#d5b55c;
-  background-image:repeating-linear-gradient(115deg,rgba(255,255,255,.24) 0 7px,rgba(255,255,255,.04) 7px 14px);
-  background-size:28px 28px;
-  width:100%;
-  --distance-flow-duration:.9s
-}
+.angling-distance-fill{position:relative;overflow:hidden;background-color:#d5b55c;background-image:repeating-linear-gradient(120deg,rgba(255,255,255,.30) 0 5px,rgba(72,52,10,.12) 5px 10px,transparent 10px 18px);background-size:36px 28px;width:100%;--distance-flow-duration:.9s}
+.angling-distance-fill::after{content:'';position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-style:normal;font-size:12px;font-weight:1000;line-height:1;color:rgba(30,24,5,.88);text-shadow:0 1px 1px rgba(255,255,255,.45);pointer-events:none}
+.angling-distance-fill.distance-away::after{content:'▶ ▶ ▶'}
+.angling-distance-fill.distance-near::after{content:'◀ ◀ ◀'}
 .angling-distance-fill.distance-away{animation:anglingDistanceAway var(--distance-flow-duration) linear infinite}
 .angling-distance-fill.distance-near{animation:anglingDistanceNear var(--distance-flow-duration) linear infinite}
-.angling-distance-fill.distance-fast{filter:brightness(1.10)}
-@keyframes anglingDistanceAway{from{background-position:0 0}to{background-position:28px 0}}
-@keyframes anglingDistanceNear{from{background-position:28px 0}to{background-position:0 0}}
+.angling-distance-fill.distance-fast::after{font-size:14px}
+@keyframes anglingDistanceAway{from{background-position:0 0}to{background-position:36px 0}}
+@keyframes anglingDistanceNear{from{background-position:36px 0}to{background-position:0 0}}
 .angling-drill-direction{font-size:13px;color:#ffe777;min-height:18px;font-weight:950}
 .angling-drill-help{font-size:8.5px;font-weight:800;opacity:.90;margin:3px 0 6px}
 .angling-reel-btn{display:inline-flex!important;align-items:center;justify-content:center;gap:9px;min-width:178px;min-height:44px!important;padding:6px 18px!important;border-radius:999px!important;background:#edf8ef!important;color:#173b2a!important;border:2px solid #fff!important;font-size:11px!important;font-weight:1000!important;touch-action:none;-webkit-user-select:none;user-select:none;box-shadow:0 4px 12px rgba(0,0,0,.30)}
@@ -34555,7 +34552,7 @@ const ANGLING_FIGHT_PROFILE={
   pike:{run:1.24,burst:1.34,runLength:.78,maxRun:9,runCost:1.18,lateral:1.28,surface:.62,toward:.32,stamina:.96},
   zander:{run:1.02,burst:1.12,runLength:.70,maxRun:7,runCost:1.08,lateral:.82,surface:.18,toward:.24,stamina:1.00},
   eel:{run:.72,burst:.60,runLength:1.12,maxRun:12,runCost:.72,lateral:.46,surface:.04,toward:.10,stamina:1.24},
-  catfish:{run:1.34,burst:1.52,runLength:1.78,maxRun:30,runCost:.90,lateral:.72,surface:.08,toward:.12,stamina:1.68},
+  catfish:{run:1.48,burst:1.62,runLength:1.92,maxRun:30,runCost:.78,lateral:.74,surface:.08,toward:.12,stamina:1.92},
   sturgeon:{run:1.12,burst:1.16,runLength:1.28,maxRun:22,runCost:1.04,lateral:.78,surface:.34,toward:.16,stamina:1.34},
   koi:{run:1.20,burst:1.08,runLength:1.30,maxRun:24,runCost:1.00,lateral:.94,surface:.22,toward:.18,stamina:1.28}
 };
@@ -35754,8 +35751,8 @@ function updateAnglingDrill(dt){
   const fight=anglingCurrentFightProfile||ANGLING_FIGHT_PROFILE.roach;
   if(anglingDrillRunTime>=anglingDrillRunDuration){
     anglingDrillRunTime=0;
-    const trophyRunDrive=THREE.MathUtils.lerp(.78,1.28,anglingFightSizeFactor);
-    const runFactor=Math.max(.55,fight.run*anglingFishTemperamentFactor*trophyRunDrive);
+    const trophyRunDrive=THREE.MathUtils.lerp(.82,1.48,anglingFightSizeFactor);
+    const runFactor=Math.max(.58,fight.run*anglingFishTemperamentFactor*trophyRunDrive);
     // Dauer einer Flucht: Art + Fischgröße + aktuelle Ausdauer.
     // Kapitaler Wels/Karpfen/Stör kann lange ziehen; Hecht/Zander bleiben
     // typischerweise kürzer und explosiver. 30 s bedeutet dabei nicht 30 s
@@ -35769,7 +35766,7 @@ function updateAnglingDrill(dt){
     // Meist mittlere Runs, gelegentlich ein wirklich langer Lauf bei einem
     // großen, noch frischen Fisch.
     const longRunChance=THREE.MathUtils.clamp(
-      (anglingFightSizeFactor-.30)*.78+anglingDrillStamina*.24,0,.78
+      (anglingFightSizeFactor-.22)*.92+anglingDrillStamina*.30,0,.88
     );
     const durationMix=Math.random()<longRunChance
       ? THREE.MathUtils.lerp(.62,1,Math.pow(Math.random(),.45))
@@ -35798,9 +35795,9 @@ function updateAnglingDrill(dt){
   const attack=THREE.MathUtils.smoothstep(rp,0,.16);
   const release=1-THREE.MathUtils.smoothstep(rp,.72,1);
   const runPulse=Math.pow(Math.max(0,Math.min(attack,release)),1.18);
-  const trophyReserve=THREE.MathUtils.clamp((anglingFightSizeFactor-.62)/.38,0,1);
+  const trophyReserve=THREE.MathUtils.clamp((anglingFightSizeFactor-.50)/.50,0,1);
   const effectiveStrength=anglingDrillStrength*
-    (THREE.MathUtils.lerp(.20,.34,trophyReserve)+THREE.MathUtils.lerp(.80,.66,trophyReserve)*anglingDrillStamina);
+    (THREE.MathUtils.lerp(.20,.43,trophyReserve)+THREE.MathUtils.lerp(.80,.57,trophyReserve)*anglingDrillStamina);
   const burst=(fight.burst||1)*anglingFishBurstIndividual;
   const runPower=effectiveStrength*burst*runPulse;
   const angleTension=anglingDrillAngleQuality>=0
@@ -35829,14 +35826,14 @@ function updateAnglingDrill(dt){
     const angleStaminaBonus=THREE.MathUtils.clamp(1+anglingDrillAngleQuality*.10,.90,1.10);
     anglingDrillStamina=Math.max(0,
       anglingDrillStamina-dt*.082*drag.stamina*angleStaminaBonus/
-      ((.58+effectiveStrength*.82)*Math.max(.58,anglingStaminaResistance)*(1+trophyReserve*.38))
+      ((.58+effectiveStrength*.82)*Math.max(.58,anglingStaminaResistance)*(1+trophyReserve*.78))
     );
   }
   // Auch eine Flucht kostet den Fisch Kraft. Explosive Arten verbrauchen in
   // ihrem Run mehr Reserven; ausdauernde Arten verteilen diese über längere Zeit.
   if(runPulse>.12&&anglingDrillStamina>.001&&!anglingFishTowardRun){
     const runFatigue=.040*(fight.runCost||1)*(.72+.48*effectiveStrength)
-      /Math.max(.72,anglingStaminaResistance);
+      /Math.max(.72,anglingStaminaResistance)*(1-trophyReserve*.48);
     anglingDrillStamina=Math.max(0,anglingDrillStamina-dt*runFatigue*runPulse);
   }
 
