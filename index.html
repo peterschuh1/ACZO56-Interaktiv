@@ -11367,11 +11367,11 @@ function updateAstronomy(){
   // Kein künstliches Anheben des Mondes mehr, wenn er unter dem Horizont steht.
   const sunUp=sunPos.altitude>0;
   const moonUp=moonPos.altitude>0;
-  // Die reale Mondposition darf tagsüber astronomisch über dem Horizont sein,
-  // in dieser Visualisierung wird die Scheibe aber erst ab der fortgeschrittenen
-  // Dämmerung gezeigt. Damit erscheint um 14:24 garantiert kein grauer Mond
-  // neben der Sonne; nachts bleibt er selbst bei 99 % Wolken diffus sichtbar.
-  const moonDisplayAllowed=moonUp&&sunPos.altitude<=THREE.MathUtils.degToRad(-4);
+  // Mondposition bleibt vollständig astronomisch. Die Sichtbarkeit wird nicht mehr
+  // hart bei -4° Sonnenhöhe geschaltet, sondern weich mit der Dämmerung eingeblendet.
+  const moonDisplayAllowed=moonUp;
+  const sunAltDeg=THREE.MathUtils.radToDeg(sunPos.altitude);
+  const moonTwilightVisibility=1-THREE.MathUtils.smoothstep(sunAltDeg,-6,4);
   let moonVec=celestialVector(moonPos,span*1.9);
 
   sun.position.copy(sunVec);
@@ -11397,7 +11397,7 @@ function updateAstronomy(){
   const moonCloudTransmission=Math.max(.13,1-.90*Math.pow(moonCloud,1.28));
   const moonVisualOpacity=moonDisplayAllowed
     ? THREE.MathUtils.clamp(
-        Math.max(.065,moonHorizonVisibility*THREE.MathUtils.lerp(1,.46,moonDaylight)*moonCloudTransmission),
+        moonHorizonVisibility*moonTwilightVisibility*THREE.MathUtils.lerp(1,.46,moonDaylight)*moonCloudTransmission,
         0,1
       )
     : 0;
@@ -11425,7 +11425,7 @@ function updateAstronomy(){
   // Unveränderter Ausgangswert für die Wolkendämpfung. Dadurch kann der
   // Regler die Sonne nicht bei jedem Aufruf erneut schwächer multiplizieren.
   sun.userData.clearSkyIntensity=sun.intensity;
-  moonLight.intensity=(moonDisplayAllowed ? 0.10+0.35*moonIll.fraction : 0)
+  moonLight.intensity=(moonDisplayAllowed ? (0.10+0.35*moonIll.fraction)*moonTwilightVisibility : 0)
     *((typeof diagnosticState==='undefined'||diagnosticState.relief)?1:0);
 
   // V36: kontinuierliche Helligkeit statt nur drei optischer Zustände.
