@@ -1568,12 +1568,10 @@ html,body{
 .angling-drill-fill{display:block;height:100%;width:50%;min-width:2px;border-radius:inherit;transition:width .10s linear,background .12s linear}
 .angling-tension-fill{color:#73d866;background:repeating-linear-gradient(90deg,currentColor 0 6.5%,transparent 6.5% 8.33%)}.angling-stamina-fill{background:#4cb9df;width:100%}
 .angling-distance-fill{position:relative;overflow:hidden;background-color:#d5b55c;background-image:repeating-linear-gradient(120deg,rgba(255,255,255,.30) 0 5px,rgba(72,52,10,.12) 5px 10px,transparent 10px 18px);background-size:36px 28px;width:100%;--distance-flow-duration:.9s}
-.angling-distance-fill::after{content:'';position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-style:normal;font-size:12px;font-weight:1000;line-height:1;color:rgba(30,24,5,.88);text-shadow:0 1px 1px rgba(255,255,255,.45);pointer-events:none}
-.angling-distance-fill.distance-away::after{content:'▶ ▶ ▶'}
-.angling-distance-fill.distance-near::after{content:'◀ ◀ ◀'}
+.angling-distance-arrow{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-style:normal;font-size:12px;font-weight:1000;line-height:1;color:#201805;text-shadow:0 1px 1px rgba(255,255,255,.65);pointer-events:none;white-space:nowrap;overflow:visible}
 .angling-distance-fill.distance-away{animation:anglingDistanceAway var(--distance-flow-duration) linear infinite}
 .angling-distance-fill.distance-near{animation:anglingDistanceNear var(--distance-flow-duration) linear infinite}
-.angling-distance-fill.distance-fast::after{font-size:14px}
+.angling-distance-fill.distance-fast .angling-distance-arrow{font-size:14px}
 @keyframes anglingDistanceAway{from{background-position:0 0}to{background-position:36px 0}}
 @keyframes anglingDistanceNear{from{background-position:36px 0}to{background-position:0 0}}
 .angling-drill-direction{font-size:13px;color:#ffe777;min-height:18px;font-weight:950}
@@ -4780,7 +4778,7 @@ html,body{
        </div>
        <div class="angling-drill-row"><span>Schnurbelastung</span><div class="angling-drill-bar"><i id="anglingTensionFill" class="angling-drill-fill angling-tension-fill"></i></div><span id="anglingTensionText">gut</span></div>
        <div class="angling-drill-row"><span>Ausdauer</span><div class="angling-drill-bar"><i id="anglingStaminaFill" class="angling-drill-fill angling-stamina-fill"></i></div><span id="anglingStaminaText">100 %</span></div>
-       <div class="angling-drill-row"><span>Entfernung</span><div class="angling-drill-bar"><i id="anglingFightDistanceFill" class="angling-drill-fill angling-distance-fill"></i></div><span id="anglingFightDistanceText">10 m</span></div>
+       <div class="angling-drill-row"><span>Entfernung</span><div class="angling-drill-bar"><i id="anglingFightDistanceFill" class="angling-drill-fill angling-distance-fill"><b id="anglingDistanceFlowArrow" class="angling-distance-arrow"></b></i></div><span id="anglingFightDistanceText">10 m</span></div>
        <div class="angling-drill-help">Halten = kurbeln · Maus/Finger bewegt die Rute · Fisch links → Rute rechts, Fisch rechts → Rute links.</div>
        <button id="anglingReelBtn" class="angling-reel-btn"><i class="angling-reel-icon"></i><span id="anglingReelLabel">EINHOLEN HALTEN</span></button>
      </div>
@@ -5627,7 +5625,7 @@ const anglingTensionText=document.getElementById('anglingTensionText');
 const anglingStaminaFill=document.getElementById('anglingStaminaFill');
 const anglingStaminaText=document.getElementById('anglingStaminaText');
 const anglingFightDistanceFill=document.getElementById('anglingFightDistanceFill');
-const anglingFightDistanceText=document.getElementById('anglingFightDistanceText');
+const anglingFightDistanceText=document.getElementById('anglingFightDistanceText'); const anglingDistanceFlowArrow=document.getElementById('anglingDistanceFlowArrow');
 const anglingReelBtn=document.getElementById('anglingReelBtn');
 const anglingReelLabel=document.getElementById('anglingReelLabel');
 const anglingCatchCard=document.getElementById('anglingCatchCard');
@@ -35716,6 +35714,10 @@ function updateAnglingDrillUi(){
   anglingFightDistanceFill.classList.toggle('distance-away',distanceAway);
   anglingFightDistanceFill.classList.toggle('distance-near',distanceNear);
   anglingFightDistanceFill.classList.toggle('distance-fast',distanceMoving&&anglingDistanceUiSpeed>.75);
+  if(anglingDistanceFlowArrow){
+    anglingDistanceFlowArrow.textContent=distanceAway?'▶ ▶ ▶':distanceNear?'◀ ◀ ◀':'';
+    anglingDistanceFlowArrow.setAttribute('aria-label',distanceAway?'Fisch nimmt Schnur':distanceNear?'Schnur wird eingeholt':'');
+  }
   const flowDuration=THREE.MathUtils.clamp(1.18/(.45+anglingDistanceUiSpeed*1.65),.16,1.25);
   anglingFightDistanceFill.style.setProperty('--distance-flow-duration',flowDuration.toFixed(3)+'s');
 
