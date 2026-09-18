@@ -1567,7 +1567,18 @@ html,body{
 .angling-drill-bar{height:11px;border-radius:999px;background:rgba(255,255,255,.20);overflow:hidden}
 .angling-drill-fill{display:block;height:100%;width:50%;min-width:2px;border-radius:inherit;transition:width .10s linear,background .12s linear}
 .angling-tension-fill{color:#73d866;background:repeating-linear-gradient(90deg,currentColor 0 6.5%,transparent 6.5% 8.33%)}.angling-stamina-fill{background:#4cb9df;width:100%}
-.angling-distance-fill{background:#d5b55c;width:100%}
+.angling-distance-fill{
+  background-color:#d5b55c;
+  background-image:repeating-linear-gradient(115deg,rgba(255,255,255,.24) 0 7px,rgba(255,255,255,.04) 7px 14px);
+  background-size:28px 28px;
+  width:100%;
+  --distance-flow-duration:.9s
+}
+.angling-distance-fill.distance-away{animation:anglingDistanceAway var(--distance-flow-duration) linear infinite}
+.angling-distance-fill.distance-near{animation:anglingDistanceNear var(--distance-flow-duration) linear infinite}
+.angling-distance-fill.distance-fast{filter:brightness(1.10)}
+@keyframes anglingDistanceAway{from{background-position:0 0}to{background-position:28px 0}}
+@keyframes anglingDistanceNear{from{background-position:28px 0}to{background-position:0 0}}
 .angling-drill-direction{font-size:13px;color:#ffe777;min-height:18px;font-weight:950}
 .angling-drill-help{font-size:8.5px;font-weight:800;opacity:.90;margin:3px 0 6px}
 .angling-reel-btn{display:inline-flex!important;align-items:center;justify-content:center;gap:9px;min-width:178px;min-height:44px!important;padding:6px 18px!important;border-radius:999px!important;background:#edf8ef!important;color:#173b2a!important;border:2px solid #fff!important;font-size:11px!important;font-weight:1000!important;touch-action:none;-webkit-user-select:none;user-select:none;box-shadow:0 4px 12px rgba(0,0,0,.30)}
@@ -26642,6 +26653,8 @@ let anglingFishTowardRun=false;
 let anglingFishBurstIndividual=1;
 let anglingFishEnduranceIndividual=1;
 let anglingFightSizeFactor=.5;
+let anglingDistanceUiPrev=null;
+let anglingDistanceUiSpeed=0;
 let anglingCatchRevealData=null;
 let anglingLastSurfaceEffect=0;
 let anglingAimScreenX=.5;
@@ -34669,6 +34682,8 @@ function beginAnglingDrill(){
   anglingCurrentFightProfile=ANGLING_FIGHT_PROFILE[anglingPendingCatch.species]||ANGLING_FIGHT_PROFILE.roach;
   const temp=ANGLING_TEMPERAMENTS.find(t=>t.name===anglingFishTemperament)||ANGLING_TEMPERAMENTS[1];
   anglingFightSizeFactor=sizeFactor;
+  anglingDistanceUiPrev=anglingFightDistance;
+  anglingDistanceUiSpeed=0;
   anglingDrillStrength=THREE.MathUtils.clamp((ANGLING_STRENGTH[anglingPendingCatch.species]||.4)*(.72+.36*sizeFactor)*temp.run,.12,1.18);
   anglingFishBurstIndividual=.92+Math.random()*.16;
   anglingFishEnduranceIndividual=.92+Math.random()*.16;
@@ -35677,10 +35692,32 @@ function updateAnglingDrillUi(){
   // Der Fisch darf durch Fluchten weiter weg sein als beim Anhieb.
   // Der Balken bleibt dabei sauber auf 0–100 % begrenzt; die Zahl zeigt
   // weiterhin die tatsächliche Entfernung inklusive gewonnener Schnur.
+  const landingDistance=Math.min(2.15,Math.max(1.70,anglingFightStartDistance*.12));
   const distanceRemaining=THREE.MathUtils.clamp(
-    anglingFightDistance/Math.max(1,anglingFightStartDistance),0,1
+    (anglingFightDistance-landingDistance)/
+    Math.max(.01,anglingFightStartDistance-landingDistance),0,1
   );
   anglingFightDistanceFill.style.width=(distanceRemaining*100).toFixed(1)+'%';
+
+  // Bewegungsrichtung direkt IM vorhandenen Entfernungsbalken:
+  // rechts laufend = Fisch nimmt Schnur, links laufend = Fisch kommt näher.
+  // Die Animationsgeschwindigkeit folgt geglättet der realen Distanzänderung.
+  if(anglingDistanceUiPrev===null)anglingDistanceUiPrev=anglingFightDistance;
+  const distanceDelta=anglingFightDistance-anglingDistanceUiPrev;
+  const distanceSpeedRaw=Math.abs(distanceDelta)/Math.max(.001,dt||.016);
+  anglingDistanceUiSpeed=THREE.MathUtils.lerp(
+    anglingDistanceUiSpeed,distanceSpeedRaw,Math.min(1,(dt||.016)*7)
+  );
+  anglingDistanceUiPrev=anglingFightDistance;
+  const distanceMoving=Math.abs(distanceDelta)>.0015&&anglingDistanceUiSpeed>.025;
+  const distanceAway=distanceMoving&&distanceDelta>0;
+  const distanceNear=distanceMoving&&distanceDelta<0;
+  anglingFightDistanceFill.classList.toggle('distance-away',distanceAway);
+  anglingFightDistanceFill.classList.toggle('distance-near',distanceNear);
+  anglingFightDistanceFill.classList.toggle('distance-fast',distanceMoving&&anglingDistanceUiSpeed>.75);
+  const flowDuration=THREE.MathUtils.clamp(1.18/(.45+anglingDistanceUiSpeed*1.65),.16,1.25);
+  anglingFightDistanceFill.style.setProperty('--distance-flow-duration',flowDuration.toFixed(3)+'s');
+
   anglingFightDistanceText.textContent=anglingFightDistance.toFixed(1).replace('.',',')+' m';
   let tensionWord='gut',color='#73d866';
   if(anglingDrillTension>.86){tensionWord='kritisch';color='#ef4b45';}
@@ -35923,7 +35960,10 @@ function updateAnglingDrill(dt){
   updateAnglingDrillUi();
   if(anglingDrillDangerTime>.72)loseAnglingFish('Schnur gerissen');
   else if(anglingDrillSlackTime>1.35)loseAnglingFish('Fisch ausgeschlitzt');
-  else if(anglingDrillStamina<=.035&&anglingFightDistance<=2.15)beginAnglingLanding();
+  else if(
+    anglingDrillStamina<=.035 &&
+    anglingFightDistance<=Math.min(2.15,Math.max(1.70,anglingFightStartDistance*.12))
+  )beginAnglingLanding();
 }
 
 function projectAnglingQte(){
