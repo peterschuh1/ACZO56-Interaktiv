@@ -27930,7 +27930,7 @@ function getAnglingContextualBiteMotion(species,phase){
   const predatorRun=(species==='pike'||species==='zander'||species==='catfish')?1:
     (species==='grasscarp'? .72 : (species==='carp'||species==='mirrorcarp'||species==='koi'? .42:0));
   const extraRun=anglingBiteStyle==='side'
-    ? predatorRun*sidePower*Math.pow(commit,1.55)*.72
+    ? predatorRun*sidePower*Math.pow(commit,1.55)*.42
     : 0;
   const totalTravel=travel+extraRun;
 
@@ -34528,22 +34528,22 @@ const ANGLING_STRENGTH={
 const ANGLING_FIGHT_PROFILE={
   // run = Häufigkeit/Grundkraft, burst = Explosivität, runLength = Dauer,
   // runCost = zusätzlicher Ausdauerverbrauch einer echten Flucht.
-  roach:{run:.72,burst:.48,runLength:.55,runCost:.72,lateral:.75,surface:.18,toward:.16,stamina:.72},
-  rudd:{run:.76,burst:.52,runLength:.58,runCost:.74,lateral:.82,surface:.20,toward:.18,stamina:.76},
-  bream:{run:.58,burst:.48,runLength:.92,runCost:.72,lateral:.62,surface:.10,toward:.10,stamina:1.02},
-  perch:{run:.94,burst:.82,runLength:.58,runCost:.92,lateral:1.02,surface:.38,toward:.24,stamina:.82},
-  sunfish:{run:.84,burst:.58,runLength:.50,runCost:.82,lateral:.92,surface:.20,toward:.18,stamina:.72},
-  goby:{run:.62,burst:.34,runLength:.42,runCost:.68,lateral:.54,surface:.05,toward:.10,stamina:.58},
-  tench:{run:.76,burst:.66,runLength:1.00,runCost:.78,lateral:.72,surface:.08,toward:.11,stamina:1.18},
-  carp:{run:1.22,burst:1.10,runLength:1.34,runCost:1.02,lateral:.94,surface:.24,toward:.18,stamina:1.30},
-  mirrorcarp:{run:1.25,burst:1.13,runLength:1.38,runCost:1.03,lateral:.97,surface:.25,toward:.18,stamina:1.34},
-  grasscarp:{run:1.30,burst:1.18,runLength:1.42,runCost:1.04,lateral:.90,surface:.20,toward:.15,stamina:1.36},
-  pike:{run:1.24,burst:1.34,runLength:.78,runCost:1.18,lateral:1.28,surface:.62,toward:.32,stamina:.96},
-  zander:{run:1.02,burst:1.12,runLength:.70,runCost:1.08,lateral:.82,surface:.18,toward:.24,stamina:1.00},
-  eel:{run:.72,burst:.60,runLength:1.12,runCost:.72,lateral:.46,surface:.04,toward:.10,stamina:1.24},
-  catfish:{run:1.20,burst:1.42,runLength:1.65,runCost:1.08,lateral:.68,surface:.08,toward:.12,stamina:1.42},
-  sturgeon:{run:1.12,burst:1.16,runLength:1.28,runCost:1.04,lateral:.78,surface:.34,toward:.16,stamina:1.34},
-  koi:{run:1.20,burst:1.08,runLength:1.30,runCost:1.00,lateral:.94,surface:.22,toward:.18,stamina:1.28}
+  roach:{run:.72,burst:.48,runLength:.55,maxRun:4,runCost:.72,lateral:.75,surface:.18,toward:.16,stamina:.72},
+  rudd:{run:.76,burst:.52,runLength:.58,maxRun:5,runCost:.74,lateral:.82,surface:.20,toward:.18,stamina:.76},
+  bream:{run:.58,burst:.48,runLength:.92,maxRun:8,runCost:.72,lateral:.62,surface:.10,toward:.10,stamina:1.02},
+  perch:{run:.94,burst:.82,runLength:.58,maxRun:6,runCost:.92,lateral:1.02,surface:.38,toward:.24,stamina:.82},
+  sunfish:{run:.84,burst:.58,runLength:.50,maxRun:4,runCost:.82,lateral:.92,surface:.20,toward:.18,stamina:.72},
+  goby:{run:.62,burst:.34,runLength:.42,maxRun:3,runCost:.68,lateral:.54,surface:.05,toward:.10,stamina:.58},
+  tench:{run:.76,burst:.66,runLength:1.00,maxRun:10,runCost:.78,lateral:.72,surface:.08,toward:.11,stamina:1.18},
+  carp:{run:1.22,burst:1.10,runLength:1.34,maxRun:25,runCost:1.02,lateral:.94,surface:.24,toward:.18,stamina:1.30},
+  mirrorcarp:{run:1.25,burst:1.13,runLength:1.38,maxRun:27,runCost:1.03,lateral:.97,surface:.25,toward:.18,stamina:1.34},
+  grasscarp:{run:1.30,burst:1.18,runLength:1.42,maxRun:30,runCost:1.04,lateral:.90,surface:.20,toward:.15,stamina:1.36},
+  pike:{run:1.24,burst:1.34,runLength:.78,maxRun:9,runCost:1.18,lateral:1.28,surface:.62,toward:.32,stamina:.96},
+  zander:{run:1.02,burst:1.12,runLength:.70,maxRun:7,runCost:1.08,lateral:.82,surface:.18,toward:.24,stamina:1.00},
+  eel:{run:.72,burst:.60,runLength:1.12,maxRun:12,runCost:.72,lateral:.46,surface:.04,toward:.10,stamina:1.24},
+  catfish:{run:1.20,burst:1.42,runLength:1.65,maxRun:30,runCost:1.08,lateral:.68,surface:.08,toward:.12,stamina:1.42},
+  sturgeon:{run:1.12,burst:1.16,runLength:1.28,maxRun:22,runCost:1.04,lateral:.78,surface:.34,toward:.16,stamina:1.34},
+  koi:{run:1.20,burst:1.08,runLength:1.30,maxRun:24,runCost:1.00,lateral:.94,surface:.22,toward:.18,stamina:1.28}
 };
 const ANGLING_TEMPERAMENTS=[
   {name:'ruhig',weight:.20,run:.82,stamina:.90},
@@ -35672,7 +35672,12 @@ function setAnglingDrillRodFromPointer(clientX,clientY){
 function updateAnglingDrillUi(){
   const tensionPct=Math.round(anglingDrillTension*100),staminaPct=Math.round(anglingDrillStamina*100);
   anglingTensionFill.style.width=tensionPct+'%';anglingStaminaFill.style.width=staminaPct+'%';
-  const distanceRemaining=anglingClamp01(anglingFightDistance/Math.max(1,anglingFightStartDistance));
+  // Der Fisch darf durch Fluchten weiter weg sein als beim Anhieb.
+  // Der Balken bleibt dabei sauber auf 0–100 % begrenzt; die Zahl zeigt
+  // weiterhin die tatsächliche Entfernung inklusive gewonnener Schnur.
+  const distanceRemaining=THREE.MathUtils.clamp(
+    anglingFightDistance/Math.max(1,anglingFightStartDistance),0,1
+  );
   anglingFightDistanceFill.style.width=(distanceRemaining*100).toFixed(1)+'%';
   anglingFightDistanceText.textContent=anglingFightDistance.toFixed(1).replace('.',',')+' m';
   let tensionWord='gut',color='#73d866';
@@ -35707,11 +35712,28 @@ function updateAnglingDrill(dt){
   if(anglingDrillRunTime>=anglingDrillRunDuration){
     anglingDrillRunTime=0;
     const runFactor=Math.max(.55,fight.run*anglingFishTemperamentFactor);
-    // Frische, laufstarke Fische setzen schneller nach. Mit sinkender Ausdauer
-    // werden die Pausen länger. runLength prägt zusätzlich die Art.
-    const fatiguePause=THREE.MathUtils.lerp(1.38,.82,anglingDrillStamina);
-    anglingDrillRunDuration=(.72+Math.random()*1.18)*fatiguePause/runFactor
-      +(fight.runLength||1)*(.34+Math.random()*.24);
+    // Dauer einer Flucht: Art + Fischgröße + aktuelle Ausdauer.
+    // Kapitaler Wels/Karpfen/Stör kann lange ziehen; Hecht/Zander bleiben
+    // typischerweise kürzer und explosiver. 30 s bedeutet dabei nicht 30 s
+    // Vollgas: die Kraftkurve innerhalb des Runs baut sich auf und wieder ab.
+    const maxSpeciesRun=fight.maxRun||7;
+    const sizeRunFactor=THREE.MathUtils.clamp(.22+.78*sizeFactor,.22,1);
+    const staminaRunFactor=THREE.MathUtils.clamp(.28+.72*anglingDrillStamina,.28,1);
+    const individuality=THREE.MathUtils.clamp(anglingFishEnduranceIndividual,.92,1.08);
+    const runCeiling=maxSpeciesRun*sizeRunFactor*staminaRunFactor*individuality;
+    const runFloor=Math.min(runCeiling,1.25+(fight.runLength||1)*1.15);
+    // Meist mittlere Runs, gelegentlich ein wirklich langer Lauf bei einem
+    // großen, noch frischen Fisch.
+    const longRunChance=THREE.MathUtils.clamp(
+      (sizeFactor-.42)*.58+anglingDrillStamina*.18,0,.58
+    );
+    const durationMix=Math.random()<longRunChance
+      ? THREE.MathUtils.lerp(.62,1,Math.pow(Math.random(),.45))
+      : THREE.MathUtils.lerp(.18,.62,Math.random());
+    anglingDrillRunDuration=THREE.MathUtils.clamp(
+      THREE.MathUtils.lerp(runFloor,runCeiling,durationMix)/Math.max(.82,runFactor*.72),
+      runFloor,maxSpeciesRun
+    );
     if(Math.random()<THREE.MathUtils.clamp(.52+.24*fight.lateral,.45,.88))anglingDrillDirectionValue*=-1;
     // Manche Arten drehen plötzlich auf den Angler zu. Dann fällt die Spannung
     // ab und schnelles Kurbeln ist wichtiger als Kraft gegen Kraft.
@@ -35725,8 +35747,13 @@ function updateAnglingDrill(dt){
   const runPhase=anglingDrillRunTime/Math.max(.01,anglingDrillRunDuration);
   // Echte Fluchtkurve: kurzer Aufbau, kräftiger Mittelteil, sauberes Abklingen.
   // Außerhalb des Fensters arbeitet nur der normale Fischdruck.
-  const runShape=Math.sin(THREE.MathUtils.clamp(runPhase,0,1)*Math.PI);
-  const runPulse=Math.pow(Math.max(0,runShape),1.55);
+  // Lange Fluchten bekommen einen ruhigen Mittelteil: Aufbau -> Zugphase ->
+  // Nachlassen. Dadurch wirkt ein 20–30-s-Run nicht wie eine Zeitlupe eines
+  // kurzen Sprints.
+  const rp=THREE.MathUtils.clamp(runPhase,0,1);
+  const attack=THREE.MathUtils.smoothstep(rp,0,.16);
+  const release=1-THREE.MathUtils.smoothstep(rp,.72,1);
+  const runPulse=Math.pow(Math.max(0,Math.min(attack,release)),1.18);
   const effectiveStrength=anglingDrillStrength*(.20+.80*anglingDrillStamina);
   const burst=(fight.burst||1)*anglingFishBurstIndividual;
   const runPower=effectiveStrength*burst*runPulse;
@@ -35786,12 +35813,15 @@ function updateAnglingDrill(dt){
     const payout=anglingSelectedDrag==='loose'?1.55:
       anglingSelectedDrag==='tight'?.22:.82;
     const reelResistance=drillPointerReeling&&!anglingFishTowardRun?.88:1;
-    const runSpeed=(.34+1.42*runPower)*(fight.runLength||1)*payout*reelResistance;
+    const runSpeed=(.16+.66*runPower)*(fight.runLength||1)*payout*reelResistance;
     anglingFightDistance=THREE.MathUtils.clamp(
       anglingFightDistance+runDirection*dt*runSpeed,
-      1.55,anglingFightStartDistance+Math.max(7,10*burst)
+      1.55,anglingFightStartDistance+Math.max(4.5,6.0*burst)
     );
   }
+  // Erst NACH Kurbeln und Flucht aktualisieren, damit Entfernung und Balken
+  // nicht einen Frame hinter der tatsächlichen Fischposition liegen.
+  updateAnglingDrillUi();
   const dangerAngleFactor=THREE.MathUtils.clamp(1-anglingDrillAngleQuality*.34,.72,1.42);
   // P57: Bei großen/starken Fischen wird die kritische Zone auf Normal etwas
   // früher gefährlich. Dadurch muss man in Fluchten tatsächlich lösen, statt
@@ -35818,7 +35848,7 @@ function updateAnglingDrill(dt){
   const direction=anglingCurrentDirection(anglingTmpA);
   const side=anglingTmpB.copy(direction).applyAxisAngle(anglingUp,Math.PI/2);
   anglingHookPoint.copy(anglingSelection.shore).addScaledVector(direction,anglingFightDistance)
-    .addScaledVector(side,anglingDrillDirectionValue*(.4+1.8*anglingDrillStrength)*fight.lateral*runPulse);
+    .addScaledVector(side,anglingDrillDirectionValue*(.28+1.05*anglingDrillStrength)*fight.lateral*runPulse);
   if(pondDepthAt(anglingHookPoint.x,anglingHookPoint.y)==null){
     anglingHookPoint.copy(anglingSelection.shore).addScaledVector(direction,anglingFightDistance);
   }
