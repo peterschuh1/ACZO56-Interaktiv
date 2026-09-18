@@ -26531,6 +26531,10 @@ let anglingBiteVariant=0;
 // beginnt exakt an diesem Schwellwert; dieselbe Grenze nutzt die Futterleiste.
 let anglingBiteAlertPhase=.68;
 let anglingBiteDeepFactor=1;
+// V1.3 Posenbisse: jeder Biss bekommt passend zur Fischart eine natürliche
+// Tendenz (Abtauchen, seitlich ziehen oder Hebebiss) und eine freie Zugrichtung.
+let anglingBiteStyle='mixed';
+let anglingBiteTravelAngle=0;
 let anglingStrikeQuality='normal';
 let anglingCastStart=new THREE.Vector3();
 let anglingCastEnd=new THREE.Vector3();
@@ -26632,6 +26636,11 @@ let anglingCurrentFightProfile=null;
 let anglingFishTemperament='normal';
 let anglingFishTemperamentFactor=1;
 let anglingFishTowardRun=false;
+// Jeder gehakte Fisch bekommt zusätzlich zum Temperament eine kleine,
+// unsichtbare Individualität. Dadurch drillen zwei gleich große Hechte nicht
+// vollkommen identisch, ohne dass Zufall die Artcharakteristik überstimmt.
+let anglingFishBurstIndividual=1;
+let anglingFishEnduranceIndividual=1;
 let anglingCatchRevealData=null;
 let anglingLastSurfaceEffect=0;
 let anglingAimScreenX=.5;
@@ -27661,7 +27670,29 @@ const ANGLING_BITE_DURATION_BY_SPECIES={
   carp:1.04,mirrorcarp:1.08,grasscarp:1.00,koi:.98,sturgeon:1.04,
   pike:.76,zander:1.10,eel:1.05,catfish:1.02
 };
-const anglingSpeciesBiteMotion={dip:0,wobble:0,slide:0,lean:0,sideLean:0};
+// Gewichtung [Abtauchen, seitlich wegziehen, Hebebiss]. Die eigentliche
+// Bewegung bleibt zusätzlich artspezifisch in getAnglingSpeciesBiteMotion().
+const ANGLING_BITE_STYLE_WEIGHTS={
+  goby:[.62,.32,.06],sunfish:[.55,.38,.07],roach:[.48,.38,.14],rudd:[.42,.46,.12],
+  perch:[.48,.48,.04],bream:[.18,.22,.60],tench:[.25,.38,.37],
+  carp:[.38,.46,.16],mirrorcarp:[.34,.50,.16],grasscarp:[.24,.68,.08],koi:[.34,.50,.16],
+  sturgeon:[.28,.54,.18],pike:[.24,.73,.03],zander:[.28,.68,.04],
+  eel:[.32,.62,.06],catfish:[.30,.66,.04]
+};
+const ANGLING_BITE_SIDE_POWER={
+  goby:.55,sunfish:.70,roach:.76,rudd:.90,perch:1.00,bream:.78,tench:.92,
+  carp:1.12,mirrorcarp:1.16,grasscarp:1.38,koi:1.14,sturgeon:1.12,
+  pike:1.55,zander:1.38,eel:1.08,catfish:1.42
+};
+const anglingSpeciesBiteMotion={dip:0,wobble:0,slide:0,forward:0,lean:0,sideLean:0};
+
+function pickAnglingBiteStyle(species){
+  const w=ANGLING_BITE_STYLE_WEIGHTS[species]||[.50,.40,.10];
+  let r=Math.random()*(w[0]+w[1]+w[2]);
+  if((r-=w[0])<0)return 'dive';
+  if((r-=w[1])<0)return 'side';
+  return 'lift';
+}
 
 function anglingBitePulse(phase,start,end,waves=1){
   if(phase<=start||phase>=end)return 0;
@@ -27673,7 +27704,7 @@ function anglingBiteCommit(phase,start,power=1){
 }
 function getAnglingSpeciesBiteMotion(species,phase){
   const out=anglingSpeciesBiteMotion;
-  out.dip=0;out.wobble=0;out.slide=0;out.lean=0;out.sideLean=0;
+  out.dip=0;out.wobble=0;out.slide=0;out.forward=0;out.lean=0;out.sideLean=0;
 
   const dir=anglingBiteVariant>=0?1:-1;
   const strength=.92+Math.abs(anglingBiteVariant)*.16;
@@ -27856,6 +27887,57 @@ function getAnglingSpeciesBiteMotion(species,phase){
       break;
     }
   }
+  return out;
+}
+
+// Verknüpft die artspezifische Handschrift mit der realen Montagesituation.
+// Je näher der Köder am Grund liegt, desto weniger vertikalen Weg kann der
+// Fisch erzeugen. Diese Energie erscheint dann als seitliches Wandern.
+// Ein echter Hebebiss entlastet die Pose und hebt sie sichtbar an.
+function getAnglingContextualBiteMotion(species,phase){
+  const out=getAnglingSpeciesBiteMotion(species,phase);
+  const info=getAnglingRigInfo(anglingCastEnd.x,anglingCastEnd.y);
+  const clearance=info.waterDepth-anglingRigDepth;
+  const nearBottom=THREE.MathUtils.clamp((.55-clearance)/.55,0,1);
+  const onBottom=info.state==='bottom'?1:nearBottom;
+  const sidePower=ANGLING_BITE_SIDE_POWER[species]||1;
+  const commit=THREE.MathUtils.smoothstep(phase,.18,.96);
+
+  let vertical=1,sideBoost=1,lift=0;
+  if(anglingBiteStyle==='side'){
+    vertical=THREE.MathUtils.lerp(.72,.18,onBottom);
+    sideBoost=1.55;
+  }else if(anglingBiteStyle==='lift'){
+    vertical=THREE.MathUtils.lerp(.52,.12,onBottom);
+    sideBoost=.88;
+    lift=(.10+.16*onBottom)*commit;
+  }else{
+    vertical=THREE.MathUtils.lerp(1,.24,onBottom);
+    sideBoost=.82;
+  }
+
+  // Grundkontakt begrenzt das Abtauchen physikalisch. Negative dip-Werte sind
+  // bereits Hebebewegungen (z.B. Brasse) und dürfen erhalten bleiben.
+  if(out.dip>0)out.dip*=vertical;
+  if(lift>0)out.dip-=lift;
+
+  // Bei Grundnähe wird Zug, der nicht nach unten gehen kann, horizontal.
+  const horizontalTransfer=1+onBottom*(.70+.38*sidePower);
+  const travel=Math.abs(out.slide)*sideBoost*horizontalTransfer*sidePower;
+
+  // Raubfische und große Karpfen dürfen beim entschlossenen Wegziehen deutlich
+  // Strecke machen. Der Verlauf wächst weich, statt die Pose zu teleportieren.
+  const predatorRun=(species==='pike'||species==='zander'||species==='catfish')?1:
+    (species==='grasscarp'? .72 : (species==='carp'||species==='mirrorcarp'||species==='koi'? .42:0));
+  const extraRun=anglingBiteStyle==='side'
+    ? predatorRun*sidePower*Math.pow(commit,1.55)*.72
+    : 0;
+  const totalTravel=travel+extraRun;
+
+  // Freie Richtung auf der Wasseroberfläche statt ausschließlich links/rechts.
+  // biteSlide bleibt quer zum Angler, forward liegt in Blick-/Wurfrichtung.
+  out.slide=Math.sin(anglingBiteTravelAngle)*totalTravel;
+  out.forward=Math.cos(anglingBiteTravelAngle)*totalTravel;
   return out;
 }
 
@@ -33245,15 +33327,15 @@ function updateAnglingBobberDepthLook(depth=0){
   anglingBobHalo.material.opacity=THREE.MathUtils.lerp(.30,.035,underwater);
 }
 
-function setAnglingBobberRestPose(biteDip=0,biteWobble=0,biteSlide=0,biteLean=0,biteSideLean=0,visualDepth=biteDip){
+function setAnglingBobberRestPose(biteDip=0,biteWobble=0,biteSlide=0,biteLean=0,biteSideLean=0,visualDepth=biteDip,biteForward=0){
   if(!anglingSelection)return;
   // Jeder Frame startet wieder am echten Wurfpunkt. Nur der aktuelle Biss darf
   // den Schwimmer seitlich verschieben; dadurch gibt es kein Aufsummieren.
   const biteDir=anglingCurrentDirection(anglingTmpC);
   const biteSide=anglingTmpB.copy(biteDir).applyAxisAngle(anglingUp,Math.PI/2);
   const steerSlide=anglingFloatRodX*.11+anglingFloatNudgeSide*anglingFloatNudge;
-  anglingBobber.position.x=anglingCastEnd.x+biteSide.x*(biteSlide+steerSlide);
-  anglingBobber.position.y=anglingCastEnd.y+biteSide.y*(biteSlide+steerSlide);
+  anglingBobber.position.x=anglingCastEnd.x+biteSide.x*(biteSlide+steerSlide)+biteDir.x*biteForward;
+  anglingBobber.position.y=anglingCastEnd.y+biteSide.y*(biteSlide+steerSlide)+biteDir.y*biteForward;
   const info=getAnglingRigInfo(anglingBobber.position.x,anglingBobber.position.y);
   // Auch ein sehr kräftiger Biss darf die Pose optisch nicht unter den lokal
   // vorhandenen Gewässerboden ziehen. In tiefem Wasser bleibt rund ein Meter
@@ -34388,6 +34470,17 @@ function beginAnglingBite(){
   // BISS-Moment und Endtiefe werden pro Ereignis neu kombiniert. Dadurch kann
   // dieselbe Fischart kurz entschlossen oder laenger pruefend beissen.
   anglingBiteVariant=Math.random()*2-1;
+  anglingBiteStyle=pickAnglingBiteStyle(biteSpecies);
+  // Nahe/auf Grund: Abtauchbisse werden seltener, seitliche und Hebebisse
+  // häufiger. Die Fischart bleibt trotzdem der wichtigste Charakterfaktor.
+  const biteRig=getAnglingRigInfo(anglingCastEnd.x,anglingCastEnd.y);
+  const biteClearance=biteRig.waterDepth-anglingRigDepth;
+  const biteBottomness=biteRig.state==='bottom'?1:THREE.MathUtils.clamp((.50-biteClearance)/.50,0,1);
+  if(biteBottomness>.20&&anglingBiteStyle==='dive'&&Math.random()<.72*biteBottomness){
+    const w=ANGLING_BITE_STYLE_WEIGHTS[biteSpecies]||[.5,.4,.1];
+    anglingBiteStyle=Math.random()<(w[2]/Math.max(.001,w[1]+w[2]))?'lift':'side';
+  }
+  anglingBiteTravelAngle=Math.random()*Math.PI*2;
   const biteBase=ANGLING_BITE_DURATION_BY_SPECIES[biteSpecies]||.90;
   anglingBiteDuration=THREE.MathUtils.clamp(biteBase*(1.38+Math.random()*1.02),1.12,2.55);
   anglingBiteAlertPhase=.57+Math.random()*.23;
@@ -34433,22 +34526,24 @@ const ANGLING_STRENGTH={
 // Artspezifische Drillhandschrift. Werte modifizieren nur das bereits
 // vorhandene Kraftmodell und bleiben damit kompatibel mit Bremse/Ausdauer.
 const ANGLING_FIGHT_PROFILE={
-  roach:{run:.72,lateral:.75,surface:.18,toward:.16,stamina:.72},
-  rudd:{run:.76,lateral:.82,surface:.20,toward:.18,stamina:.76},
-  bream:{run:.58,lateral:.62,surface:.10,toward:.10,stamina:1.02},
-  perch:{run:.94,lateral:1.02,surface:.38,toward:.24,stamina:.82},
-  sunfish:{run:.84,lateral:.92,surface:.20,toward:.18,stamina:.72},
-  goby:{run:.62,lateral:.54,surface:.05,toward:.10,stamina:.58},
-  tench:{run:.76,lateral:.72,surface:.08,toward:.11,stamina:1.18},
-  carp:{run:1.22,lateral:.94,surface:.24,toward:.18,stamina:1.30},
-  mirrorcarp:{run:1.25,lateral:.97,surface:.25,toward:.18,stamina:1.34},
-  grasscarp:{run:1.30,lateral:.90,surface:.20,toward:.15,stamina:1.36},
-  pike:{run:1.24,lateral:1.28,surface:.62,toward:.32,stamina:.96},
-  zander:{run:1.02,lateral:.82,surface:.18,toward:.24,stamina:1.00},
-  eel:{run:.72,lateral:.46,surface:.04,toward:.10,stamina:1.24},
-  catfish:{run:1.20,lateral:.68,surface:.08,toward:.12,stamina:1.42},
-  sturgeon:{run:1.12,lateral:.78,surface:.34,toward:.16,stamina:1.34},
-  koi:{run:1.20,lateral:.94,surface:.22,toward:.18,stamina:1.28}
+  // run = Häufigkeit/Grundkraft, burst = Explosivität, runLength = Dauer,
+  // runCost = zusätzlicher Ausdauerverbrauch einer echten Flucht.
+  roach:{run:.72,burst:.48,runLength:.55,runCost:.72,lateral:.75,surface:.18,toward:.16,stamina:.72},
+  rudd:{run:.76,burst:.52,runLength:.58,runCost:.74,lateral:.82,surface:.20,toward:.18,stamina:.76},
+  bream:{run:.58,burst:.48,runLength:.92,runCost:.72,lateral:.62,surface:.10,toward:.10,stamina:1.02},
+  perch:{run:.94,burst:.82,runLength:.58,runCost:.92,lateral:1.02,surface:.38,toward:.24,stamina:.82},
+  sunfish:{run:.84,burst:.58,runLength:.50,runCost:.82,lateral:.92,surface:.20,toward:.18,stamina:.72},
+  goby:{run:.62,burst:.34,runLength:.42,runCost:.68,lateral:.54,surface:.05,toward:.10,stamina:.58},
+  tench:{run:.76,burst:.66,runLength:1.00,runCost:.78,lateral:.72,surface:.08,toward:.11,stamina:1.18},
+  carp:{run:1.22,burst:1.10,runLength:1.34,runCost:1.02,lateral:.94,surface:.24,toward:.18,stamina:1.30},
+  mirrorcarp:{run:1.25,burst:1.13,runLength:1.38,runCost:1.03,lateral:.97,surface:.25,toward:.18,stamina:1.34},
+  grasscarp:{run:1.30,burst:1.18,runLength:1.42,runCost:1.04,lateral:.90,surface:.20,toward:.15,stamina:1.36},
+  pike:{run:1.24,burst:1.34,runLength:.78,runCost:1.18,lateral:1.28,surface:.62,toward:.32,stamina:.96},
+  zander:{run:1.02,burst:1.12,runLength:.70,runCost:1.08,lateral:.82,surface:.18,toward:.24,stamina:1.00},
+  eel:{run:.72,burst:.60,runLength:1.12,runCost:.72,lateral:.46,surface:.04,toward:.10,stamina:1.24},
+  catfish:{run:1.20,burst:1.42,runLength:1.65,runCost:1.08,lateral:.68,surface:.08,toward:.12,stamina:1.42},
+  sturgeon:{run:1.12,burst:1.16,runLength:1.28,runCost:1.04,lateral:.78,surface:.34,toward:.16,stamina:1.34},
+  koi:{run:1.20,burst:1.08,runLength:1.30,runCost:1.00,lateral:.94,surface:.22,toward:.18,stamina:1.28}
 };
 const ANGLING_TEMPERAMENTS=[
   {name:'ruhig',weight:.20,run:.82,stamina:.90},
@@ -34573,8 +34668,10 @@ function beginAnglingDrill(){
   anglingCurrentFightProfile=ANGLING_FIGHT_PROFILE[anglingPendingCatch.species]||ANGLING_FIGHT_PROFILE.roach;
   const temp=ANGLING_TEMPERAMENTS.find(t=>t.name===anglingFishTemperament)||ANGLING_TEMPERAMENTS[1];
   anglingDrillStrength=THREE.MathUtils.clamp((ANGLING_STRENGTH[anglingPendingCatch.species]||.4)*(.72+.36*sizeFactor)*temp.run,.12,1.18);
+  anglingFishBurstIndividual=.92+Math.random()*.16;
+  anglingFishEnduranceIndividual=.92+Math.random()*.16;
   anglingDrillStamina=anglingStrikeQuality==='perfect'?.92:1;
-  anglingStaminaResistance=anglingCurrentFightProfile.stamina*temp.stamina;
+  anglingStaminaResistance=anglingCurrentFightProfile.stamina*temp.stamina*anglingFishEnduranceIndividual;
   setupAnglingFishVisual();anglingFishVisual.visible=false;anglingNetGroup.visible=false;
   anglingFishVisualPrevValid=false;anglingFishVisualDepthYaw=0;anglingFishVisualMotionState='drilling';
   anglingDrillTension=anglingStrikeQuality==='perfect'?.34:.42;
@@ -35610,7 +35707,11 @@ function updateAnglingDrill(dt){
   if(anglingDrillRunTime>=anglingDrillRunDuration){
     anglingDrillRunTime=0;
     const runFactor=Math.max(.55,fight.run*anglingFishTemperamentFactor);
-    anglingDrillRunDuration=(1.15+Math.random()*2.15)/runFactor;
+    // Frische, laufstarke Fische setzen schneller nach. Mit sinkender Ausdauer
+    // werden die Pausen länger. runLength prägt zusätzlich die Art.
+    const fatiguePause=THREE.MathUtils.lerp(1.38,.82,anglingDrillStamina);
+    anglingDrillRunDuration=(.72+Math.random()*1.18)*fatiguePause/runFactor
+      +(fight.runLength||1)*(.34+Math.random()*.24);
     if(Math.random()<THREE.MathUtils.clamp(.52+.24*fight.lateral,.45,.88))anglingDrillDirectionValue*=-1;
     // Manche Arten drehen plötzlich auf den Angler zu. Dann fällt die Spannung
     // ab und schnelles Kurbeln ist wichtiger als Kraft gegen Kraft.
@@ -35622,31 +35723,34 @@ function updateAnglingDrill(dt){
     }
   }
   const runPhase=anglingDrillRunTime/Math.max(.01,anglingDrillRunDuration);
-  const runPulse=.48+.52*Math.sin(runPhase*Math.PI);
-  // Ein-Knopf-Drill: Halten kurbelt und erhöht die Spannung, Loslassen senkt sie.
-  // Die Fischstärke verändert Zugphasen und notwendige Erholung, ohne eine
-  // zusätzliche Wischrichtung zu verlangen.
-  // Ein ermüdeter Fisch erzeugt weniger Fluchten und gibt beim Kurbeln
-  // zunehmend Strecke ab. Das verhindert einen Stillstand bei 0 % Ausdauer.
+  // Echte Fluchtkurve: kurzer Aufbau, kräftiger Mittelteil, sauberes Abklingen.
+  // Außerhalb des Fensters arbeitet nur der normale Fischdruck.
+  const runShape=Math.sin(THREE.MathUtils.clamp(runPhase,0,1)*Math.PI);
+  const runPulse=Math.pow(Math.max(0,runShape),1.55);
   const effectiveStrength=anglingDrillStrength*(.20+.80*anglingDrillStamina);
+  const burst=(fight.burst||1)*anglingFishBurstIndividual;
+  const runPower=effectiveStrength*burst*runPulse;
   const angleTension=anglingDrillAngleQuality>=0
     ? -anglingDrillAngleQuality*.075
     : (-anglingDrillAngleQuality)*.115;
-  // P57: Große/starke Fische sollen auf "Normal" nicht mehr fast risikolos
-  // durchzukurbeln sein. Je stärker der Fisch, desto mehr zusätzliche Last
-  // kommt beim Kurbeln auf die normale Bremse. Weich bleibt die sichere,
-  // langsamere Variante; Hart bleibt bewusst aggressiv und riskant.
+
+  // Die Bremse verhindert keine Flucht. Sie entscheidet, ob deren Energie
+  // als Schnurabzug oder als gefährliche Schnurspannung endet.
+  const dragRunTension=anglingSelectedDrag==='loose'
+    ?runPower*.045
+    :anglingSelectedDrag==='tight'?runPower*.285:runPower*.145;
   const mediumBigFishLoad=(anglingSelectedDrag==='medium'&&drillPointerReeling)
-    ?THREE.MathUtils.clamp((effectiveStrength-.48)/.52,0,1)*(.055+.075*runPulse)
+    ?THREE.MathUtils.clamp((effectiveStrength-.48)/.52,0,1)*(.045+.065*runPulse)
     :0;
   const tightBigFishLoad=(anglingSelectedDrag==='tight'&&drillPointerReeling)
-    ?THREE.MathUtils.clamp((effectiveStrength-.58)/.52,0,1)*(.035+.045*runPulse)
+    ?THREE.MathUtils.clamp((effectiveStrength-.58)/.52,0,1)*(.045+.070*runPulse)
     :0;
-  const targetTension=.12+drag.tension+effectiveStrength*(.22+.34*runPulse)
-    +(drillPointerReeling?.38:-.08)-(anglingFishTowardRun&&runPulse>.56?.24:0)
-    +angleTension+mediumBigFishLoad+tightBigFishLoad;
-  anglingDrillTension+=THREE.MathUtils.clamp(targetTension-anglingDrillTension,-dt*.72,dt*1.05);
+  const targetTension=.12+drag.tension+effectiveStrength*(.20+.16*runPulse)
+    +(drillPointerReeling?.38:-.08)-(anglingFishTowardRun&&runPulse>.48?.24:0)
+    +angleTension+mediumBigFishLoad+tightBigFishLoad+dragRunTension;
+  anglingDrillTension+=THREE.MathUtils.clamp(targetTension-anglingDrillTension,-dt*.72,dt*(1.05+runPower*.65));
   anglingDrillTension=anglingClamp01(anglingDrillTension);
+
   const safe=anglingDrillTension>.16&&anglingDrillTension<.86;
   if(safe&&anglingDrillReeling){
     const angleStaminaBonus=THREE.MathUtils.clamp(1+anglingDrillAngleQuality*.10,.90,1.10);
@@ -35654,26 +35758,39 @@ function updateAnglingDrill(dt){
       anglingDrillStamina-dt*.082*drag.stamina*angleStaminaBonus/((.58+effectiveStrength*.82)*Math.max(.58,anglingStaminaResistance))
     );
   }
-  // Solange die Schnur nicht unmittelbar vor dem Riss steht, gewinnt aktives
-  // Kurbeln immer etwas Strecke; bei leerer Ausdauer deutlich mehr.
+  // Auch eine Flucht kostet den Fisch Kraft. Explosive Arten verbrauchen in
+  // ihrem Run mehr Reserven; ausdauernde Arten verteilen diese über längere Zeit.
+  if(runPulse>.12&&anglingDrillStamina>.001&&!anglingFishTowardRun){
+    const runFatigue=.040*(fight.runCost||1)*(.72+.48*effectiveStrength)
+      /Math.max(.72,anglingStaminaResistance);
+    anglingDrillStamina=Math.max(0,anglingDrillStamina-dt*runFatigue*runPulse);
+  }
+
+  // Während einer starken Flucht kann der Angler nicht einfach durchkurbeln.
+  // Je stärker der Fisch zieht, desto weniger Schnur gewinnt die Kurbel zurück.
   if(anglingDrillReeling&&anglingDrillTension<.92){
     const angleReelBonus=THREE.MathUtils.clamp(1+anglingDrillAngleQuality*.12,.86,1.12);
     const reelGain=(.38+1.28*(1-anglingDrillStamina))*(1.13-effectiveStrength*.28)*drag.reelSpeed*angleReelBonus;
-
-    // P56: Die oben angezeigte Entfernung soll die Bremse unmittelbar zeigen.
-    // Deshalb bekommt jede Stufe zusätzlich einen klar getrennten linearen
-    // Schnureinzug. Der dynamische Drillanteil bleibt bestehen.
     const dragDistanceGain=anglingSelectedDrag==='loose'?.18:
       anglingSelectedDrag==='tight'?.86:.42;
-
+    const reelAgainstRun=anglingFishTowardRun?1:THREE.MathUtils.clamp(1-runPower*.82,.06,1);
     anglingFightDistance=Math.max(1.55,
-      anglingFightDistance-dt*(reelGain+dragDistanceGain)
+      anglingFightDistance-dt*(reelGain+dragDistanceGain)*reelAgainstRun
     );
   }
-  if(runPulse>.72&&anglingDrillStamina>.035){
+
+  if(runPulse>.10&&anglingDrillStamina>.012){
     const runDirection=anglingFishTowardRun?-1:1;
-    anglingFightDistance=THREE.MathUtils.clamp(anglingFightDistance+runDirection*dt*effectiveStrength*.38*drag.runDistance
-      *fight.run*anglingFishTemperamentFactor*(drillPointerReeling?.32:1),1.55,anglingFightStartDistance+7);
+    // Weiche Bremse: deutlicher Schnurabzug. Mittel: kontrollierter Abzug.
+    // Fest: kaum Schnurabgabe, dafür wurde oben die Spannung stark erhöht.
+    const payout=anglingSelectedDrag==='loose'?1.55:
+      anglingSelectedDrag==='tight'?.22:.82;
+    const reelResistance=drillPointerReeling&&!anglingFishTowardRun?.88:1;
+    const runSpeed=(.34+1.42*runPower)*(fight.runLength||1)*payout*reelResistance;
+    anglingFightDistance=THREE.MathUtils.clamp(
+      anglingFightDistance+runDirection*dt*runSpeed,
+      1.55,anglingFightStartDistance+Math.max(7,10*burst)
+    );
   }
   const dangerAngleFactor=THREE.MathUtils.clamp(1-anglingDrillAngleQuality*.34,.72,1.42);
   // P57: Bei großen/starken Fischen wird die kritische Zone auf Normal etwas
@@ -36936,7 +37053,7 @@ function updateAnglingMode(dt){
     if(anglingReturnToShorePendingReset)return false;
     const phase=anglingClamp01(anglingStateTime/anglingBiteDuration);
     const biteVisibility=anglingRigState==='over'?.55:1;
-    const biteMotion=getAnglingSpeciesBiteMotion(anglingPendingCatch?.species,phase);
+    const biteMotion=getAnglingContextualBiteMotion(anglingPendingCatch?.species,phase);
     const deepStart=Math.max(.32,anglingBiteAlertPhase-.19);
     const deepCommit=THREE.MathUtils.smoothstep(phase,deepStart,.98);
     const deepPull=(.10+.22*Math.abs(anglingBiteVariant))*deepCommit;
@@ -36945,7 +37062,8 @@ function updateAnglingMode(dt){
     const biteSlide=biteMotion.slide*biteVisibility;
     const biteLean=biteMotion.lean*biteVisibility;
     const biteSideLean=biteMotion.sideLean*biteVisibility;
-    setAnglingBobberRestPose(biteDip,biteWobble,biteSlide,biteLean,biteSideLean);
+    const biteForward=biteMotion.forward*biteVisibility;
+    setAnglingBobberRestPose(biteDip,biteWobble,biteSlide,biteLean,biteSideLean,biteDip,biteForward);
     if(phase>anglingBiteAlertPhase-.09&&phase<anglingBiteAlertPhase-.03&&anglingLastSurfaceEffect<=0){
       spawnAnglingSurfaceEffect(anglingBobber.position,.65,1.15);anglingLastSurfaceEffect=.9;
     }
@@ -36959,8 +37077,16 @@ function updateAnglingMode(dt){
   }else if(anglingState==='bite-focus'){
     if(anglingReturnToShorePendingReset)return false;
     // Nur ein sehr kurzer Nachdruck vor dem unveränderten Anhieb-QTE.
-    const focusDepth=THREE.MathUtils.clamp(.62*anglingBiteDeepFactor,.58,1.02);
-    setAnglingBobberRestPose(focusDepth+Math.sin(anglingStateTime*15)*.018,Math.sin(anglingStateTime*11)*.035,0,0,0,focusDepth);
+    // Die Pose behält dabei den gerade gezeigten Bisscharakter, statt bei jedem
+    // Fisch künstlich doch noch vollständig unter Wasser gedrückt zu werden.
+    const focusMotion=getAnglingContextualBiteMotion(anglingPendingCatch?.species,1);
+    const focusDepth=Math.max(-.28,focusMotion.dip*anglingBiteDeepFactor);
+    setAnglingBobberRestPose(
+      focusDepth+Math.sin(anglingStateTime*15)*.012,
+      Math.sin(anglingStateTime*11)*.025,
+      focusMotion.slide,focusMotion.lean,focusMotion.sideLean,
+      Math.max(0,focusDepth),focusMotion.forward
+    );
     if(anglingStateTime>=.14)beginAnglingStrikeQte();
   }else if(anglingState==='strike'){
     anglingQteLapTime+=dt;
