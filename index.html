@@ -35704,9 +35704,13 @@ function updateAnglingDrillUi(){
   // Die Animationsgeschwindigkeit folgt geglättet der realen Distanzänderung.
   if(anglingDistanceUiPrev===null)anglingDistanceUiPrev=anglingFightDistance;
   const distanceDelta=anglingFightDistance-anglingDistanceUiPrev;
-  const distanceSpeedRaw=Math.abs(distanceDelta)/Math.max(.001,dt||.016);
+  // updateAnglingDrillUi() besitzt absichtlich kein dt-Argument.
+  // Für die reine Balkenanimation genügt die Distanzänderung pro UI-Frame;
+  // dadurch bleibt die Anzeige unabhängig vom Drill-Integrator und wir
+  // erzeugen keinen Scope-Fehler.
+  const distanceSpeedRaw=Math.abs(distanceDelta)*60;
   anglingDistanceUiSpeed=THREE.MathUtils.lerp(
-    anglingDistanceUiSpeed,distanceSpeedRaw,Math.min(1,(dt||.016)*7)
+    anglingDistanceUiSpeed,distanceSpeedRaw,.12
   );
   anglingDistanceUiPrev=anglingFightDistance;
   const distanceMoving=Math.abs(distanceDelta)>.0015&&anglingDistanceUiSpeed>.025;
