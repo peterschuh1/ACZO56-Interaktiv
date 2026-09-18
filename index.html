@@ -1592,6 +1592,22 @@ html,body{
   animation:anglingDistanceNear var(--distance-flow-duration) ease-in-out infinite
 }
 .angling-distance-fill.distance-fast{filter:contrast(1.08) brightness(1.045)}
+/* Flucht/Schnurabzug: gleiche ruhige Pulsbewegung, aber klar rot getönt.
+   Schnurgewinn bleibt gold. Keine zusätzliche UI-Fläche. */
+.angling-distance-fill.distance-away{
+  background-color:#b94a43;
+  background-image:linear-gradient(
+    90deg,
+    rgba(255,74,65,0) 0%,
+    rgba(255,105,92,.14) 24%,
+    rgba(255,122,105,.48) 38%,
+    rgba(255,214,204,.94) 49%,
+    rgba(255,214,204,.94) 51%,
+    rgba(255,122,105,.48) 62%,
+    rgba(255,105,92,.14) 76%,
+    rgba(255,74,65,0) 100%
+  );
+}
 @keyframes anglingDistanceAway{
   from{background-position:115% 0}
   to{background-position:-15% 0}
@@ -34715,7 +34731,8 @@ function beginAnglingDrill(){
   anglingFishBurstIndividual=.92+Math.random()*.16;
   anglingFishEnduranceIndividual=.92+Math.random()*.16;
   anglingDrillStamina=anglingStrikeQuality==='perfect'?.92:1;
-  anglingStaminaResistance=anglingCurrentFightProfile.stamina*temp.stamina*anglingFishEnduranceIndividual;
+  anglingStaminaResistance=anglingCurrentFightProfile.stamina*temp.stamina*anglingFishEnduranceIndividual*
+    THREE.MathUtils.lerp(.84,1.34,THREE.MathUtils.clamp((sizeFactor-.45)/.70,0,1));
   setupAnglingFishVisual();anglingFishVisual.visible=false;anglingNetGroup.visible=false;
   anglingFishVisualPrevValid=false;anglingFishVisualDepthYaw=0;anglingFishVisualMotionState='drilling';
   anglingDrillTension=anglingStrikeQuality==='perfect'?.34:.42;
@@ -35761,10 +35778,14 @@ function updateAnglingDrillUi(){
   );
 
   anglingFightDistanceText.textContent=anglingFightDistance.toFixed(1).replace('.',',')+' m';
-  let tensionWord='gut',color='#73d866';
-  if(anglingDrillTension>.86){tensionWord='kritisch';color='#ef4b45';}
-  else if(anglingDrillTension>.72){tensionWord='hoch';color='#f0c84d';}
-  else if(anglingDrillTension<.18){tensionWord='locker';color='#65bce0';}
+  let tensionWord='gut',color='#49cf62';
+  // Durchgehende Belastungsskala: grün -> gelb -> orange -> rot.
+  // Die Segmentoptik des bestehenden Balkens bleibt erhalten; nur currentColor
+  // folgt jetzt sichtbar der tatsächlichen Schnurbelastung.
+  if(anglingDrillTension>=.86){tensionWord='kritisch';color='#ef3f36';}
+  else if(anglingDrillTension>=.68){tensionWord='hoch';color='#f28a2e';}
+  else if(anglingDrillTension>=.46){tensionWord='erhöht';color='#f0cf3d';}
+  else if(anglingDrillTension<.18){tensionWord='locker';color='#58c96b';}
   anglingTensionFill.style.color=color;anglingTensionText.textContent=tensionWord;
   anglingStaminaText.textContent=staminaPct+' %';
   anglingDrillDirection.textContent=anglingDrillTension>.88
@@ -35812,8 +35833,13 @@ function updateAnglingDrill(dt){
     const durationMix=Math.random()<longRunChance
       ? THREE.MathUtils.lerp(.62,1,Math.pow(Math.random(),.45))
       : THREE.MathUtils.lerp(.18,.62,Math.random());
+    // Häufigkeit/Kraft und Dauer nicht gegeneinander ausspielen:
+    // Ein starker Großfisch darf gerade WEGEN seiner Kraft lange laufen.
+    const runDurationStrength=THREE.MathUtils.lerp(
+      .94,1.06,THREE.MathUtils.clamp((runFactor-.58)/1.20,0,1)
+    );
     anglingDrillRunDuration=THREE.MathUtils.clamp(
-      THREE.MathUtils.lerp(runFloor,runCeiling,durationMix)/Math.max(.82,runFactor*.72),
+      THREE.MathUtils.lerp(runFloor,runCeiling,durationMix)*runDurationStrength,
       runFloor,maxSpeciesRun
     );
     if(Math.random()<THREE.MathUtils.clamp(.52+.24*fight.lateral,.45,.88))anglingDrillDirectionValue*=-1;
@@ -35903,10 +35929,35 @@ function updateAnglingDrill(dt){
       anglingSelectedDrag==='tight'?.22:.82;
     const reelResistance=drillPointerReeling&&!anglingFishTowardRun?.88:1;
     const runSpeed=(.16+.66*runPower)*(fight.runLength||1)*payout*reelResistance;
+
+    // Der alte Deckel lag selbst beim Wels nur ungefähr 10 m hinter der
+    // Anhiebentfernung. Dort drückte die Flucht permanent gegen den Clamp:
+    // Der Spieler kurbelte, der Fisch zog dieselbe Strecke wieder heraus und
+    // wirkte dadurch wie festgenagelt. Jetzt bekommt jede Art realistischen
+    // Fluchtraum, skaliert mit Größe und ihrer maximalen Run-Dauer.
+    const sizeRunRoom=THREE.MathUtils.clamp((anglingFightSizeFactor-.45)/.70,0,1);
+    const speciesRunRoom=Math.max(4.5,(fight.maxRun||7)*THREE.MathUtils.lerp(.42,1.02,sizeRunRoom));
+    const fightMaxDistance=anglingFightStartDistance+speciesRunRoom;
+
     anglingFightDistance=THREE.MathUtils.clamp(
       anglingFightDistance+runDirection*dt*runSpeed,
-      1.55,anglingFightStartDistance+Math.max(4.5,6.0*burst)
+      1.55,fightMaxDistance
     );
+
+    // Bei offener Bremse darf eine echte kräftige Flucht nicht durch
+    // gleichzeitiges Kurbeln optisch auf 0 m/s zusammengerechnet werden.
+    // Der Fisch nimmt dann kontinuierlich Schnur. Erst beim Abklingen des Runs
+    // kann der Angler wieder netto Entfernung gewinnen.
+    if(anglingSelectedDrag==='loose'&&!anglingFishTowardRun&&runPulse>.28&&runPower>.32){
+      const minTakeSpeed=THREE.MathUtils.lerp(
+        .16,.48,THREE.MathUtils.clamp(runPower/1.45,0,1)
+      )*(.72+.28*sizeRunRoom);
+      const minRunDistance=Math.min(
+        fightMaxDistance,
+        distanceBeforeMotion+dt*minTakeSpeed
+      );
+      anglingFightDistance=Math.max(anglingFightDistance,minRunDistance);
+    }
   }
   // Netto-Bewegung dieses Physikframes: positiv = Fisch nimmt Schnur,
   // negativ = Angler gewinnt Schnur.
