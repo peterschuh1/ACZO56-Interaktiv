@@ -11371,7 +11371,7 @@ function updateAstronomy(){
   // hart bei -4° Sonnenhöhe geschaltet, sondern weich mit der Dämmerung eingeblendet.
   const moonDisplayAllowed=moonUp;
   const sunAltDeg=THREE.MathUtils.radToDeg(sunPos.altitude);
-  const moonTwilightVisibility=1-THREE.MathUtils.smoothstep(sunAltDeg,-6,4);
+  const moonTwilightVisibility=1-THREE.MathUtils.smoothstep(sunAltDeg,-8,2);
   let moonVec=celestialVector(moonPos,span*1.9);
 
   sun.position.copy(sunVec);
@@ -11401,11 +11401,11 @@ function updateAstronomy(){
         0,1
       )
     : 0;
-  const moonVisualScale=THREE.MathUtils.lerp(25,20,moonDaylight);
+  const moonVisualScale=THREE.MathUtils.lerp(16,13,moonDaylight);
   moonDisc.userData.visualOpacity=moonVisualOpacity;
   moonDisc.scale.set(moonVisualScale,moonVisualScale,1);
   if(typeof moonGlow!=='undefined'){
-    const moonGlowScale=THREE.MathUtils.lerp(50,35,moonDaylight);
+    const moonGlowScale=THREE.MathUtils.lerp(34,24,moonDaylight);
     moonGlow.userData.visualOpacity=moonVisualOpacity*THREE.MathUtils.lerp(.82,.12,moonDaylight);
     moonGlow.scale.set(moonGlowScale,moonGlowScale,1);
   }
@@ -21976,7 +21976,9 @@ function finishLeavingFishView(){
   hideCelestialDiscsForFishMode=false;
   [sunDisc,moonDisc,moonGlow].forEach(disc=>{
     if(!disc||!disc.material) return;
-    disc.material.depthTest=false;
+    // Nach dem Unterwasser-Modus müssen Himmelskörper wieder vom
+    // normalen Tiefenpuffer verdeckt werden: Bäume/Gebäude liegen vor dem Mond.
+    disc.material.depthTest=true;
     disc.material.fog=true;
     disc.material.opacity=1;
     disc.material.needsUpdate=true;
