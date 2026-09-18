@@ -1567,13 +1567,35 @@ html,body{
 .angling-drill-bar{height:11px;border-radius:999px;background:rgba(255,255,255,.20);overflow:hidden}
 .angling-drill-fill{display:block;height:100%;width:50%;min-width:2px;border-radius:inherit;transition:width .10s linear,background .12s linear}
 .angling-tension-fill{color:#73d866;background:repeating-linear-gradient(90deg,currentColor 0 6.5%,transparent 6.5% 8.33%)}.angling-stamina-fill{background:#4cb9df;width:100%}
-.angling-distance-fill{position:relative;overflow:hidden;background-color:#d5b55c;background-image:repeating-linear-gradient(120deg,rgba(255,255,255,.30) 0 5px,rgba(72,52,10,.12) 5px 10px,transparent 10px 18px);background-size:36px 28px;width:100%;--distance-flow-duration:.9s}
-.angling-distance-arrow{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-style:normal;font-size:12px;font-weight:1000;line-height:1;color:#201805;text-shadow:0 1px 1px rgba(255,255,255,.65);pointer-events:none;white-space:nowrap;overflow:visible}
-.angling-distance-fill.distance-away{animation:anglingDistanceAway var(--distance-flow-duration) linear infinite}
-.angling-distance-fill.distance-near{animation:anglingDistanceNear var(--distance-flow-duration) linear infinite}
-.angling-distance-fill.distance-fast .angling-distance-arrow{font-size:14px}
-@keyframes anglingDistanceAway{from{background-position:0 0}to{background-position:36px 0}}
-@keyframes anglingDistanceNear{from{background-position:36px 0}to{background-position:0 0}}
+.angling-distance-fill{
+  background-color:#d5b55c;
+  background-image:repeating-linear-gradient(
+    120deg,
+    rgba(45,34,5,.62) 0 5px,
+    rgba(255,239,166,.72) 5px 10px,
+    rgba(45,34,5,.18) 10px 15px,
+    rgba(255,255,255,.08) 15px 20px
+  );
+  background-size:40px 100%;
+  background-position:0 0;
+  width:100%;
+  --distance-flow-duration:.8s
+}
+.angling-distance-fill.distance-away{
+  animation:anglingDistanceAway var(--distance-flow-duration) linear infinite
+}
+.angling-distance-fill.distance-near{
+  animation:anglingDistanceNear var(--distance-flow-duration) linear infinite
+}
+.angling-distance-fill.distance-fast{filter:contrast(1.16) brightness(1.06)}
+@keyframes anglingDistanceAway{
+  from{background-position:0 0}
+  to{background-position:40px 0}
+}
+@keyframes anglingDistanceNear{
+  from{background-position:0 0}
+  to{background-position:-40px 0}
+}to{background-position:0 0}}
 .angling-drill-direction{font-size:13px;color:#ffe777;min-height:18px;font-weight:950}
 .angling-drill-help{font-size:8.5px;font-weight:800;opacity:.90;margin:3px 0 6px}
 .angling-reel-btn{display:inline-flex!important;align-items:center;justify-content:center;gap:9px;min-width:178px;min-height:44px!important;padding:6px 18px!important;border-radius:999px!important;background:#edf8ef!important;color:#173b2a!important;border:2px solid #fff!important;font-size:11px!important;font-weight:1000!important;touch-action:none;-webkit-user-select:none;user-select:none;box-shadow:0 4px 12px rgba(0,0,0,.30)}
@@ -4778,7 +4800,7 @@ html,body{
        </div>
        <div class="angling-drill-row"><span>Schnurbelastung</span><div class="angling-drill-bar"><i id="anglingTensionFill" class="angling-drill-fill angling-tension-fill"></i></div><span id="anglingTensionText">gut</span></div>
        <div class="angling-drill-row"><span>Ausdauer</span><div class="angling-drill-bar"><i id="anglingStaminaFill" class="angling-drill-fill angling-stamina-fill"></i></div><span id="anglingStaminaText">100 %</span></div>
-       <div class="angling-drill-row"><span>Entfernung</span><div class="angling-drill-bar"><i id="anglingFightDistanceFill" class="angling-drill-fill angling-distance-fill"><b id="anglingDistanceFlowArrow" class="angling-distance-arrow"></b></i></div><span id="anglingFightDistanceText">10 m</span></div>
+       <div class="angling-drill-row"><span>Entfernung</span><div class="angling-drill-bar"><i id="anglingFightDistanceFill" class="angling-drill-fill angling-distance-fill"></i></div><span id="anglingFightDistanceText">10 m</span></div>
        <div class="angling-drill-help">Halten = kurbeln · Maus/Finger bewegt die Rute · Fisch links → Rute rechts, Fisch rechts → Rute links.</div>
        <button id="anglingReelBtn" class="angling-reel-btn"><i class="angling-reel-icon"></i><span id="anglingReelLabel">EINHOLEN HALTEN</span></button>
      </div>
@@ -5625,7 +5647,7 @@ const anglingTensionText=document.getElementById('anglingTensionText');
 const anglingStaminaFill=document.getElementById('anglingStaminaFill');
 const anglingStaminaText=document.getElementById('anglingStaminaText');
 const anglingFightDistanceFill=document.getElementById('anglingFightDistanceFill');
-const anglingFightDistanceText=document.getElementById('anglingFightDistanceText'); const anglingDistanceFlowArrow=document.getElementById('anglingDistanceFlowArrow');
+const anglingFightDistanceText=document.getElementById('anglingFightDistanceText');
 const anglingReelBtn=document.getElementById('anglingReelBtn');
 const anglingReelLabel=document.getElementById('anglingReelLabel');
 const anglingCatchCard=document.getElementById('anglingCatchCard');
@@ -26650,6 +26672,7 @@ let anglingFishEnduranceIndividual=1;
 let anglingFightSizeFactor=.5;
 let anglingDistanceUiPrev=null;
 let anglingDistanceUiSpeed=0;
+let anglingDistanceMotion=0;
 let anglingCatchRevealData=null;
 let anglingLastSurfaceEffect=0;
 let anglingAimScreenX=.5;
@@ -35694,32 +35717,24 @@ function updateAnglingDrillUi(){
   );
   anglingFightDistanceFill.style.width=(distanceRemaining*100).toFixed(1)+'%';
 
-  // Bewegungsrichtung direkt IM vorhandenen Entfernungsbalken:
-  // rechts laufend = Fisch nimmt Schnur, links laufend = Fisch kommt näher.
-  // Die Animationsgeschwindigkeit folgt geglättet der realen Distanzänderung.
-  if(anglingDistanceUiPrev===null)anglingDistanceUiPrev=anglingFightDistance;
-  const distanceDelta=anglingFightDistance-anglingDistanceUiPrev;
-  // updateAnglingDrillUi() besitzt absichtlich kein dt-Argument.
-  // Für die reine Balkenanimation genügt die Distanzänderung pro UI-Frame;
-  // dadurch bleibt die Anzeige unabhängig vom Drill-Integrator und wir
-  // erzeugen keinen Scope-Fehler.
-  const distanceSpeedRaw=Math.abs(distanceDelta)*60;
+  // Netto-Schnurbewegung aus der Drillphysik:
+  // positiv = Fisch nimmt Schnur -> Muster nach rechts
+  // negativ = Angler gewinnt Schnur -> Muster nach links.
+  const distanceAway=anglingDistanceMotion>.025;
+  const distanceNear=anglingDistanceMotion<-.025;
+  const distanceMoving=distanceAway||distanceNear;
   anglingDistanceUiSpeed=THREE.MathUtils.lerp(
-    anglingDistanceUiSpeed,distanceSpeedRaw,.12
+    anglingDistanceUiSpeed,Math.abs(anglingDistanceMotion),.18
   );
-  anglingDistanceUiPrev=anglingFightDistance;
-  const distanceMoving=Math.abs(distanceDelta)>.0015&&anglingDistanceUiSpeed>.025;
-  const distanceAway=distanceMoving&&distanceDelta>0;
-  const distanceNear=distanceMoving&&distanceDelta<0;
   anglingFightDistanceFill.classList.toggle('distance-away',distanceAway);
   anglingFightDistanceFill.classList.toggle('distance-near',distanceNear);
-  anglingFightDistanceFill.classList.toggle('distance-fast',distanceMoving&&anglingDistanceUiSpeed>.75);
-  if(anglingDistanceFlowArrow){
-    anglingDistanceFlowArrow.textContent=distanceAway?'▶ ▶ ▶':distanceNear?'◀ ◀ ◀':'';
-    anglingDistanceFlowArrow.setAttribute('aria-label',distanceAway?'Fisch nimmt Schnur':distanceNear?'Schnur wird eingeholt':'');
-  }
-  const flowDuration=THREE.MathUtils.clamp(1.18/(.45+anglingDistanceUiSpeed*1.65),.16,1.25);
-  anglingFightDistanceFill.style.setProperty('--distance-flow-duration',flowDuration.toFixed(3)+'s');
+  anglingFightDistanceFill.classList.toggle('distance-fast',distanceMoving&&anglingDistanceUiSpeed>.65);
+  const flowDuration=THREE.MathUtils.clamp(
+    .92/(.38+anglingDistanceUiSpeed*1.85),.14,1.05
+  );
+  anglingFightDistanceFill.style.setProperty(
+    '--distance-flow-duration',flowDuration.toFixed(3)+'s'
+  );
 
   anglingFightDistanceText.textContent=anglingFightDistance.toFixed(1).replace('.',',')+' m';
   let tensionWord='gut',color='#73d866';
@@ -35839,6 +35854,10 @@ function updateAnglingDrill(dt){
     anglingDrillStamina=Math.max(0,anglingDrillStamina-dt*runFatigue*runPulse);
   }
 
+  // Entfernung vor Kurbeln/Flucht merken. Daraus wird nach der Physik die
+  // echte Bewegungsrichtung in m/s bestimmt, unabhängig von UI-Aufrufen.
+  const distanceBeforeMotion=anglingFightDistance;
+
   // Während einer starken Flucht kann der Angler nicht einfach durchkurbeln.
   // Je stärker der Fisch zieht, desto weniger Schnur gewinnt die Kurbel zurück.
   if(anglingDrillReeling&&anglingDrillTension<.92){
@@ -35865,6 +35884,12 @@ function updateAnglingDrill(dt){
       1.55,anglingFightStartDistance+Math.max(4.5,6.0*burst)
     );
   }
+  // Netto-Bewegung dieses Physikframes: positiv = Fisch nimmt Schnur,
+  // negativ = Angler gewinnt Schnur.
+  const distanceVelocity=(anglingFightDistance-distanceBeforeMotion)/Math.max(.001,dt);
+  anglingDistanceMotion=THREE.MathUtils.lerp(
+    anglingDistanceMotion,distanceVelocity,Math.min(1,dt*10)
+  );
   // Erst NACH Kurbeln und Flucht aktualisieren, damit Entfernung und Balken
   // nicht einen Frame hinter der tatsächlichen Fischposition liegen.
   updateAnglingDrillUi();
