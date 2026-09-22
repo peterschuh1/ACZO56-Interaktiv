@@ -37176,6 +37176,19 @@ const aczoAnglingInsetShoreGroups=[cloudGroup,cloudReflectionGroup,aczoOuterFore
   birdGroup,aczoWildBoarGroup,carTestGroup,personalSceneGroup,bmwX3VisitGroup,golfFamilyVisitGroup];
 const aczoAnglingInsetStates=new Array(aczoAnglingInsetGroups.length).fill(false);
 const aczoAnglingInsetShoreStates=new Array(aczoAnglingInsetShoreGroups.length).fill(false);
+// Eigene, wiederverwendete Materialseiten für Kameras über/unter Wasser.
+// Uniforms und Shader bleiben identisch; Hauptmaterial und PERF9-Cache unberührt.
+const aczoInsetWaterMaterials=new WeakMap();
+function aczoInsetWaterMaterial(source,side){
+  if(!ACZO_MOBILE_PERF||source.side===THREE.DoubleSide||source.side===side)return source;
+  let variants=aczoInsetWaterMaterials.get(source);
+  if(!variants){variants=[];aczoInsetWaterMaterials.set(source,variants);}
+  if(!variants[side]){
+    const material=source.clone();material.uniforms=source.uniforms;
+    material.side=side;variants[side]=material;
+  }
+  return variants[side];
+}
 const aczoInsetWaterState={viewport:new THREE.Vector4(),size:new THREE.Vector2(),origin:new THREE.Vector2(),sun:new THREE.Vector3(),moon:new THREE.Vector3()};
 function aczoRenderLightweightAnglingInset(cam,keepShoreNature=false){
   // P36: In der Stellenauswahl dienen Schilf, Straeucher und die echten
@@ -37190,9 +37203,14 @@ function aczoRenderLightweightAnglingInset(cam,keepShoreNature=false){
     if(group)group.visible=false;
   }
   const ws=aczoInsetWaterState;
+  const savedPondMaterial=waterSurface.material,savedRiverMaterial=moselWaterSurface.material;
   ws.size.copy(waterUniforms.viewportSize.value);ws.origin.copy(waterUniforms.viewportOrigin.value);
   ws.sun.copy(waterUniforms.sunScreen.value);ws.moon.copy(waterUniforms.moonScreen.value);
   try{
+    const below=cam.position.z<=WATER_OVERLAY_Z+.04;
+    // Die beiden Gewässer haben entgegengesetzte Dreiecksorientierungen.
+    waterSurface.material=aczoInsetWaterMaterial(savedPondMaterial,below?THREE.FrontSide:THREE.BackSide);
+    moselWaterSurface.material=aczoInsetWaterMaterial(savedRiverMaterial,below?THREE.BackSide:THREE.FrontSide);
     // getCurrentViewport liefert echte Zeichenpufferpixel inklusive DPR.
     renderer.getCurrentViewport(ws.viewport);
     waterUniforms.viewportSize.value.set(ws.viewport.z,ws.viewport.w);
@@ -37201,6 +37219,7 @@ function aczoRenderLightweightAnglingInset(cam,keepShoreNature=false){
     setProjectedCelestialScreen(moonDisc,waterUniforms.moonScreen,simulationEnabled&&!!moonDisc.userData.astronomicallyVisible,cam);
     markViewerRenderCall();renderer.render(scene,cam);
   }finally{
+    waterSurface.material=savedPondMaterial;moselWaterSurface.material=savedRiverMaterial;
     waterUniforms.viewportSize.value.copy(ws.size);waterUniforms.viewportOrigin.value.copy(ws.origin);
     waterUniforms.sunScreen.value.copy(ws.sun);waterUniforms.moonScreen.value.copy(ws.moon);
     for(let i=0;i<groups.length;i++)if(groups[i])groups[i].visible=states[i];
