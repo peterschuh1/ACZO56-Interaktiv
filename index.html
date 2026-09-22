@@ -23147,6 +23147,77 @@ function triggerAnglingLureScare(f,cfg){
   f.pause=0;
 }
 
+// Gummifisch-Nachläufer: ausschließlich vorhandene Fischakteure, Simulationszeit.
+const aczoJig={active:false,session:0,hops:0,grounded:false,lifted:false,nearBottom:false,resting:false,perchNight:false};
+function aczoSoftFollowerSpecies(species){
+  return anglingSelectedBait==='softbait'&&(species==='zander'||species==='perch');
+}
+function aczoUpdateJig(dt,active){
+  const night=simulationEnabled?sceneNightFactor:0;
+  if(night>.55)aczoJig.perchNight=true;
+  else if(night<.40)aczoJig.perchNight=false;
+  active=active&&anglingSelectedBait==='softbait'&&!anglingFastObstaclePull&&
+    ['lure-waiting','lure-retrieving'].includes(anglingState);
+  if(!active){
+    if(aczoJig.active)aczoJig.session++;
+    aczoJig.active=false;aczoJig.hops=0;aczoJig.grounded=false;aczoJig.lifted=false;
+    aczoJig.nearBottom=false;aczoJig.resting=false;return;
+  }
+  aczoJig.active=true;
+  aczoJig.hops*=Math.exp(-dt/12);
+  const limits=anglingLureDepthLimits(anglingLure.position.x,anglingLure.position.y);
+  if(!limits){aczoJig.nearBottom=false;aczoJig.resting=false;return;}
+  const height=anglingLure.position.z-limits.bottomZ-limits.bottomClearance;
+  aczoJig.nearBottom=height<.85;
+  aczoJig.resting=height<.065&&anglingLureWorldSpeed<.10;
+  if(height<.065){
+    if(aczoJig.grounded&&aczoJig.lifted)aczoJig.hops=Math.min(3,aczoJig.hops+1);
+    aczoJig.grounded=true;aczoJig.lifted=false;
+  }else if(height>.20&&aczoJig.grounded)aczoJig.lifted=true;
+}
+function aczoStartSoftFollow(f){
+  if(!aczoJig.active||(f.obj.userData.species==='perch'&&aczoJig.perchNight)||
+     (f.softCooldown||0)>fishWorldTime)return false;
+  if(f.softSession===aczoJig.session&&(f.lureChaseUntil||0)>fishWorldTime)return true;
+  f.softSession=aczoJig.session;f.softNearTime=0;f.softBiteReady=false;
+  f.softInspectMin=6+Math.random()*4;
+  f.lureChaseUntil=fishWorldTime+18+Math.random()*14;f.pause=0;
+  return true;
+}
+function aczoEndSoftFollow(f){
+  f.lureChaseUntil=0;f.softSession=-1;f.softBiteReady=false;f.pause=0;
+  f.softCooldown=fishWorldTime+10+Math.random()*8;
+  randomSpeciesPoint(f.obj.userData.species,f.target);
+}
+function aczoSoftFollowGap(f){
+  return Math.max(.20,Math.abs(f.obj.userData.baseFishWidth||.4)*.50+.10);
+}
+function aczoTickSoftFollow(f,dt,dist){
+  const sp=f.obj.userData.species;
+  if(!aczoJig.active||(sp==='perch'&&aczoJig.perchNight)){
+    if(f.softSession>=0)aczoEndSoftFollow(f);
+    return false;
+  }
+  if(f.softSession===aczoJig.session){
+    if((f.lureChaseUntil||0)<=fishWorldTime||dist>16){aczoEndSoftFollow(f);return false;}
+    const close=dist<aczoSoftFollowGap(f)+.30;
+    if(close)f.softNearTime+=dt;
+    // Erst nach längerem Beobachten entscheidet ein zeitbasierter Zufall über den Biss.
+    if(close&&f.softNearTime>=f.softInspectMin){
+      const rate=(sp==='zander'?.065:.050)*(1+(aczoJig.nearBottom?aczoJig.hops*.65:0))*(aczoJig.resting?.35:1);
+      if(Math.random()<1-Math.exp(-rate*dt)){
+        f.softBiteReady=true;
+        return beginAnglingLureAttack(f);
+      }
+    }
+  }else if((f.softCooldown||0)<=fishWorldTime&&dist<3.2&&anglingLureWorldSpeed>.10){
+    const rate=(.05+.18*Math.max(0,1-dist/3.2))*(sp==='zander'?1:.7)*
+      (1+(aczoJig.nearBottom?aczoJig.hops*.8:0));
+    if(Math.random()<1-Math.exp(-rate*dt))aczoStartSoftFollow(f);
+  }
+  return false;
+}
+
 function updateFishActors(dt){
   const fishNow=performance.now();
   // P30: Der Kunstkoederflug ueber Wasser braucht keine 516-koepfige Unterwasser-
@@ -23177,6 +23248,7 @@ function updateFishActors(dt){
     anglingLurePrevValid=false;anglingLureWorldSpeed=0;
     anglingLureSweepStart.copy(anglingLure.position);
   }
+  aczoUpdateJig(dt,lureUnderwaterActive);
   updateAnglingFeedUnderwaterVisual(dt,lureUnderwaterActive);
   if(!fishVisualActive&&!feedWorldActive) return;
   fishWorldTime+=dt;
@@ -23212,6 +23284,8 @@ function updateFishActors(dt){
       keepFishAboveFloor(f);
     }
 
+    if(f.softSession>=0&&(!aczoJig.active||f.softSession!==aczoJig.session||
+       (species==='perch'&&aczoJig.perchNight)))aczoEndSoftFollow(f);
     if(lureUnderwaterActive&&fishNow>=anglingSnagCooldownUntil){
       const lureDist=f.obj.position.distanceTo(anglingLure.position);
       const lureMoving=anglingLureWorldSpeed>.16||anglingState==='lure-retrieving';
@@ -23223,7 +23297,9 @@ function updateFishActors(dt){
       const aczoCanLureChase=aczoVisiblePredator&&!anglingFastObstaclePull&&lureMoving&&
         ['lure-retrieving','lure-waiting'].includes(anglingState)&&
         !f.obj.userData.hiddenByHunt;
-      if(aczoCanLureChase){
+      if(aczoSoftFollowerSpecies(species)){
+        if(aczoTickSoftFollow(f,dt,lureDist))return;
+      }else if(aczoCanLureChase){
         if((f.lureChaseUntil||0)>fishWorldTime){
           // Bei erreichter Ködernähe übernimmt exakt dieser sichtbare Räuber den Biss.
           if(lureDist<.46){
@@ -23313,7 +23389,7 @@ function updateFishActors(dt){
     // auch für gelegentliches natürliches Grundfressen von Karpfen, Brassen und Schleien.
     // Daher nicht mehr pro Frame pauschal zurücksetzen; der Timer läuft sauber aus.
 
-    if(feedClusterActive&&!isHunter&&!isFleeing){
+    if(feedClusterActive&&!isHunter&&!isLureHunter&&!isFleeing){
       const rule=anglingFeedRuleForSpecies(species);
       const feedMaturity=anglingFeedMaturity();
       const activeThreshold=rule?rule.threshold*(.18+.82*feedMaturity):0;
@@ -23355,7 +23431,7 @@ function updateFishActors(dt){
         }
       }
     }
-    if(f.pause>0&&!isHunter&&!isFleeing&&!feedSeeking){f.pause-=step;continue;}
+    if(f.pause>0&&!isHunter&&!isLureHunter&&!isFleeing&&!feedSeeking){f.pause-=step;continue;}
     if(isLureHunter) fishMoveDelta.copy(anglingLure.position);
     else if(isHunter) fishMoveDelta.copy(activeHunt.prey.obj.position);
     else if(isFleeing) fishMoveDelta.copy(f.huntFleeTarget);
@@ -23364,7 +23440,9 @@ function updateFishActors(dt){
       if(f.schoolTarget&&!feedSeeking) fishMoveDelta.add(f.schoolOffset);
     }
     fishMoveDelta.sub(f.obj.position);
-    const dist=fishMoveDelta.length();
+    const softObserving=isLureHunter&&aczoSoftFollowerSpecies(species)&&
+      f.softSession===aczoJig.session&&anglingState!=='strike';
+    const dist=Math.max(0,fishMoveDelta.length()-(softObserving?aczoSoftFollowGap(f):0));
     if(isHunter){
       const captureDistance=Math.max(.13,
         (Math.abs(f.obj.userData.baseFishWidth||f.obj.scale.x)+
@@ -23396,7 +23474,7 @@ function updateFishActors(dt){
 
     const bottomGrazerActive=feedBottomGrazer||ambientBottomGrazer;
     const bottomGrazerLocked=bottomGrazerActive&&(f.feedBottomUntil||0)>fishWorldTime;
-    const arrivalThreshold=bottomGrazerActive?.28:(feedSeeking?.09:.22);
+    const arrivalThreshold=softObserving?.025:bottomGrazerActive?.28:(feedSeeking?.09:.22);
 
     // Ein einmal grundelnder Fisch bleibt mehrere Sekunden in EINER ruhigen Pose,
     // auch wenn sein intern berechneter Futterzielpunkt leicht weiterwandert.
@@ -23543,7 +23621,7 @@ function updateFishActors(dt){
     const huntSpeed=species==='pike'?3.15:species==='zander'?2.65:species==='catfish'?2.20:1.85;
     const feedSpeed=feedSeeking?(anglingFeedRuleForSpecies(species)?.group==='edge'?Math.max(f.speed*1.20,.72):Math.max(f.speed*1.18,.42)):0;
     const lureHuntSpeed=species==='pike'?3.55:species==='zander'?3.00:species==='catfish'?2.35:2.10;
-    const actualSpeed=isLureHunter?lureHuntSpeed:(isHunter?huntSpeed:(isFleeing?Math.max(1.25,f.speed*3.4):(feedSeeking?feedSpeed:f.speed*activity)));
+    const actualSpeed=isLureHunter?(softObserving?Math.min(lureHuntSpeed,Math.max(.18,anglingLureWorldSpeed+dist*1.6)):lureHuntSpeed):(isHunter?huntSpeed:(isFleeing?Math.max(1.25,f.speed*3.4):(feedSeeking?feedSpeed:f.speed*activity)));
     f.obj.position.addScaledVector(fishMoveDelta,Math.min(dist,actualSpeed*step));
     keepFishAboveFloor(f);
     f.shadowYaw=Math.atan2(-fishMoveDelta.x,fishMoveDelta.y);
@@ -36305,6 +36383,9 @@ function beginAnglingLureAttack(sourceActor=null){
     const candidates=fishActors.filter(f=>{
       if(!f?.obj||f.obj.userData.hiddenByHunt)return false;
       const sp=f.obj.userData.species;
+      if(aczoSoftFollowerSpecies(sp))return aczoJig.active&&
+        !(sp==='perch'&&aczoJig.perchNight)&&(f.softCooldown||0)<=fishWorldTime&&
+        f.obj.position.distanceToSquared(anglingLure.position)<196;
       return ['pike','zander','perch','catfish'].includes(sp);
     });
     if(!candidates.length)return false;
@@ -36340,6 +36421,7 @@ function beginAnglingLureAttack(sourceActor=null){
         }
       }
     }
+    if(aczoSoftFollowerSpecies(sourceActor.obj.userData.species))return aczoStartSoftFollow(sourceActor);
     sourceActor.lureChaseUntil=fishWorldTime+4.2+Math.random()*2.0;
     sourceActor.pause=0;
     return true;
@@ -36347,6 +36429,10 @@ function beginAnglingLureAttack(sourceActor=null){
 
   const species=sourceActor.obj?.userData?.species;
   if(!['pike','zander','perch','catfish'].includes(species))return false;
+  if(aczoSoftFollowerSpecies(species)){
+    if(!aczoJig.active||(species==='perch'&&aczoJig.perchNight)||!sourceActor.softBiteReady)return false;
+    sourceActor.softBiteReady=false;
+  }
 
   const temperament=pickAnglingTemperament();
   let catchCm=anglingSizeForSpecies(species);
