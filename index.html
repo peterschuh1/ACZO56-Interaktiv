@@ -2295,7 +2295,7 @@ html,body{
 }
 @media(max-width:680px){
   .angling-ui.artificial-lure.line-active .angling-reel-zoom{
-    width:170px!important;height:116px!important;left:7px!important;bottom:72px!important;
+    width:min(195px,48vw)!important;height:130px!important;left:7px!important;bottom:72px!important;
   }
   .angling-reel-zoom .angling-float-caption{font-size:8px!important;padding:4px 5px!important}
 }
@@ -9234,6 +9234,7 @@ const waterUniforms={
  sunScreen:{value:new THREE.Vector3(-2,-2,0)},
  moonScreen:{value:new THREE.Vector3(-2,-2,0)},
  viewportSize:{value:new THREE.Vector2(1,1)},
+ viewportOrigin:{value:new THREE.Vector2(0,0)},
  sunStrength:{value:0},
  moonStrength:{value:0},
  cloudAmount:{value:0},
@@ -9335,6 +9336,7 @@ const waterMat=new THREE.ShaderMaterial({
    uniform vec3 sunScreen;
    uniform vec3 moonScreen;
    uniform vec2 viewportSize;
+   uniform vec2 viewportOrigin;
    uniform float sunStrength;
    uniform float moonStrength;
    uniform float cloudAmount;
@@ -9444,7 +9446,7 @@ const waterMat=new THREE.ShaderMaterial({
      }
 
      vec3 N=normalize(vNormalW);
-     vec3 V=normalize(cameraPos-vWorldPos);
+     vec3 V=normalize(cameraPosition-vWorldPos); // Aktuelle Renderkamera, auch im Livefenster.
      float ndv=max(dot(N,V),0.0);
      float fresnel=pow(1.0-ndv,2.1);
 
@@ -9577,7 +9579,7 @@ const waterMat=new THREE.ShaderMaterial({
      // unter Sonne bzw. Mond. Beim Drehen folgt sie deren sichtbarer Position;
      // Windwellen modulieren nur sanft die Helligkeit, nicht mehr die Richtung.
      vec3 celestialN=vec3(0.0,0.0,1.0);
-     vec2 screenUV=gl_FragCoord.xy/max(viewportSize,vec2(1.0));
+     vec2 screenUV=(gl_FragCoord.xy-viewportOrigin)/max(viewportSize,vec2(1.0));
      // TEST V5: vollständige Mond-Reflexionslogik 1:1 für die Sonne.
      // Nur die Farbe bleibt sonnentypisch warm; Breite, Wellenbruch,
      // Kern, Glühen und Begrenzung entsprechen exakt dem Mondblock.
@@ -10173,6 +10175,7 @@ scene.add(waterSkirt);
 const celestialDepthUniforms={
   time:waterUniforms.time,
   viewportSize:waterUniforms.viewportSize,
+  viewportOrigin:waterUniforms.viewportOrigin,
   sourceScreen:{value:new THREE.Vector3(-2,-2,0)},
   sourceStrength:{value:0},
   transitionFade:{value:1},
@@ -10205,6 +10208,7 @@ const celestialDepthMat=new THREE.ShaderMaterial({
   fragmentShader:`
     uniform float time;
     uniform vec2 viewportSize;
+    uniform vec2 viewportOrigin;
     uniform vec3 sourceScreen;
     uniform float sourceStrength;
     uniform float transitionFade;
@@ -10241,7 +10245,7 @@ const celestialDepthMat=new THREE.ShaderMaterial({
                  +sin((curve-sin(flow*.18+1.1)*.55)*1.18-flow*.15+3.8)*.20)*.5+.5;
       float longCrests=max(smoothstep(.56,.88,fine),smoothstep(.54,.86,wave));
 
-      vec2 suv=gl_FragCoord.xy/max(viewportSize,vec2(1.0));
+      vec2 suv=(gl_FragCoord.xy-viewportOrigin)/max(viewportSize,vec2(1.0));
       float width=mix(.34,.20,clamp(suv.y,0.0,1.0));
       float reflectionArea=exp(-pow((suv.x-sourceScreen.x)/width,2.0))
         *sourceScreen.z*step(suv.y,sourceScreen.y-.004);
@@ -28002,7 +28006,7 @@ function aczoShapeReel(parts,metal,housing,line,knob,root,rodStart,rodEnd,scale)
 aczoShapeReel([anglingReelHousing,reelStem,reelFoot,anglingReelRotorGroup,anglingReelRotorCup,anglingReelSpool,anglingReelSpoolBarrel,anglingReelSpoolLine,anglingReelLipFront,anglingReelLipRear,anglingReelDragKnob,anglingReelBail,anglingReelBailArmA,anglingReelBailArmB,anglingReelCrank,crankArm,crankKnob],anglingRodMetalMat,aczoHousingMain,anglingReelLineMat,anglingReelKnobMat,anglingReelBody,anglingRodGripEnd,anglingRodB,1);
 aczoShapeReel([anglingMiniHousing,anglingMiniStem,anglingMiniFoot,anglingMiniRotorGroup,anglingMiniRotorCup,anglingMiniSpool,anglingMiniSpoolBarrel,anglingMiniSpoolLine,anglingMiniLipFront,anglingMiniLipRear,anglingMiniDragKnob,anglingMiniBail,anglingMiniBailArmA,anglingMiniBailArmB,anglingMiniCrank,anglingMiniCrankArm,anglingMiniKnobMesh],reelMiniMetal,aczoHousingMini,reelMiniLine,reelMiniKnob,anglingMiniReelBody,reelMiniGripB,aczoMiniSeatEnd,1.4);
 anglingReelLineExit.position.set(.055,0,-.047);anglingReelRotorGroup.add(anglingReelLineExit);
-anglingReelMiniCamera.position.set(-1.12,-1.25,-.14);anglingReelMiniCamera.lookAt(.10,-.12,-.70);
+anglingReelMiniCamera.position.set(-.78,-.99,-.18);anglingReelMiniCamera.lookAt(.36,.035,-.68);
 function aczoApplyRodModel(id){
  const v=aczoRodVisual,p=ACZO_ROD_MODELS[id]||ACZO_ROD_MODELS.rod_standard;
  aczoApplyRodSurfaces(id);
@@ -37172,6 +37176,7 @@ const aczoAnglingInsetShoreGroups=[cloudGroup,cloudReflectionGroup,aczoOuterFore
   birdGroup,aczoWildBoarGroup,carTestGroup,personalSceneGroup,bmwX3VisitGroup,golfFamilyVisitGroup];
 const aczoAnglingInsetStates=new Array(aczoAnglingInsetGroups.length).fill(false);
 const aczoAnglingInsetShoreStates=new Array(aczoAnglingInsetShoreGroups.length).fill(false);
+const aczoInsetWaterState={viewport:new THREE.Vector4(),size:new THREE.Vector2(),origin:new THREE.Vector2(),sun:new THREE.Vector3(),moon:new THREE.Vector3()};
 function aczoRenderLightweightAnglingInset(cam,keepShoreNature=false){
   // P36: In der Stellenauswahl dienen Schilf, Straeucher und die echten
   // Uferbaeume als wichtige Orientierungspunkte. Nur dort bleiben die
@@ -37184,8 +37189,20 @@ function aczoRenderLightweightAnglingInset(cam,keepShoreNature=false){
     states[i]=group?group.visible:false;
     if(group)group.visible=false;
   }
-  try{markViewerRenderCall();renderer.render(scene,cam);}
-  finally{
+  const ws=aczoInsetWaterState;
+  ws.size.copy(waterUniforms.viewportSize.value);ws.origin.copy(waterUniforms.viewportOrigin.value);
+  ws.sun.copy(waterUniforms.sunScreen.value);ws.moon.copy(waterUniforms.moonScreen.value);
+  try{
+    // getCurrentViewport liefert echte Zeichenpufferpixel inklusive DPR.
+    renderer.getCurrentViewport(ws.viewport);
+    waterUniforms.viewportSize.value.set(ws.viewport.z,ws.viewport.w);
+    waterUniforms.viewportOrigin.value.set(ws.viewport.x,ws.viewport.y);
+    setProjectedCelestialScreen(sunDisc,waterUniforms.sunScreen,simulationEnabled&&sun.visible,cam);
+    setProjectedCelestialScreen(moonDisc,waterUniforms.moonScreen,simulationEnabled&&!!moonDisc.userData.astronomicallyVisible,cam);
+    markViewerRenderCall();renderer.render(scene,cam);
+  }finally{
+    waterUniforms.viewportSize.value.copy(ws.size);waterUniforms.viewportOrigin.value.copy(ws.origin);
+    waterUniforms.sunScreen.value.copy(ws.sun);waterUniforms.moonScreen.value.copy(ws.moon);
     for(let i=0;i<groups.length;i++)if(groups[i])groups[i].visible=states[i];
   }
 }
@@ -39081,9 +39098,9 @@ updateAnglingSetupUi();
 
 const celestialScreenTemp=new THREE.Vector3();
 const waterViewportTemp=new THREE.Vector2();
-function setProjectedCelestialScreen(object,uniform,active){
+function setProjectedCelestialScreen(object,uniform,active,projectionCamera=camera){
   if(!active){uniform.value.set(-2,-2,0);return;}
-  celestialScreenTemp.copy(object.position).project(camera);
+  celestialScreenTemp.copy(object.position).project(projectionCamera);
   // Für die Spiegelung darf die Lichtquelle auch oberhalb des sichtbaren
   // Bildausschnitts stehen. Früher wurde dadurch besonders die hoch stehende
   // Tagessonne komplett deaktiviert, während der tiefer stehende Mond wirkte.
