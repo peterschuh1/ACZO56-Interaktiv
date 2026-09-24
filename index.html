@@ -11670,8 +11670,13 @@ function updateAstronomy(){
   // Mondposition bleibt vollständig astronomisch. Die Sichtbarkeit wird nicht mehr
   // hart bei -4° Sonnenhöhe geschaltet, sondern weich mit der Dämmerung eingeblendet.
   const moonDisplayAllowed=moonUp;
+  // Der Mond darf astronomisch korrekt auch tagsueber und in der Daemmerung
+  // sichtbar bleiben. Die alte Formel blendete ihn rund um Sonnenuntergang fast
+  // vollstaendig aus, obwohl er real bereits klar am Himmel stehen kann.
+  // Sonnenstand beeinflusst deshalb nur noch Glow/Lichtstaerke, nicht die
+  // grundsaetzliche Sichtbarkeit der Mondscheibe.
   const sunAltDeg=THREE.MathUtils.radToDeg(sunPos.altitude);
-  const moonTwilightVisibility=1-THREE.MathUtils.smoothstep(sunAltDeg,-8,2);
+  const moonTwilightVisibility=1;
   let moonVec=celestialVector(moonPos,span*1.9);
 
   sun.position.copy(sunVec);
@@ -11693,11 +11698,17 @@ function updateAstronomy(){
   // Diese Werte gelten gemeinsam für Desktop und die responsive Mobilansicht.
   const moonCloud=THREE.MathUtils.clamp((liveWeather?.cloud||0)/100,0,1);
   const moonDaylight=THREE.MathUtils.smoothstep(sunPos.altitude,-.08,.18);
-  const moonHorizonVisibility=THREE.MathUtils.smoothstep(moonPos.altitude,0,.18);
-  const moonCloudTransmission=Math.max(.13,1-.90*Math.pow(moonCloud,1.28));
+  // Nur die letzten etwa 3 Grad ueber dem Horizont weich ausblenden. Darueber
+  // bleibt die Scheibe stabil sichtbar, sofern sie astronomisch ueber dem
+  // Horizont steht.
+  const moonHorizonVisibility=THREE.MathUtils.smoothstep(moonPos.altitude,0,.055);
+  // Wetter-Cloudcover ist eine Flaechenangabe und kein lokaler Pixel-Okkluder.
+  // Selbst 99 % duerfen die Scheibe daher stark daempfen, aber nicht rechnerisch
+  // praktisch loeschen. Echte Wolkengeometrie kann sie weiterhin optisch verdecken.
+  const moonCloudTransmission=Math.max(.42,1-.58*Math.pow(moonCloud,1.18));
   const moonVisualOpacity=moonDisplayAllowed
     ? THREE.MathUtils.clamp(
-        moonHorizonVisibility*moonTwilightVisibility*THREE.MathUtils.lerp(1,.46,moonDaylight)*moonCloudTransmission,
+        moonHorizonVisibility*THREE.MathUtils.lerp(.96,.72,moonDaylight)*moonCloudTransmission,
         0,1
       )
     : 0;
@@ -11725,7 +11736,10 @@ function updateAstronomy(){
   // Unveränderter Ausgangswert für die Wolkendämpfung. Dadurch kann der
   // Regler die Sonne nicht bei jedem Aufruf erneut schwächer multiplizieren.
   sun.userData.clearSkyIntensity=sun.intensity;
-  moonLight.intensity=(moonDisplayAllowed ? (0.10+0.35*moonIll.fraction)*moonTwilightVisibility : 0)
+  // Mondlicht bleibt in heller Daemmerung/bei Tag dezent; nur die Scheibe darf
+  // sichtbar sein. Dadurch entsteht kein kuenstlicher Nacht-Look vor Sonnenuntergang.
+  const moonLightDayFade=THREE.MathUtils.lerp(1,.16,moonDaylight);
+  moonLight.intensity=(moonDisplayAllowed ? (0.10+0.35*moonIll.fraction)*moonLightDayFade : 0)
     *((typeof diagnosticState==='undefined'||diagnosticState.relief)?1:0);
 
   // V36: kontinuierliche Helligkeit statt nur drei optischer Zustände.
