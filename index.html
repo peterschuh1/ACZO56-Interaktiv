@@ -7845,6 +7845,11 @@ scene.add(sun);
 // abhängig von ihrer Deckkraft natürlich überlagern.
 const CELESTIAL_GLOW_RENDER_ORDER=29;
 const CELESTIAL_DISC_RENDER_ORDER=30;
+// Mond nach dem transparenten Wolkendeck (renderOrder 999), aber weiterhin
+// mit aktivem Tiefentest: Gelände/Bäume verdecken ihn, die Wolkenwirkung wird
+// kontrolliert über moonVisualOpacity gedämpft statt die Scheibe wegzumalen.
+const MOON_GLOW_RENDER_ORDER=1000;
+const MOON_DISC_RENDER_ORDER=1001;
 
 // Sichtbare Sonne in einer oberen Ecke der 3D-Szene.
 const sunDisc=new THREE.Sprite(
@@ -8218,9 +8223,12 @@ const moonDisc=new THREE.Sprite(new THREE.SpriteMaterial({
   map:moonTex,
   transparent:true,
   depthWrite:false,
-  depthTest:true
+  depthTest:true,
+  // Der Szenennebel simuliert bodennahe Fernsicht. Auf ein Himmelsobjekt in
+  // großer Sprite-Distanz angewendet löschte er den Mond nahezu vollständig.
+  fog:false
 }));
-moonDisc.renderOrder=CELESTIAL_DISC_RENDER_ORDER;
+moonDisc.renderOrder=MOON_DISC_RENDER_ORDER;
 moonDisc.scale.set(25,25,1);
 moonDisc.userData.visualOpacity=1;
 
@@ -8285,9 +8293,10 @@ const moonGlow=new THREE.Sprite(new THREE.SpriteMaterial({
   transparent:true,
   depthWrite:false,
   depthTest:true,
+  fog:false,
   blending:THREE.AdditiveBlending
 }));
-moonGlow.renderOrder=CELESTIAL_GLOW_RENDER_ORDER;
+moonGlow.renderOrder=MOON_GLOW_RENDER_ORDER;
 moonGlow.scale.set(50,50,1);
 moonGlow.userData.visualOpacity=.82;
 scene.add(moonGlow);
@@ -22296,13 +22305,13 @@ function finishLeavingFishView(){
     // Nach dem Unterwasser-Modus müssen Himmelskörper wieder vom
     // normalen Tiefenpuffer verdeckt werden: Bäume/Gebäude liegen vor dem Mond.
     disc.material.depthTest=true;
-    disc.material.fog=true;
+    disc.material.fog=(disc===sunDisc);
     disc.material.opacity=1;
     disc.material.needsUpdate=true;
   });
   sunDisc.renderOrder=CELESTIAL_DISC_RENDER_ORDER;
-  moonDisc.renderOrder=CELESTIAL_DISC_RENDER_ORDER;
-  moonGlow.renderOrder=CELESTIAL_GLOW_RENDER_ORDER;
+  moonDisc.renderOrder=MOON_DISC_RENDER_ORDER;
+  moonGlow.renderOrder=MOON_GLOW_RENDER_ORDER;
   fishWheelThrust=0;
   fishTouchPointers.clear();fishTouchForward=0;fishTouchStrafe=0;
   fishTouchImpulseForward=0;fishTouchImpulseStrafe=0;fishTouchTwoLast=null;
@@ -24797,7 +24806,7 @@ function setAnglingCelestialOcclusionForPanorama(active){
     if(!disc||!disc.material)return;
     if(disc.material.depthTest!==true){disc.material.depthTest=true;disc.material.needsUpdate=true;}
     if(disc.material.depthWrite!==false){disc.material.depthWrite=false;disc.material.needsUpdate=true;}
-    disc.renderOrder=active?order:(disc===moonGlow?CELESTIAL_GLOW_RENDER_ORDER:CELESTIAL_DISC_RENDER_ORDER);
+    disc.renderOrder=active?order:(disc===moonGlow?MOON_GLOW_RENDER_ORDER:(disc===moonDisc?MOON_DISC_RENDER_ORDER:CELESTIAL_DISC_RENDER_ORDER));
   };
   apply(sunDisc,1);
   apply(moonDisc,1);
@@ -40453,6 +40462,10 @@ function aczoPerf7Summary(){
    aczoPerf4LastCelestialAt=frameNow;
    if(simulationEnabled){
      enforceCelestialDiscVisibility();
+     // Hauptbild: Mond nach dem transparenten Wolkendeck zeichnen. Der normale
+     // Tiefentest bleibt aktiv, deshalb kann er nicht durch Gelände/Bäume scheinen.
+     if(typeof moonDisc!=='undefined'&&moonDisc.material){moonDisc.renderOrder=MOON_DISC_RENDER_ORDER;moonDisc.material.fog=false;}
+     if(typeof moonGlow!=='undefined'&&moonGlow.material){moonGlow.renderOrder=MOON_GLOW_RENDER_ORDER;moonGlow.material.fog=false;}
      updateCelestialReflectionScreens();
      updateCelestialDepthLighting();
      updateCelestialLensFlare();
