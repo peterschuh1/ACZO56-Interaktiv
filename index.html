@@ -1358,6 +1358,7 @@ html,body{
 @media(pointer:coarse){
   .fish-hint-desktop{display:none}
   .fish-hint-touch{display:inline}
+  .angling-desktop-wheel-hint{display:none}
 }
 
 .celestial-lens-flare{position:absolute;inset:0;z-index:8;pointer-events:none;overflow:hidden;opacity:0;transition:opacity .16s linear;mix-blend-mode:screen}
@@ -1490,13 +1491,71 @@ html,body{
 }
 .angling-ui.fight-pulse::after{
   content:"";position:absolute;inset:0;z-index:57;pointer-events:none;
-  background:radial-gradient(circle at 18% 35%,rgba(205,244,255,.48) 0 2px,transparent 3px),
-    radial-gradient(circle at 77% 22%,rgba(205,244,255,.38) 0 3px,transparent 4px),
-    radial-gradient(circle at 66% 64%,rgba(205,244,255,.32) 0 2px,transparent 4px),
-    radial-gradient(ellipse at center,transparent 52%,rgba(2,28,22,.34) 100%);
-  animation:anglingFightFlash .58s ease-out both
+  /* P69: Start einer echten Flucht klarer spürbar, weiterhin ohne Lichtpunkte. */
+  background:radial-gradient(ellipse at center,transparent 46%,rgba(35,10,8,.10) 68%,rgba(126,27,20,.52) 100%);
+  animation:anglingFightFlash .68s ease-out both
 }
-@keyframes anglingFightFlash{from{opacity:.95;transform:scale(1.015)}to{opacity:0;transform:scale(1)}}
+@keyframes anglingFightFlash{0%{opacity:.98;transform:scale(1.018)}55%{opacity:.58}100%{opacity:0;transform:scale(1)}}
+
+/* P69: Einheitliches visuelles Spannungssystem. Nur Opacity/Gradienten, keine Kamerabewegung. */
+.angling-tension-fx{
+  position:absolute;inset:0;z-index:56;pointer-events:none;opacity:0;
+  will-change:opacity;
+}
+.angling-ui.bite-alert .angling-tension-fx{
+  background:radial-gradient(ellipse at center,transparent 52%,rgba(255,209,72,.12) 76%,rgba(255,139,45,.42) 100%);
+  animation:aczoBiteEdge .36s cubic-bezier(.16,.84,.28,1) both
+}
+.angling-ui.bite-focus .angling-tension-fx{
+  background:radial-gradient(ellipse at center,transparent 61%,rgba(255,214,82,.08) 82%,rgba(255,168,54,.18) 100%);
+  opacity:.16
+}
+.angling-ui.snag-impact .angling-tension-fx{
+  background:radial-gradient(ellipse at center,transparent 48%,rgba(93,45,16,.14) 73%,rgba(207,104,33,.50) 100%);
+  animation:aczoSnagEdge .48s ease-out both
+}
+.angling-ui.is-drilling.line-paying-out .angling-tension-fx{
+  background:radial-gradient(ellipse at center,transparent 43%,rgba(61,8,8,.12) 67%,rgba(198,32,25,.82) 100%);
+  opacity:var(--aczo-run-opacity,.26);
+  animation:aczoRunEdge var(--aczo-run-period,.66s) ease-in-out infinite
+}
+.angling-ui.is-drilling.line-tension-high:not(.line-paying-out) .angling-tension-fx{
+  background:radial-gradient(ellipse at center,transparent 52%,rgba(92,18,10,.10) 74%,rgba(232,83,39,.68) 100%);
+  opacity:.38;animation:aczoTensionEdge .82s ease-in-out infinite
+}
+.angling-ui.is-drilling.line-tension-critical .angling-tension-fx{
+  background:radial-gradient(ellipse at center,transparent 42%,rgba(100,8,8,.18) 65%,rgba(245,48,38,.90) 100%);
+  opacity:.68;animation:aczoTensionEdge .34s ease-in-out infinite
+}
+.angling-ui.is-drilling.line-paying-out .angling-tension-fill{
+  filter:drop-shadow(0 0 7px rgba(255,76,55,.82));
+  animation:aczoTensionBarRun var(--aczo-run-period,.66s) ease-in-out infinite,
+            aczoTensionSweep var(--aczo-run-period,.66s) linear infinite
+}
+.angling-ui.is-drilling.line-tension-high:not(.line-paying-out) .angling-tension-fill{
+  filter:drop-shadow(0 0 8px rgba(255,127,54,.88));
+  animation:aczoTensionSweep 1.05s linear infinite
+}
+.angling-ui.is-drilling.line-tension-critical .angling-tension-fill{
+  filter:drop-shadow(0 0 12px rgba(255,48,38,.98));
+  animation:aczoTensionBarCritical .34s ease-in-out infinite alternate,
+            aczoTensionSweep .52s linear infinite
+}
+.angling-ui.is-drilling.rod-direct-load .angling-drill-panel{
+  box-shadow:0 0 0 1px rgba(255,145,65,.30),0 0 20px rgba(218,73,31,.22)
+}
+#anglingFightDistanceText.taking-line{
+  color:#ffc0b7;text-shadow:0 0 9px rgba(255,69,55,.76);
+  animation:aczoDistanceTake var(--aczo-run-period,.72s) ease-in-out infinite
+}
+@keyframes aczoBiteEdge{0%{opacity:0}45%{opacity:.82}100%{opacity:0}}
+@keyframes aczoSnagEdge{0%{opacity:.95}42%{opacity:.55}100%{opacity:0}}
+@keyframes aczoRunEdge{0%,100%{opacity:calc(var(--aczo-run-opacity,.26)*.66)}50%{opacity:var(--aczo-run-opacity,.26)}}
+@keyframes aczoTensionEdge{0%,100%{opacity:.24}50%{opacity:.64}}
+@keyframes aczoTensionBarRun{0%,100%{transform:scaleY(1)}50%{transform:scaleY(1.18)}}
+@keyframes aczoTensionBarCritical{from{transform:scaleY(1)}to{transform:scaleY(1.28)}}
+@keyframes aczoTensionSweep{from{background-position:150% 0,0 0}to{background-position:-65% 0,0 0}}
+@keyframes aczoDistanceTake{0%,100%{transform:scale(1)}50%{transform:scale(1.12)}}
 .angling-float-zoom{
   display:none;position:absolute;right:12px;bottom:72px;z-index:63;width:142px;height:164px;
   overflow:hidden;border-radius:16px;border:2px solid rgba(255,255,255,.92);pointer-events:none;
@@ -1567,7 +1626,14 @@ html,body{
 .angling-drill-row{display:grid;grid-template-columns:86px 1fr 62px;align-items:center;gap:6px;margin:5px 0;font-size:8px;font-weight:900}
 .angling-drill-bar{height:11px;border-radius:999px;background:rgba(255,255,255,.20);overflow:hidden}
 .angling-drill-fill{display:block;height:100%;width:50%;min-width:2px;border-radius:inherit;transition:width .10s linear,background .12s linear}
-.angling-tension-fill{color:#73d866;background:repeating-linear-gradient(90deg,currentColor 0 6.5%,transparent 6.5% 8.33%)}.angling-stamina-fill{background:#4cb9df;width:100%}
+.angling-tension-fill{
+  color:#73d866;
+  background-image:
+    linear-gradient(90deg,rgba(255,255,255,0) 0%,rgba(255,255,255,0) 34%,rgba(255,255,255,.78) 50%,rgba(255,255,255,0) 66%,rgba(255,255,255,0) 100%),
+    repeating-linear-gradient(90deg,currentColor 0 6.5%,transparent 6.5% 8.33%);
+  background-size:190% 100%,auto;
+  background-position:150% 0,0 0;
+}.angling-stamina-fill{background:#4cb9df;width:100%}
 .angling-distance-fill{
   background-color:#d5b55c;
   background-image:linear-gradient(
@@ -1713,7 +1779,7 @@ html,body{
   text-align:center;transform:translate(-50%,-50%)
 }
 .angling-catch-card.show{display:block;animation:anglingCatchReveal .48s cubic-bezier(.2,.8,.2,1) both}
-@keyframes anglingCatchReveal{from{opacity:0;transform:translate(-50%,-46%) scale(.82)}to{opacity:1;transform:translate(-50%,-50%) scale(1)}}
+@keyframes anglingCatchReveal{from{opacity:0;transform:translate(-50%,-50%) scale(.88)}to{opacity:1;transform:translate(-50%,-50%) scale(1)}}
 .angling-catch-card img{display:block;width:min(220px,82%);height:105px;object-fit:contain;margin:0 auto 6px}
 .angling-catch-card strong{display:block;font-size:18px;margin-bottom:3px}
 .angling-catch-card span{display:block;font-size:11px;font-weight:750;margin-bottom:10px}
@@ -1774,12 +1840,11 @@ html,body{
 .angling-ep-popup.show{display:block;animation:anglingEpGain 3.25s cubic-bezier(.18,.82,.28,1) both}
 .angling-ep-popup small{display:block;margin:6px auto 0;font-size:11.5px;line-height:1.28;color:#fff;font-weight:900;max-width:390px;white-space:normal}
 @keyframes anglingEpGain{
-  0%{opacity:0;transform:translate(-50%,-18%) scale(.62)}
-  9%{opacity:1;transform:translate(-50%,-50%) scale(1.10)}
-  18%{opacity:1;transform:translate(-50%,-54%) scale(1)}
-  68%{opacity:1;transform:translate(-50%,-58%) scale(1)}
-  82%{opacity:1;transform:translate(-50%,-92%) scale(.98)}
-  100%{opacity:0;transform:translate(-50%,-205%) scale(.90)}
+  0%{opacity:0;transform:translate(-50%,-50%) scale(.90)}
+  10%{opacity:1;transform:translate(-50%,-50%) scale(1.05)}
+  20%{opacity:1;transform:translate(-50%,-50%) scale(1)}
+  82%{opacity:1;transform:translate(-50%,-50%) scale(1)}
+  100%{opacity:0;transform:translate(-50%,-50%) scale(.98)}
 }
 .angling-ep-badge.ep-pulse{animation:anglingEpBadgePulse .55s ease-out}
 @keyframes anglingEpBadgePulse{0%{transform:scale(1)}45%{transform:scale(1.14)}100%{transform:scale(1)}}
@@ -4447,13 +4512,14 @@ html,body{
 #aczoCatchRecord small{display:block;margin-top:3px;font-size:11px;line-height:1.3;color:#f5e5b5}
 #anglingCatchCard.aczo-personal-record{border-color:#f4d776;animation:anglingCatchReveal .48s cubic-bezier(.2,.8,.2,1) both,aczo-record-glow 1.3s .45s ease-out}
 @keyframes aczo-record-glow{0%,100%{box-shadow:inset 0 0 0 transparent}45%{box-shadow:inset 0 0 18px #f9d97755}}
-#aczoCatchRewards:empty{display:none}
-#aczoCatchRewards #anglingEpPopup{position:static!important;inset:auto!important;transform:none!important;z-index:auto!important;width:100%;max-width:100%;margin:6px 0;padding:7px 8px;box-shadow:none;border-radius:9px;font-size:16px;background:#2b482dcc;white-space:normal;pointer-events:none}
+#aczoCatchRewards{height:74px;min-height:74px;display:flex;align-items:center;justify-content:center;overflow:visible}
+/* P66: Höhe der EP-Zone bleibt auch vor dem Einblenden reserviert, damit die zentrierte Fangkarte nicht nach oben springt. */
+#aczoCatchRewards #anglingEpPopup{position:static!important;inset:auto!important;transform:none!important;z-index:auto!important;width:100%;max-width:100%;margin:0;padding:7px 8px;box-shadow:none;border-radius:9px;font-size:16px;background:#2b482dcc;white-space:normal;pointer-events:none}
 #aczoCatchRewards #anglingEpPopup.show{animation:aczo-reward-in .35s ease-out both!important}
 #aczoCatchRewards #anglingEpPopup small{font-size:10px;line-height:1.3;max-width:100%;margin:3px 0 0}
 @keyframes aczo-reward-in{from{opacity:0}to{opacity:1}}
 #anglingCatchCard #anglingAgainBtn{min-height:40px;white-space:normal}
-@media(max-width:680px){#anglingCatchCard .aczo-catch-photo{height:82px}#anglingCatchCard{padding:10px}#anglingCatchCard #anglingCatchTitle{font-size:15px}}
+@media(max-width:680px){#anglingCatchCard .aczo-catch-photo{height:82px}#anglingCatchCard{padding:10px}#anglingCatchCard #anglingCatchTitle{font-size:15px}#aczoCatchRewards{height:70px;min-height:70px}}
 @media(max-height:480px){#anglingCatchCard .aczo-catch-photo{height:54px}#anglingCatchCard{padding:8px}#aczoCatchRecord{padding:5px 7px;margin-bottom:5px}}
 
 /* Abtropfen bekommt kurz freie Sicht; die Zielsteuerung bleibt unverändert. */
@@ -4849,16 +4915,17 @@ html,body{
        <div class="angling-help-content">
          <section><h3>🎯 Angelstelle & Auswurf</h3><p>Wähle zuerst einen Platz am Ufer, auf einem Gitterroststeg, auf dem Nordsteg oder auf dem Bootssteg am Südufer. Der Nordsteg bietet die Spitze geradeaus sowie zwei mittlere Positionen parallel zum Ufer; am Bootssteg blickst du gerade aufs Wasser. Danach bewegst du das Zielkreuz auf die gewünschte Wasserstelle und bestätigst sie. Erst dann wird der Auswurf freigegeben. Tiefe, Entfernung, Struktur, Wetter und Tageszeit beeinflussen die Fischaktivität.</p></section>
          <section><h3>📱 Mobile Steuerung</h3><p>Tippe in die Szene, um Ziel oder Aktion auszuführen. Halten kurbelt kontinuierlich; ein Doppeltipp holt Kunstköder oder Deeper schnell vollständig zum Ufer zurück. Während des Drills hältst du „Kurbeln“ gedrückt und führst Rute beziehungsweise Finger auf die Gegenseite des Fisches. Beim Keschern bewegst du den Kescher mit dem Finger unter den Fisch. Textauswahl, iOS-Lupe und Kontextmenü sind während der aktiven Spielsteuerung gesperrt.</p></section>
+         <section><h3>🖱️ Desktop-Steuerung</h3><p>Klick und Halten bedienen die Angelaktionen; Kunstköder oder Deeper können per Rechtsklick schnell zurückgeholt werden. Im Drill bewegt die Maus die Rute. Das Mausrad verstellt die Rollenbremse stufenweise: nach oben/von dir weg = fester, nach unten/zu dir = lockerer. Das Mausrad verändert die Bremse nur während eines laufenden Drills und zoomt dann nicht die Karte.</p></section>
          <section><h3>🖥️ Grafikqualität</h3><p>Unter Einstellungen stehen Leistung, Standard und Qualität zur Wahl. Standard entspricht exakt der bisherigen Darstellung. Leistung nutzt 85 % und Qualität 160 % dieser Grundauflösung. Geändert wird ausschließlich die interne 3D-Renderauflösung; Spielsysteme, Wasser, Wetter, Schatten, Wolken, Fische und Animationen bleiben identisch. Die Auswahl gilt für die gesamte Anwendung und wird nur auf diesem Gerät gespeichert.</p></section>
          <section><h3>🎒 Köder- & Tacklebox</h3><p>Alle Köder besitzen einen echten Bestand. Die Standardrute mit 50 m Wurfweite gehört von Beginn an dir. Die mittlere Rute wirft 75 m und die beste 100 m. Weitere Ruten, Kescher und der Deeper werden nach dem Kauf dauerhaft in deiner Tacklebox gespeichert. Lockfutter wird dort mit seinem aktuellen Vorrat angezeigt. Nicht vorhandene kaufbare Artikel sind ausgegraut und führen direkt in den Tackle-Shop.</p></section>
          <section><h3>🟡 Lockfutter & Futterplätze</h3><p>Die drei Lockfuttersorten besitzen unterschiedliche Stärke und einen echten Vorrat. Wähle eine Sorte, setze den Zielpunkt im Wasser und bestätige den Wurf. Bis zu zwei Futterplätze können gleichzeitig wirken; ihre Markierung zeigt Sorte und Restzeit. Eine sauber im Futterplatz liegende Pose verbessert die Fangchance zusätzlich.</p></section>
          <section><h3>📡 Deeper-Echolot</h3><p>Kaufe und montiere den Deeper in der Tacklebox, wähle einen Messpunkt und wirf ihn wie einen Köder aus. Das Sonar zeigt aktuelle Tiefe, Bodenverlauf, Messkegel und erkannte Fischsignale. Mit „Stelle speichern“ setzt du am Messpunkt eine Markierung. Ziehe den Deeper normal ein oder hole ihn am Desktop per Rechtsklick und mobil per Doppeltipp schnell zurück.</p></section>
-         <section><h3>🌽 Naturköder</h3><p>Wurm, Made, Mais und Spezial-Naturköder werden beim erfolgreichen Anhieb verbraucht. Bei einem verpassten Anhieb besteht eine kleinere Chance auf Köderverlust. Einfaches Einholen verbraucht keinen Naturköder.</p></section>
+         <section><h3>🌽 Naturköder</h3><p>Wurm, Made, Mais und Spezial-Naturköder werden beim erfolgreichen Anhieb verbraucht. Bei einem verpassten Anhieb besteht eine kleinere Chance auf Köderverlust. Einfaches Einholen verbraucht keinen Naturköder. Das Wurmbündel wird aus 12 Tauwürmern montiert und ist ausschließlich als spezieller Welsköder gedacht; ein montiertes Bündel bleibt bis zum tatsächlichen Verbrauch als Wurmbündel aktiv.</p></section>
          <section><h3>🐟 Köderfisch</h3><p>Geeignete gefangene Kleinfische erhöhen deinen Köderfischbestand. Ein Köderfisch wird bei einer Raubfischattacke verbraucht. Er kann nicht gekauft werden.</p></section>
-         <section><h3>🌀 Kunstköder</h3><p>Blinker und Gummifisch fangen nur in Bewegung. Klick oder Tipp holt etwa 0,5 m ein, Halten kurbelt kontinuierlich. Mobil holt ein Doppeltipp schnell komplett ein; am Desktop bleibt es der Rechtsklick. Maus- oder Fingerbewegung nach oben/unten verändert die Rutenhöhe und Lauftiefe; links/rechts gibt einen kleinen seitlichen Impuls. Ein Fisch kann nur dann gerissen werden, wenn der Kunstköder während des aktiven Einkurbelns den Fischkörper unmittelbar berührt. Beim freien Absinken oder wenn der Köder reglos am Grund liegt, kann kein Fisch gerissen werden. Wird der Köder dagegen aktiv über den Grund gezogen, zählt eine echte Körperberührung ebenfalls. Die Schnur kollidiert weiterhin mit Unterwasserholz, Bäumen und Stegen. Läuft sie über mehrere Hindernisse, kann sie nun auf mehreren Punkten gleichzeitig aufliegen und entsprechend mehrere Knicke bilden. Beim Einholen wird der Köder zuerst zum jeweils nächsten Kontaktpunkt gezogen; dort kann anschließend auch ein Hänger entstehen.</p></section>
+         <section><h3>🌀 Kunstköder</h3><p>Blinker und Gummifisch fangen nur in Bewegung. Klick oder Tipp holt etwa 0,5 m ein, Halten kurbelt kontinuierlich. Mobil holt ein Doppeltipp schnell komplett ein; am Desktop übernimmt der Rechtsklick. Beim Schnelleinholen folgt die Unterwasserkamera dem Köder ruhig bis kurz vor das Ufer; dort steigt der Köder weich aus dem Wasser und die Uferansicht übernimmt. Während dieses Schnellrückwegs kann kein Fisch gerissen werden, die Hängerkollisionen mit Unterwasserholz, Bäumen und Stegen bleiben aber vollständig aktiv. Dasselbe Hängerprinzip gilt für „Zum Ufer“, es gibt keinen Hindernis-Bypass. Maus- oder Fingerbewegung nach oben/unten verändert die Rutenhöhe und Lauftiefe; links/rechts gibt einen kleinen seitlichen Impuls. Ein Fisch kann nur dann gerissen werden, wenn der Kunstköder beim normalen aktiven Einkurbeln den Fischkörper unmittelbar berührt. Beim freien Absinken oder reglosen Köder ist das ausgeschlossen. Läuft die Schnur über mehrere Hindernisse, kann sie auf mehreren Punkten gleichzeitig aufliegen und mehrere Knicke bilden; beim Einholen wird der Köder zuerst zum jeweils nächsten Kontaktpunkt geführt.</p></section>
          <section><h3>🐊 Spezialköder</h3><p>Premium- und artspezifische Köder erhöhen die Gewichtung bestimmter Fischarten, garantieren aber keinen Biss. Standort, Tiefe, Aktivität und Zufall bleiben relevant.</p></section>
-         <section><h3>⚡ Biss & Anhieb</h3><p>Beim Posenangeln zeigt der Schwimmer zuerst den Biss. Danach läuft das Reaktions-QTE zweimal vollständig. Ein exakt mittiger Treffer gilt als perfekter Anhieb und bringt beim Fang +8 EP. Triff den grünen beziehungsweise besonders guten Bereich. Ein früher Fehlversuch beendet nicht sofort den gesamten Versuch.</p></section>
-         <section><h3>🎣 Drill</h3><p>Beobachte Schnurspannung, Fisch-Ausdauer und Entfernung. Halte „Kurbeln“ gedrückt und führe die Rute immer auf die Gegenseite des Fisches: Fisch links bedeutet Rute rechts, Fisch rechts bedeutet Rute links. Kurbeln gewinnt Schnur, erhöht aber die Belastung. Bei zu hoher Spannung musst du kurz lösen, sonst droht Schnurbruch. Ein montierter Kunstköder geht bei Schnurbruch verloren.</p></section>
+         <section><h3>⚡ Biss, Anhieb & Hänger</h3><p>Beim Posenangeln zeigt der Schwimmer zuerst den Biss. Danach läuft das Reaktions-QTE zweimal vollständig. Ein exakt mittiger Treffer gilt als perfekter Anhieb und bringt beim Fang +8 EP. Triff den grünen beziehungsweise besonders guten Bereich. Ein früher Fehlversuch beendet nicht sofort den gesamten Versuch. Kurze Randimpulse unterstützen Biss und Hänger visuell; der Hänger bleibt anschließend ein echter Zustand und muss gelöst werden, statt durch Schnelleinholen oder „Zum Ufer“ übersprungen zu werden.</p></section>
+         <section><h3>🎣 Drill & Bremse</h3><p>Beobachte Schnurspannung, Fisch-Ausdauer und Entfernung. Halte „Kurbeln“ gedrückt und führe die Rute auf die Gegenseite des Fisches: Fisch links bedeutet Rute rechts, Fisch rechts bedeutet Rute links. Die Rutenhaltung ist Teil der Drillphysik: Zeigt die Rute fast direkt zum Fisch, richtet sich der Blank auf und die Schnur übernimmt mehr Last; mit größerem Winkel biegt die Rute stärker und puffert Fluchtspitzen. Eine lockere Bremse lässt mehr Schnur frei und schützt besonders bei starken Fischen, eine feste Bremse holt direkter ein, erhöht aber das Risiko. Auf dem Desktop stellst du die Bremse zusätzlich mit dem Mausrad ein: ↑ fester, ↓ lockerer. Die sichtbare Drillschnur wechselt mit der Belastung von Weiß über Gelb und Orange zu Rot. Bei echter Flucht und Schnurabzug reagieren Randpuls, Belastungsbalken und Rutenfederung sichtbar stärker. Große Fische mit viel Rest-Ausdauer können kurz vor dem Ufer erneut nach draußen flüchten. Bei zu hoher Spannung musst du Last herausnehmen, sonst droht Schnurbruch; ein montierter Kunstköder geht dabei verloren.</p></section>
          <section><h3>🥅 Keschern</h3><p>Bewege den Kescher mit Maus oder Finger nach links/rechts unter den Fisch und keschere im passenden Moment. Der Standardkescher gehört zur Startausrüstung. Der größere Pro Kescher kann im Shop gekauft werden und vergrößert die reale Fangzone um rund 18 %. Der erste knappe Fehlversuch wird weiterhin verziehen.</p></section>
          <section><h3>⏱️ Zeitwechsel</h3><p>Der Zeitwechsel steht ausschließlich in der Ufer-Angelperspektive bereit, solange die Angel noch nicht ausgeworfen wurde und du den Auswurfpunkt wählen kannst. In Stellenauswahl, Unterwasseransicht, nach dem Auswurf, bei Biss, Drill und Keschern ist die Funktion ausgeblendet. Du kannst die Spielzeit in 1-Stunden-Schritten bis maximal 24 Stunden vor- oder zurückspulen. Jede Stunde kostet 1 EP und läuft in 0,5 Sekunden ab. Einsteiger besitzen pro Sitzung einen Vorwärts- und einen Rückwärtswechsel; höhere Anglerstufen erhalten zusätzliche Wechsel.</p></section>
          <section><h3>🌗 Aktivitätszeiten</h3><p>Die Fischaktivität verändert sich mit der Tageszeit. Hecht und Barsch profitieren vor allem von Morgen- und Abendphasen. Zander wird besonders in Dämmerung, Nacht und bei Bewölkung aktiv; Aal und Wels bevorzugen überwiegend Abend und Nacht. Zwischen ungefähr 13 und 15 Uhr tritt eine allgemeine, leicht schwankende Mittags-Beißflaute auf. Sie reduziert die Bisschance deutlich, aber niemals auf null.</p></section>
@@ -4983,6 +5050,7 @@ html,body{
        <div class="angling-strike-track"><i class="angling-strike-zone"></i><i id="anglingStrikeCursor" class="angling-strike-cursor"></i></div>
      </div>
      <div class="angling-bite-alert" aria-hidden="true">BISS!</div>
+     <div class="angling-tension-fx" aria-hidden="true"></div>
      <div id="anglingFloatZoom" class="angling-float-zoom" aria-hidden="true">
        <div id="anglingDeeperPlot" class="angling-deeper-plot">
          <canvas id="anglingDeeperCanvas" class="angling-deeper-canvas" aria-label="Deeper Sonaranzeige"></canvas>
@@ -5010,7 +5078,7 @@ html,body{
        <div class="angling-drill-row"><span>Schnurbelastung</span><div class="angling-drill-bar"><i id="anglingTensionFill" class="angling-drill-fill angling-tension-fill"></i></div><span id="anglingTensionText">gut</span></div>
        <div class="angling-drill-row"><span>Ausdauer</span><div class="angling-drill-bar"><i id="anglingStaminaFill" class="angling-drill-fill angling-stamina-fill"></i></div><span id="anglingStaminaText">100 %</span></div>
        <div class="angling-drill-row"><span>Entfernung</span><div class="angling-drill-bar"><i id="anglingFightDistanceFill" class="angling-drill-fill angling-distance-fill"></i></div><span id="anglingFightDistanceText">10 m</span></div>
-       <div class="angling-drill-help">Halten = kurbeln · Maus/Finger bewegt die Rute · Fisch links → Rute rechts, Fisch rechts → Rute links.</div>
+       <div class="angling-drill-help">Halten = kurbeln · Maus/Finger bewegt die Rute · Fisch links → Rute rechts, Fisch rechts → Rute links.<span class="angling-desktop-wheel-hint"> · Mausrad ↑ Bremse fester · ↓ lockerer</span></div>
        <button id="anglingReelBtn" class="angling-reel-btn"><i class="angling-reel-icon"></i><span id="anglingReelLabel">EINHOLEN HALTEN</span></button>
      </div>
      <div id="anglingLandingPanel" class="angling-landing-panel">
@@ -5100,6 +5168,7 @@ html,body{
          <div class="help-item"><strong>👁️ Anzeigen</strong><span>Blendet Wetterfenster, Tiefenlegende und Kompass gemeinsam ein oder aus.</span></div>
          <div class="help-item"><strong>🐟 Unterwasser Desktop</strong><span>Im Weiher schwimmen und die Blickrichtung frei steuern. Fische können angeklickt und alle 16 Arten in der Sammlung freigeschaltet werden; die Minikarte zeigt die Position.</span></div>
          <div class="help-item"><strong>📱 Unterwasser mobil</strong><span>Ein Finger steuert die Schwimmbewegung, zwei Finger verändern Blickrichtung und Tauchwinkel. Antippen öffnet Fischinformationen. Die Gestenhilfe erscheint bei jedem Einstieg kurz automatisch.</span></div>
+         <div class="help-item"><strong>🎣 Angelspiel Desktop</strong><span>Klick/Halten bedient die Angelaktionen, Rechtsklick holt Kunstköder oder Deeper schnell zurück. Im Drill bewegt die Maus die Rute; Mausrad nach oben stellt die Bremse fester, nach unten lockerer. Die vollständige Anleitung steht im Spielmenü unter „Hilfe“.</span></div>
          <div class="help-item"><strong>🎣 Angelspiel mobil</strong><span>Tippen bedient Ziel und Aktionen, Halten kurbelt. Ein Doppeltipp holt Kunstköder oder Deeper schnell zurück. Im Drill „Kurbeln“ halten und den Finger auf die Gegenseite des Fisches führen. Die vollständige Anleitung steht im Spielmenü unter „Hilfe“.</span></div>
          <div class="help-item"><strong>🌿 Unterwasserwelt</strong><span>Boden, Steine, Pflanzen, Schwebstoffe, Lichtmuster, bewegte Wolken über der Oberfläche und Fischverhalten bilden den Weiher lebendig nach.</span></div>
          <div class="help-item"><strong>🚶🚲🚗 Umgebung</strong><span>Radfahrer, Fußgänger, Besucher, Fahrzeuge und Vögel beleben die Umgebung. Bei Ruhe reduziert die mobile Version automatisch die Bildrate, um Rechenlast und Akkuverbrauch zu senken.</span></div>
@@ -5620,107 +5689,14 @@ document.addEventListener('visibilitychange',()=>{
   if(document.visibilityState!=='visible')resetViewerGestureState();
 });
 
-// BETA 1: Debug-/Profiler-Modus vollständig deaktiviert.
-const viewerDebugEnabled=false;
-let viewerDebugPanel=null;
-let viewerDebugFrames=0,viewerDebugLongFrames=0,viewerDebugMaxFrameMs=0;
-let viewerDebugRenderCalls=0,viewerDebugShadowUpdates=0;
+// Produktionszustand: deaktivierte Debug-/A/B-Profiler entfernt.
 let aczoPerf1BatchStats={sourceBoxes:0,batches:0,drawcallsSaved:0};
 let aczoPerf3CylinderBatchStats={sourceCylinders:0,batches:0,drawcallsSaved:0};
 let aczoPerf4State='ACTIVE',aczoPerf4IdleFrames=0,aczoPerf4HeavyTicks=0;
-// BETA 1: A/B-Profiler ist im öffentlichen Beta-Build deaktiviert.
-const aczoPerf5ProfilerEnabled=false;
-let aczoPerf5Phase='NORMAL',aczoPerf5PhaseStarted=performance.now(),aczoPerf5PhaseIndex=0;
-let aczoPerf5PhaseFrames=0,aczoPerf5PhaseMs=0,aczoPerf5PhaseLong33=0,aczoPerf5PhaseLong50=0,aczoPerf5PhaseLong100=0;
-const aczoPerf5Results=[];
-let aczoPerf5SavedWater=null;
-let aczoPerf5LastFrameStamp=performance.now();
-// PERF6: dieselbe Homepage, aber zwei Renderprofile. Keine getrennte Spielversion.
-const ACZO_PERF6_MOBILE=ACZO_MOBILE_PERF; // PERF10: dieselbe robuste Geraeteklasse wie der Hauptrenderer
-let aczoPerf6SunReflectionEnabled=true;
+const ACZO_PERF6_MOBILE=ACZO_MOBILE_PERF;
+const aczoPerf6SunReflectionEnabled=true;
 let aczoPerf6LastReflectionUpdate=0;
-let viewerDebugLastUpdate=performance.now();
-function markViewerRenderCall(){ /* Beta: kein Debug-Counter */ }
-function requestViewerShadowUpdate(){
-  renderer.shadowMap.needsUpdate=true;
-}
-if(viewerDebugEnabled){
-  viewerDebugPanel=document.createElement('div');
-  viewerDebugPanel.setAttribute('aria-hidden','true');
-  Object.assign(viewerDebugPanel.style,{
-    position:'absolute',left:'6px',top:'6px',zIndex:'9999',pointerEvents:'none',
-    padding:'5px 7px',borderRadius:'6px',background:'rgba(0,0,0,.72)',
-    color:'#fff',font:'10px/1.3 monospace',whiteSpace:'pre'
-  });
-  host.appendChild(viewerDebugPanel);
-}
-
-function aczoPerf5SetPhase(idx){
-  // PERF28: gezielter Wasser-/Reflexions-A/B-Test. Jede Phase dauert 5 s.
-  if(aczoPerf5SavedWater!==null){
-    try{syncWaterVisibility(aczoPerf5SavedWater);}catch(e){}
-    aczoPerf5SavedWater=null;
-  }
-  if(typeof waterUniforms!=='undefined'&&waterUniforms.reflectionLite){
-    waterUniforms.reflectionLite.value=0;
-  }
-  aczoPerf5PhaseFrames=0;aczoPerf5PhaseMs=0;aczoPerf5PhaseLong33=0;aczoPerf5PhaseLong50=0;aczoPerf5PhaseLong100=0;
-  aczoPerf5PhaseStarted=performance.now();aczoPerf5PhaseIndex=idx;
-  aczoPerf6SunReflectionEnabled=true;
-
-  if(idx===0){
-    aczoPerf5Phase='NORMAL';
-  }else if(idx===1){
-    aczoPerf5Phase='DIRECT REFLECT OFF';
-    aczoPerf6SunReflectionEnabled=false;
-  }else if(idx===2){
-    aczoPerf5Phase='WATER REFLECTION LITE';
-    aczoPerf6SunReflectionEnabled=false;
-    if(typeof waterUniforms!=='undefined'&&waterUniforms.reflectionLite){
-      waterUniforms.reflectionLite.value=1;
-    }
-  }else if(idx===3){
-    aczoPerf5Phase='WATER OFF';
-    aczoPerf5SavedWater=waterVisible;
-    try{syncWaterVisibility(false);}catch(e){}
-  }else{
-    aczoPerf5Phase='DONE';
-    if(typeof waterUniforms!=='undefined'&&waterUniforms.reflectionLite){
-      waterUniforms.reflectionLite.value=0;
-    }
-  }
-}
-function aczoPerf5ProfilerTick(frameMs){
-  if(!aczoPerf5ProfilerEnabled||aczoPerf5Phase==='DONE')return;
-  aczoPerf5PhaseFrames++;aczoPerf5PhaseMs+=frameMs;
-  if(frameMs>33)aczoPerf5PhaseLong33++;if(frameMs>50)aczoPerf5PhaseLong50++;if(frameMs>100)aczoPerf5PhaseLong100++;
-  const now=performance.now();
-  if(now-aczoPerf5PhaseStarted>=5000){
-    const secs=Math.max(.001,aczoPerf5PhaseMs/1000);
-    aczoPerf5Results.push({name:aczoPerf5Phase,fps:aczoPerf5PhaseFrames/secs,avg:aczoPerf5PhaseMs/Math.max(1,aczoPerf5PhaseFrames),p33:aczoPerf5PhaseLong33,p50:aczoPerf5PhaseLong50,p100:aczoPerf5PhaseLong100});
-    aczoPerf5SetPhase(aczoPerf5PhaseIndex+1);
-  }
-}
-function aczoPerf5Summary(){
-  if(!aczoPerf5ProfilerEnabled)return 'PERF5 Profiler AUS (mit &profile=1 starten)';
-  if(!aczoPerf5Results.length)return `PERF5 ${aczoPerf5Phase} · sammelt...`;
-
-  // PERF28.2: Auf Mobil werden die vier A/B-Ergebnisse untereinander
-  // ausgegeben, damit nichts rechts aus dem Debugfeld herausläuft.
-  const lines=aczoPerf5Results.map(r=>
-    `${r.name}  ${r.fps.toFixed(1)} fps / ${r.avg.toFixed(0)} ms`
-  );
-  return `PERF5 ${aczoPerf5Phase}\n`+lines.join('\n');
-}
-// PERF28.1 STARTFIX:
- // Der Profiler wird erst nach Ende des synchronen Seitenaufbaus gestartet.
- // waterUniforms ist ein später deklariertes const; ein sofortiger Aufruf hier
- // lief bei ?profile=1 in dessen Temporal Dead Zone und brach den Viewer ab.
- if(aczoPerf5ProfilerEnabled){
-   window.setTimeout(()=>aczoPerf5SetPhase(0),0);
- }
-
-function updateViewerDebug(rawDt){ /* BETA 1: Debug-Modus entfernt */ }
+function requestViewerShadowUpdate(){renderer.shadowMap.needsUpdate=true;}
 
 const controls=new THREE.OrbitControls(camera,renderer.domElement);
 controls.enableDamping=true;
@@ -6086,13 +6062,6 @@ let touch2DRotating=false;
 const exaggeration=1; // V2.3.0: fester realer Tiefenmaßstab ohne dynamische Überhöhung.
 let is2D=false;
 
-function boostDepthColor(col){
- const hsl={h:0,s:0,l:0};
- col.getHSL(hsl);
- hsl.s=THREE.MathUtils.clamp(hsl.s*1.14+.05,0,1);
- hsl.l=THREE.MathUtils.clamp(hsl.l*1.03+(hsl.l<.5?.015:.006),0,1);
- return col.setHSL(hsl.h,hsl.s,hsl.l);
-}
 
 
 // V2.3.0: Farbverlauf exakt aus dem ursprünglichen ReefMaster-Farbshader und Tiefenfeld offline geglaettet; Mikro-Huegel entfernt.
@@ -7875,7 +7844,7 @@ const sunDisc=new THREE.Sprite(
  })
 );
 sunDisc.position.copy(sun.position);
-sunDisc.scale.set(48,48,1);
+sunDisc.scale.set(56,56,1);
 sunDisc.renderOrder=CELESTIAL_DISC_RENDER_ORDER;
 scene.add(sunDisc);
 
@@ -8229,7 +8198,7 @@ const moonDisc=new THREE.Sprite(new THREE.SpriteMaterial({
   fog:false
 }));
 moonDisc.renderOrder=MOON_DISC_RENDER_ORDER;
-moonDisc.scale.set(25,25,1);
+moonDisc.scale.set(30,30,1);
 moonDisc.userData.visualOpacity=1;
 
 scene.add(moonDisc);
@@ -8394,10 +8363,6 @@ scene.add(cloudGroup);
 
 // FINAL V4.3: unregelmäßige, transparente Wolkenfelder statt weißer Kugelwolken.
 // Jede Wolke besitzt Kern-, Rand- und leichte Mond-/Sonnen-Highlight-Bereiche.
-function cloudRand(seed){
-  const x=Math.sin(seed*12.9898+78.233)*43758.5453;
-  return x-Math.floor(x);
-}
 
 function addCloudField(x,y,z,s,seed,layer=1){
   // PERF2: Die frueheren 27 Wolkenfelder aus vielen transparenten Kugel-/Instanzteilen
@@ -8669,11 +8634,6 @@ function pointInsidePondMask(x,y){
 
 }
 
-function pointInsideWaterMask(x,y){
-  // Gemeinsame Maske für Weiher und die exakt eingezeichnete Moselfläche.
-  return pointInsidePondMask(x,y) ||
-    (typeof pointInMosel==='function' && pointInMosel(x,y));
-}
 
 function updateRealCloudReflections(){
   // PERF33: Legacy-Sprite-Spiegelungen komplett stillgelegt.
@@ -8730,14 +8690,6 @@ setSeasonTimeAnchor(seasonStartupNow);
 // PERF-Benchmark: ?debug=1 startet reproduzierbar am selben Kalendertag um 14:00 Uhr.
 // Ohne Debug bleibt die echte Uhrzeit unverändert. So vergleichen wir die teure
 // Tagdarstellung statt nachts versehentlich den leichteren Zustand zu messen.
-if(viewerDebugEnabled){
-  const perfDayDate=new Date(seasonStartupNow);
-  perfDayDate.setHours(14,0,0,0);
-  seasonTestMode=true;
-  seasonTestDay=seasonDayOfDate(perfDayDate);
-  seasonTestHour=14;
-  setSeasonTimeAnchor(perfDayDate);
-}
 function seasonTestSnowing(){return seasonTestMode&&seasonTestPrecipType==='snow'&&Number(liveWeather.precipitation||0)>0.01;}
 function seasonTestRaining(){return Number(liveWeather.precipitation||liveWeather.rain||0)>0.01&&!seasonTestSnowing();}
 function seasonWinterBrownStrength(){return seasonTestMode?THREE.MathUtils.clamp(seasonTestWinterBrown/100,0,1):.72;}
@@ -8750,8 +8702,6 @@ function seasonWinterFactor(day){
 }
 
 // In der Online-Fassung bleiben alle geprüften Ebenen dauerhaft aktiv.
-const diagnosticState={mirror:true,alpha:true,spec:true,relief:true,lift:true,disc:true,baseWaves:true,lane:true,depthSpots:true,waterObject:true,pondObject:true,extraObjects:true,stars:true,solarScatter:true};
-function applyDiagnosticLayers(){}
 
 
 
@@ -8997,8 +8947,7 @@ function applyWeatherScene(){
         &&!!moonDisc.userData.astronomicallyVisible;
       moonLight.intensity=(moonSceneAllowed?moonStrength:0)
         *(.075+.78*moonFraction)
-        *cloudTransmission
-        *((typeof diagnosticState==='undefined'||diagnosticState.relief)?1:0);
+        *cloudTransmission;
 
       // Tagsüber warmes gerichtetes Relieflicht aus der echten Sonnenposition.
       if(typeof dayReliefLight!=='undefined'){
@@ -9040,16 +8989,7 @@ function loadLiveWeather(){
   // PERF-Benchmark: fester Tageszustand mit leichter bis mittlerer Bewoelkung,
   // damit auch Wolken, Wolkenreflexion und Lichtdaempfung reproduzierbar in den
   // Vergleich eingehen. Nur ?debug=1 ist betroffen.
-  if(viewerDebugEnabled){
-    liveWeather={temperature:20,humidity:55,precipitation:0,rain:0,weatherCode:2,cloud:35,windSpeed:8,windDirection:245};
-    seasonRealWeather={...liveWeather};
-    simulationEnabled=true;
-    updateSimulationButton();
-    updateWeatherText();
-    updateAstronomy();
-    return Promise.resolve(liveWeather);
-  }
-  if(liveWeatherRequestInFlight)return liveWeatherRequestInFlight;
+    if(liveWeatherRequestInFlight)return liveWeatherRequestInFlight;
   const request=(async()=>{
     const controller=new AbortController();
     const timeout=window.setTimeout(()=>controller.abort(),12000);
@@ -9111,7 +9051,7 @@ function applyNeutralDayScene(){
   sunDisc.position.copy(sun.position);
   sunDisc.userData.astronomicallyVisible=true;
   sunDisc.visible=!is2D&&celestialDiscAllowedForView();
-  sunDisc.scale.set(48,48,1);
+  sunDisc.scale.set(56,56,1);
   if(sunDisc.material){
     sunDisc.material.opacity=1.0;
     sunDisc.material.depthTest=true;
@@ -9165,7 +9105,6 @@ function applyNeutralDayScene(){
   if(typeof cloudReflectionGroup!=='undefined')cloudReflectionGroup.visible=false;
   if(typeof directCelestialReflectionGroup!=='undefined')directCelestialReflectionGroup.visible=false;
   if(typeof seasonSnowPoints!=='undefined')seasonSnowPoints.visible=false;
-  if(typeof seasonLeafPoints!=='undefined')seasonLeafPoints.visible=false;
   if(typeof aczoStructureShadowLight!=='undefined'){
     aczoStructureShadowLight.intensity=0;
     aczoStructureShadowLight.visible=false;
@@ -11605,29 +11544,26 @@ function celestialVector(pos,radius){
   ).multiplyScalar(radius);
 }
 
-// V8.92: Die Lichtquellen bleiben unverändert am Kartenursprung ausgerichtet.
-// Nur ihre sichtbaren Scheiben werden für das Hauptbild relativ zur Kamera auf
-// denselben Richtungsvektor gesetzt. So entsteht bei Kamerafahrten keine
-// künstliche Parallaxe, während Licht, Schatten und Wasser-Richtungen identisch
-// zu V8.91 bleiben.
-const celestialDiscCameraDirection=new THREE.Vector3();
+// Sonne und Mond bleiben als echte Weltobjekte an ihrer astronomischen
+// Himmelsrichtung stehen. Die sichtbaren Scheiben sind bewusst NICHT mehr an
+// die Kamera gekoppelt, damit Rein-/Rauszoomen oder Kamerafahrten sie nicht
+// am Bildschirm mitziehen. 840 m liegt innerhalb der 900-m-Himmelskugel.
+const ACZO_CELESTIAL_DISC_WORLD_RADIUS=840;
+const celestialDiscWorldDirection=new THREE.Vector3();
 function positionCelestialDiscsForMainCamera(){
-  const span=Math.max(D.sceneW,D.sceneH);
-  const place=(disc,light,distance)=>{
+  const place=(disc,light)=>{
     if(!disc||!light||!light.target)return;
-    celestialDiscCameraDirection.copy(light.position).sub(light.target.position);
-    if(celestialDiscCameraDirection.lengthSq()<1e-8)return;
-    celestialDiscCameraDirection.normalize();
-    disc.position.copy(camera.position).addScaledVector(celestialDiscCameraDirection,distance);
+    celestialDiscWorldDirection.copy(light.position).sub(light.target.position);
+    if(celestialDiscWorldDirection.lengthSq()<1e-8)return;
+    celestialDiscWorldDirection.normalize();
+    disc.position.copy(light.target.position).addScaledVector(celestialDiscWorldDirection,ACZO_CELESTIAL_DISC_WORLD_RADIUS);
   };
-  place(sunDisc,sun,span*2.1);
-  place(moonDisc,moonLight,span*1.9);
+  place(sunDisc,sun);
+  place(moonDisc,moonLight);
   if(typeof moonGlow!=='undefined')moonGlow.position.copy(moonDisc.position);
 }
 function restoreCelestialDiscWorldPositions(){
-  sunDisc.position.copy(sun.position);
-  moonDisc.position.copy(moonLight.position);
-  if(typeof moonGlow!=='undefined')moonGlow.position.copy(moonDisc.position);
+  positionCelestialDiscsForMainCamera();
 }
 
 let aczoAstronomicalNight=false;
@@ -11721,11 +11657,11 @@ function updateAstronomy(){
         0,1
       )
     : 0;
-  const moonVisualScale=THREE.MathUtils.lerp(16,13,moonDaylight);
+  const moonVisualScale=THREE.MathUtils.lerp(34,29,moonDaylight);
   moonDisc.userData.visualOpacity=moonVisualOpacity;
   moonDisc.scale.set(moonVisualScale,moonVisualScale,1);
   if(typeof moonGlow!=='undefined'){
-    const moonGlowScale=THREE.MathUtils.lerp(34,24,moonDaylight);
+    const moonGlowScale=THREE.MathUtils.lerp(70,50,moonDaylight);
     moonGlow.userData.visualOpacity=moonVisualOpacity*THREE.MathUtils.lerp(.82,.12,moonDaylight);
     moonGlow.scale.set(moonGlowScale,moonGlowScale,1);
   }
@@ -11748,8 +11684,7 @@ function updateAstronomy(){
   // Mondlicht bleibt in heller Daemmerung/bei Tag dezent; nur die Scheibe darf
   // sichtbar sein. Dadurch entsteht kein kuenstlicher Nacht-Look vor Sonnenuntergang.
   const moonLightDayFade=THREE.MathUtils.lerp(1,.16,moonDaylight);
-  moonLight.intensity=(moonDisplayAllowed ? (0.10+0.35*moonIll.fraction)*moonLightDayFade : 0)
-    *((typeof diagnosticState==='undefined'||diagnosticState.relief)?1:0);
+  moonLight.intensity=(moonDisplayAllowed ? (0.10+0.35*moonIll.fraction)*moonLightDayFade : 0);
 
   // V36: kontinuierliche Helligkeit statt nur drei optischer Zustände.
   // Von ca. 6° Sonnenhöhe bis zur bürgerlichen Dämmerung wird das Luftbild
@@ -16889,37 +16824,6 @@ function aczoAddWindow(parent,x,y,z,w,h,side,name){
   else aczoFacilityBox(parent,[.070,w+.10,.028],[x-.012,y,z],barMat,name+'_GITTER_H');
   return win;
 }
-function aczoBuildGableHouse(parent,width,depth,wallH,ridgeH,prefix,wallMat=aczoBuildingWoodMat,seamMat=aczoBuildingWoodDarkMat){
-  aczoFacilityBox(parent,[width,depth,wallH],[0,0,wallH*.5],wallMat,prefix+'_WANDBLOCK');
-  const triPos=[-width*.5,0,wallH,width*.5,0,wallH,0,0,ridgeH];
-  for(const side of [-1,1]){
-    const geo=new THREE.BufferGeometry();
-    geo.setAttribute('position',new THREE.Float32BufferAttribute(triPos.map((v,i)=>i%3===1?side*depth*.5:v),3));
-    geo.setAttribute('uv',new THREE.Float32BufferAttribute([0,0,1,0,.5,1],2));
-    geo.setIndex(side<0?[0,2,1]:[0,1,2]);geo.computeVertexNormals();
-    aczoFacilityMesh(parent,new THREE.Mesh(geo,aczoBuildingSlateMat),prefix+'_SCHIEFERGIEBEL_'+(side<0?'VORN':'HINTEN'));
-  }
-  const overhang=.34,run=width*.5+overhang,rise=ridgeH-wallH;
-  const slope=Math.hypot(run,rise),angle=Math.atan2(rise,run);
-  for(const side of [-1,1]){
-    const roof=new THREE.Mesh(new THREE.BoxGeometry(slope,depth+overhang*2,.13),aczoBuildingSlateMat);
-    roof.position.set(side*run*.5,0,wallH+rise*.5+.03);
-    // Linke und rechte Dachflaeche steigen jeweils ZUM First hin an. Die alte
-    // Vorzeichenfolge hob die Aussenkanten an und erzeugte die Origami-Form.
-    roof.rotation.y=side<0?-angle:angle;
-    aczoFacilityMesh(parent,roof,prefix+'_DACH_'+(side<0?'WEST':'OST'));
-  }
-  // Feine horizontale Fugen lassen die wettergegerbte Holzverschalung auch
-  // aus mittlerer Entfernung als echte Bretterfassade erkennen.
-  for(let z=.30;z<wallH;z+=.34){
-    aczoFacilityBox(parent,[width+.025,.025,.018],[0,-depth*.5-.014,z],seamMat,prefix+'_FASSADENFUGE_V');
-    aczoFacilityBox(parent,[width+.025,.025,.018],[0, depth*.5+.014,z],seamMat,prefix+'_FASSADENFUGE_H');
-    aczoFacilityBox(parent,[.025,depth+.025,.018],[-width*.5-.014,0,z],seamMat,prefix+'_FASSADENFUGE_W');
-    aczoFacilityBox(parent,[.025,depth+.025,.018],[ width*.5+.014,0,z],seamMat,prefix+'_FASSADENFUGE_O');
-  }
-  for(const x of [-width*.5-.035,width*.5+.035])for(const y of [-depth*.5-.035,depth*.5+.035])
-    aczoFacilityBox(parent,[.10,.10,wallH+.08],[x,y,wallH*.5],seamMat,prefix+'_ECKBRETT');
-}
 
 // Giebelhaus mit First entlang der lokalen X-Achse. Beim Vereinsheim ist
 // -X die Nordwand und +/-Y sind West/Ost; damit verläuft der First wie auf
@@ -16985,108 +16889,6 @@ function aczoAddTerraceChair(parent,x,y,yaw,name){
   aczoFacilityBox(chair,[.50,.055,.68],[0,.225,.84],aczoBuildingBlackMeshMat,name+'_LEHNE');
   for(const dx of [-.20,.20])for(const dy of [-.20,.20])aczoFacilityPole(chair,dx,dy,.05,.47,.018,aczoBuildingStainlessMat,name+'_BEIN');
   for(const dx of [-.25,.25])aczoFacilityBox(chair,[.025,.42,.035],[dx,0,.68],aczoBuildingStainlessMat,name+'_ARMLEHNE');
-}
-function aczoBuildMainClubhouseV2314(){
-  // Die Drohnenaufnahme ist gegenueber der geographischen Kartenansicht
-  // gedreht. Der direkte WMS-Abgleich setzt das Hauptdach deshalb korrekt
-  // auf das oestliche Vereinsgelaende bei rund +69.5 / +20.8 m.
-  const site=aczoFacilitySite('VEREINSHEIM_HAUPTBAU',69.45,20.70,-.72);
-  // Der leicht vergroesserte reale Baukoerper deckt die komplette, im
-  // Orthofoto sichtbare Dach- und Terrassenflaeche ab.
-  const width=8.20,depth=8.90,wallH=3.05,ridgeH=5.58;
-  aczoBuildGableHouse(site,width,depth,wallH,ridgeH,'VEREINSHEIM');
-  const clubSideDoor=aczoAddFacilityDoor(site,-1.75,-depth*.5-.065,1.08,1.10,2.05,'front','VEREINSHEIM_WEISSE_METALLTUER',aczoBuildingWhiteDoorMat);
-  aczoFacilityBox(clubSideDoor,[.34,.025,.46],[.55,-.070,1.62],aczoBuildingGlassMat,'VEREINSHEIM_TUERFENSTER');
-  aczoAddWindow(site,.15,-depth*.5-.07,1.72,1.48,1.10,'front','VEREINSHEIM_FRONTFENSTER');
-  // Der in der bisherigen Fassung fehlende Haupteingang rechts am Giebel.
-  const clubMainDoor=aczoAddFacilityDoor(site,2.55,-depth*.5-.075,1.08,1.02,2.06,'front','VEREINSHEIM_HAUPTEINGANG_RECHTS',aczoBuildingWhiteDoorMat);
-  aczoFacilityBox(clubMainDoor,[.38,.025,.52],[.51,-.062,1.63],aczoBuildingGlassMat,'VEREINSHEIM_HAUPTEINGANG_FENSTER');
-  // Bewegungsmelder und warmweiße Außenleuchte über dem Haupteingang.
-  aczoFacilityBox(site,[.42,.22,.24],[2.55,-depth*.5-.18,2.83],aczoBuildingRoofEdgeMat,'VEREINSHEIM_BEWEGUNGSMELDER_GEHAEUSE');
-  aczoMainEntranceLampLens=aczoFacilityBox(site,[.29,.035,.13],[2.55,-depth*.5-.305,2.84],aczoMainEntranceLampLensMat,'VEREINSHEIM_BEWEGUNGSMELDER_LAMPENGLAS');
-  const sensor=new THREE.Mesh(new THREE.SphereGeometry(.085,12,8),aczoBuildingLightGreyMat);
-  sensor.scale.set(1,.48,.68);sensor.position.set(2.55,-depth*.5-.34,2.68);
-  aczoFacilityMesh(site,sensor,'VEREINSHEIM_BEWEGUNGSMELDER_SENSOR',false,true);
-  aczoMainEntranceLamp=new THREE.PointLight(0xffc56d,0,15,1.72);
-  aczoMainEntranceLamp.name='VEREINSHEIM_BEWEGUNGSMELDER_LICHT';
-  aczoMainEntranceLamp.position.set(2.55,-depth*.5-.72,2.72);
-  aczoMainEntranceLamp.castShadow=false;site.add(aczoMainEntranceLamp);
-  aczoAddWindow(site,width*.5+.07,-1.45,1.70,1.38,1.08,'side','VEREINSHEIM_SEITENFENSTER_SUED');
-  aczoAddWindow(site,width*.5+.07,1.52,1.70,1.38,1.08,'side','VEREINSHEIM_SEITENFENSTER_NORD');
-  aczoAddWindow(site,-width*.5-.07,.35,1.67,1.30,1.00,'side','VEREINSHEIM_RUECKFENSTER');
-  // Kleines dunkles Lueftungsfenster im verschieferten Giebel.
-  aczoFacilityBox(site,[.62,.06,.48],[0,-depth*.5-.075,4.25],aczoBuildingGlassMat,'VEREINSHEIM_GIEBEL_LUEFTUNG');
-  // Kleines Eingangsvordach der Referenzaufnahme.
-  const entranceCanopy=aczoFacilityBox(site,[2.25,1.18,.12],[2.55,-depth*.5-.42,2.45],aczoBuildingSlateMat,'VEREINSHEIM_EINGANGSVORDACH');
-  entranceCanopy.rotation.x=.10;
-  aczoFacilityPole(site,1.70,-depth*.5-.82,.02,2.43,.055,aczoBuildingSteelMat,'VEREINSHEIM_VORDACHSTUETZE_L');
-  aczoFacilityPole(site,3.40,-depth*.5-.82,.02,2.43,.055,aczoBuildingSteelMat,'VEREINSHEIM_VORDACHSTUETZE_R');
-  // Gemauerter Kamin knapp westlich des Firsts.
-  aczoFacilityBox(site,[.58,.66,1.38],[-1.40,.72,5.18],aczoBuildingStoneMat,'VEREINSHEIM_KAMIN');
-  aczoFacilityBox(site,[.72,.80,.10],[-1.40,.72,5.89],aczoBuildingRoofEdgeMat,'VEREINSHEIM_KAMINABDECKUNG');
-  // Dachrinnen und Firstleiste.
-  for(const x of [-width*.5-.28,width*.5+.28])aczoFacilityBox(site,[.08,depth+.64,.08],[x,0,wallH+.01],aczoBuildingRoofEdgeMat,'VEREINSHEIM_DACHRINNE');
-  aczoFacilityBox(site,[.10,depth+.68,.10],[0,0,ridgeH+.08],aczoBuildingRoofEdgeMat,'VEREINSHEIM_FIRST');
-  // Zwei flache Dachfenster entsprechend Luft- und Nahaufnahme.
-  const roofRun=width*.5+.34,roofRise=ridgeH-wallH,roofAngle=Math.atan2(roofRise,roofRun);
-  for(const p of [[-1.38,-1.05],[-1.38,1.05]]){
-    const roofZ=ridgeH-roofRise*Math.abs(p[0])/roofRun+.12;
-    const skylight=aczoFacilityBox(site,[1.02,.72,.075],[p[0],p[1],roofZ],aczoBuildingGlassMat,'VEREINSHEIM_DACHFENSTER');
-    skylight.rotation.y=-roofAngle;
-    aczoFacilityBox(site,[1.16,.86,.035],[p[0],p[1],roofZ-.055],aczoBuildingLightGreyMat,'VEREINSHEIM_DACHFENSTER_RAHMEN').rotation.y=-roofAngle;
-  }
-  // Lange massive Holzbank an der Seitenwand wie in der Nahaufnahme.
-  aczoFacilityBox(site,[.42,2.80,.16],[width*.5+.34,.52,.55],aczoBuildingWoodLightMat,'VEREINSHEIM_HOLZBANK_SITZ');
-  for(const y of [-.52,1.55])aczoFacilityBox(site,[.32,.18,.50],[width*.5+.28,y,.27],aczoBuildingWoodDarkMat,'VEREINSHEIM_HOLZBANK_FUSS');
-
-  // Offene, burgunderfarbene Terrassenkonstruktion an der zum Weiher
-  // gerichteten Giebelseite. Die hintere Dachkante sitzt jetzt ohne den
-  // bisherigen Zwischenraum direkt auf der Hauptfassade.
-  const terrace=new THREE.Group();terrace.name='VEREINSHEIM_UEBERDACHTE_TERRASSE';
-  terrace.position.set(-.72,-7.38,0);site.add(terrace);
-  aczoFacilityBox(terrace,[6.35,5.85,.10],[0,0,.05],aczoBuildingFloorMat,'TERRASSE_PFLASTER');
-  const terraceRoof=aczoFacilityBox(terrace,[6.70,6.06,.15],[0,0,2.76],aczoBuildingSlateMat,'TERRASSE_FLACHDACH');
-  terraceRoof.rotation.x=.045;
-  // Nur die freie Vorderkante benoetigt Stuetzen; die Rueckseite ist direkt
-  // am Hauptgebaeude verschraubt.
-  for(const x of [-2.95,0,2.95])
-    aczoFacilityPole(terrace,x,-2.68,.05,2.63,.065,aczoBuildingSteelMat,'TERRASSE_FRONTSTUETZE');
-  for(const y of [-2.72,2.72])aczoFacilityBox(terrace,[6.30,.10,.12],[0,y,2.68],aczoBuildingSteelMat,'TERRASSE_RANDTRAEGER');
-  for(let x=-2.75;x<=2.76;x+=.78)aczoFacilityBox(terrace,[.075,5.82,.10],[x,0,2.67],aczoBuildingWoodDarkMat,'TERRASSE_DACHSPARREN');
-  aczoFacilityBox(terrace,[6.38,.13,.18],[0,2.88,2.72],aczoBuildingRoofEdgeMat,'TERRASSE_WANDANSCHLUSS');
-  // Dauerhafte lange Tafel und schwarze Mesh-Gartenstuehle unter dem Dach.
-  aczoFacilityBox(terrace,[4.35,1.02,.10],[0,-.15,.79],aczoBuildingWoodLightMat,'TERRASSE_LANGE_TAFEL');
-  for(const x of [-1.72,1.72])for(const y of [-.38,.10])aczoFacilityPole(terrace,x,y,.05,.74,.035,aczoBuildingSteelMat,'TERRASSE_TAFELBEIN');
-  for(const x of [-1.58,-.52,.52,1.58]){
-    aczoAddTerraceChair(terrace,x,-.98,0,'TERRASSE_STUHL_WASSERSEITE');
-    aczoAddTerraceChair(terrace,x,.70,Math.PI,'TERRASSE_STUHL_HAUSSEITE');
-  }
-  aczoAddTerraceChair(terrace,-2.55,-.15,-Math.PI*.5,'TERRASSE_STUHL_STIRN_LINKS');
-  aczoAddTerraceChair(terrace,2.55,-.15,Math.PI*.5,'TERRASSE_STUHL_STIRN_RECHTS');
-
-  // Sanitärbau: Die Hinterkante ist nun exakt bündig zur Hausrückseite.
-  const annexW=4.35,annexD=4.15;
-  const annex=new THREE.Group();annex.name='VEREINSHEIM_SANITAERANBAU';annex.position.set(3.55,depth*.5-annexD*.5,0);site.add(annex);
-  aczoFacilityBox(annex,[annexW,annexD,2.45],[0,0,1.225],aczoBuildingGreyMat,'SANITAER_WANDBLOCK');
-  const annexRoof=aczoFacilityBox(annex,[4.66,4.46,.16],[0,.03,2.53],aczoBuildingSlateMat,'SANITAER_FLACHDACH');annexRoof.rotation.x=.025;
-  // Zwei getrennte Sanitärtüren und das kleine Fenster der Originalfassade.
-  aczoAddFacilityDoor(annex,-1.18,-annexD*.5-.055,1.00,.86,1.96,'front','SANITAER_TUER_DAMEN');
-  aczoAddFacilityDoor(annex,.38,-annexD*.5-.055,1.00,.86,1.96,'front','SANITAER_TUER_HERREN');
-  aczoAddWindow(annex,1.55,-annexD*.5-.065,1.58,.62,.70,'front','SANITAER_FRONTFENSTER');
-  // Weitere Tür um die Gebäudeecke sowie zwei hoch gesetzte Sanitärfenster.
-  aczoAddFacilityDoor(annex,annexW*.5+.055,.92,1.00,.86,1.96,'side','SANITAER_ECKTUER');
-  aczoAddWindow(annex,annexW*.5+.07,-.66,1.75,.66,.62,'side','SANITAER_SEITENFENSTER_1');
-  aczoAddWindow(annex,annexW*.5+.07,.02,1.75,.54,.62,'side','SANITAER_SEITENFENSTER_2');
-
-  aczoRegisterVisitorBuilding('Hauptgebäude',site,width,depth,[
-    {side:'yMin',center:-1.75,half:.62,name:'Nebentür'},
-    {side:'yMin',center:2.55,half:.58,name:'Haupteingang'}
-  ]);
-  // Am angebauten Sanitärteil ist die Tür um die freie Außenecke der sicher
-  // erreichbare Durchgang; die beiden Fronttüren bleiben optisch erhalten.
-  aczoRegisterVisitorBuilding('Sanitäranbau',annex,annexW,annexD,[
-    {side:'xMax',center:.92,half:.50,name:'Sanitär-Seitentür'}
-  ]);
 }
 
 // V8.142 – Die Luftaufnahme zeigt den First entlang der langen Hausachse.
@@ -17213,56 +17015,6 @@ function aczoBuildMainClubhouse(){
   ]);
 }
 
-function aczoBuildStorageShedV2314(){
-  // Abgesetzte weiss-graue Garage auf dem hellen Luftbildgrundriss. Das
-  // breite Tor sitzt an der Stirnseite; die ehemalige Torseite wird wie im
-  // Original zur gefliesten, ueberdachten Aussenkueche.
-  const shed=aczoFacilitySite('RUECKWAERTIGER_LAGERBAU',80.25,29.05,-.72);
-  const width=6.80,depth=4.00,wallH=2.48,ridgeH=3.72;
-  aczoBuildGableHouse(shed,width,depth,wallH,ridgeH,'LAGER',aczoBuildingLightGreyMat,aczoBuildingGreyMat);
-  for(const x of [-width*.5-.27,width*.5+.27])aczoFacilityBox(shed,[.075,depth+.58,.075],[x,0,wallH+.01],aczoBuildingRoofEdgeMat,'LAGER_DACHRINNE');
-  aczoFacilityBox(shed,[.09,depth+.64,.09],[0,0,ridgeH+.06],aczoBuildingRoofEdgeMat,'LAGER_FIRST');
-
-  // Korrektes Garagentor an der vorderen Stirnseite (+X).
-  aczoFacilityBox(shed,[.085,2.58,2.15],[width*.5+.052,0,1.10],aczoBuildingWhiteDoorMat,'LAGER_GARAGENTOR_STIRN');
-  for(let z=.28;z<2.08;z+=.34)aczoFacilityBox(shed,[.035,2.46,.024],[width*.5+.105,0,z],aczoBuildingGreyMat,'LAGER_GARAGENTOR_QUERFUGE');
-  for(const y of [-1.34,1.34])aczoFacilityBox(shed,[.055,.075,2.27],[width*.5+.095,y,1.13],aczoBuildingDoorMat,'LAGER_GARAGENTOR_RAHMEN');
-  aczoFacilityBox(shed,[.055,2.72,.075],[width*.5+.095,0,2.22],aczoBuildingDoorMat,'LAGER_GARAGENTOR_STURZ');
-  aczoFacilityBox(shed,[.035,.34,.055],[width*.5+.125,.70,.92],aczoBuildingRoofEdgeMat,'LAGER_GARAGENTOR_GRIFF');
-
-  // Seitlicher Dachueberstand mit schieferverkleideter Blende. Die
-  // Dachflaeche faellt von der Garagenwand nach aussen ab.
-  const kitchenRoof=aczoFacilityBox(shed,[6.35,2.48,.15],[0,-2.78,2.72],aczoBuildingSlateMat,'AUSSENKUECHE_SCHIEFERDACH');
-  kitchenRoof.rotation.x=.115;
-  aczoFacilityBox(shed,[6.34,.14,.34],[0,-3.98,2.45],aczoBuildingSlateMat,'AUSSENKUECHE_DACHBLENDE');
-  for(const x of [-2.92,2.92])aczoFacilityPole(shed,x,-3.88,.02,2.47,.065,aczoBuildingSteelMat,'AUSSENKUECHE_STUETZE');
-  for(let x=-2.75;x<=2.76;x+=.78)aczoFacilityBox(shed,[.075,2.36,.10],[x,-2.78,2.61],aczoBuildingWoodDarkMat,'AUSSENKUECHE_DACHSPARREN');
-
-  // Geflieste Rueckwand mit sichtbaren Fugen.
-  aczoFacilityBox(shed,[5.62,.055,1.86],[0,-depth*.5-.038,1.25],aczoBuildingTileMat,'AUSSENKUECHE_FLIESENWAND');
-  for(let x=-2.62;x<=2.63;x+=.35)aczoFacilityBox(shed,[.012,.018,1.82],[x,-depth*.5-.073,1.25],aczoBuildingTileJointMat,'AUSSENKUECHE_FLIESENFUGE_V');
-  for(let z=.39;z<=2.12;z+=.29)aczoFacilityBox(shed,[5.58,.018,.012],[0,-depth*.5-.073,z],aczoBuildingTileJointMat,'AUSSENKUECHE_FLIESENFUGE_H');
-
-  // Arbeitszeile, Edelstahlspuele, Armatur und zwei grosse Braeter.
-  aczoFacilityBox(shed,[5.36,.70,.10],[0,-2.10,.91],aczoBuildingStoneMat,'AUSSENKUECHE_ARBEITSPLATTE');
-  for(const x of [-2.35,2.35])aczoFacilityBox(shed,[.18,.56,.82],[x,-2.08,.46],aczoBuildingGreyMat,'AUSSENKUECHE_UNTERGESTELL');
-  aczoFacilityBox(shed,[1.02,.48,.11],[-1.78,-2.10,.96],aczoBuildingStainlessMat,'AUSSENKUECHE_SPUELE');
-  aczoFacilityBox(shed,[.75,.30,.07],[-1.78,-2.10,.975],aczoBuildingRoofEdgeMat,'AUSSENKUECHE_SPUELE_BECKEN');
-  aczoFacilityPole(shed,-1.78,-1.82,.98,1.42,.025,aczoBuildingStainlessMat,'AUSSENKUECHE_WASSERHAHN');
-  const tap=aczoFacilityBox(shed,[.035,.27,.035],[-1.78,-1.94,1.42],aczoBuildingStainlessMat,'AUSSENKUECHE_WASSERHAHN_AUSLAUF');tap.rotation.x=.18;
-  for(const x of [-.48,.80]){
-    aczoFacilityBox(shed,[1.05,.58,.26],[x,-2.10,1.08],aczoBuildingStainlessMat,'AUSSENKUECHE_BRAETER');
-    aczoFacilityBox(shed,[.91,.48,.035],[x,-2.10,1.22],aczoBuildingRoofEdgeMat,'AUSSENKUECHE_BRATFLAECHE');
-  }
-  // Fensterband und Seitentuer auf der geschuetzten Kuechenseite.
-  aczoAddWindow(shed,-2.05,-depth*.5-.075,1.76,.78,.65,'front','AUSSENKUECHE_FENSTER_LINKS');
-  aczoAddWindow(shed,2.15,-depth*.5-.075,1.76,.78,.65,'front','AUSSENKUECHE_FENSTER_RECHTS');
-  aczoAddFacilityDoor(shed,-width*.5-.055,.72,1.00,.86,1.96,'side','LAGER_SEITENTUER',aczoBuildingWhiteDoorMat);
-  aczoRegisterVisitorBuilding('Garage',shed,width,depth,[
-    {side:'xMax',center:0,half:1.36,name:'Garagentor',pedestrian:false},
-    {side:'xMin',center:.72,half:.50,name:'Seitentür'}
-  ]);
-}
 
 // Garage: First entlang der Nord-Süd-Längsachse. Das Tor sitzt am
 // nördlichen Giebel; die östliche Dachfläche geht flacher in den
@@ -18247,20 +17999,6 @@ function aczoPointInsideVisitorBuilding(x,y,pad=.28){
   }
   return false;
 }
-function aczoPlaceVisitorOnOpenGround(out,x,y){
-  out.set(x,y,ACZO_VISITOR_GROUND_Z);
-  if(!aczoPointInsideVisitorBuilding(x,y,.20))return out;
-  // Falls eine Fahrzeugseite innerhalb eines großzügig gerechneten
-  // Gebäudegrundrisses liegt, wird nur der Startpunkt auf den nächsten freien
-  // Geländepunkt gesetzt. Danach läuft die Figur ohne Teleportation weiter.
-  for(const radius of [.45,.75,1.10,1.55,2.10,2.80]){
-    for(let i=0;i<16;i++){
-      const a=i*Math.PI*2/16,cx=x+Math.cos(a)*radius,cy=y+Math.sin(a)*radius;
-      if(!aczoPointInsideVisitorBuilding(cx,cy,.20))return out.set(cx,cy,ACZO_VISITOR_GROUND_Z);
-    }
-  }
-  return out;
-}
 function aczoVehicleFootprintBlocked(x,y,dir,pad=.22){
   if(!aczoVisitorBuildings.length)return false;
   const len=4.65,wid=2.08;
@@ -18289,26 +18027,6 @@ function aczoFindContainingVisitorBuilding(x,y,pad=-.08){
     if(aczoVisitorLocalInside(building,p,pad))return building;
   }
   return null;
-}
-function aczoDoorPermitsBoundaryCrossing(building,a,b,pad=.28){
-  const hx=building.width*.5+pad,hy=building.depth*.5+pad;
-  const crossings=[];
-  const pushCross=(side,t,coord)=>{
-    if(t>=-.001&&t<=1.001)crossings.push({side,t,coord});
-  };
-  const dx=b.x-a.x,dy=b.y-a.y;
-  if(Math.abs(dy)>1e-7){
-    let t=(-hy-a.y)/dy;pushCross('yMin',t,a.x+dx*t);
-    t=(hy-a.y)/dy;pushCross('yMax',t,a.x+dx*t);
-  }
-  if(Math.abs(dx)>1e-7){
-    let t=(-hx-a.x)/dx;pushCross('xMin',t,a.y+dy*t);
-    t=(hx-a.x)/dx;pushCross('xMax',t,a.y+dy*t);
-  }
-  crossings.sort((u,v)=>u.t-v.t);
-  return crossings.some(cross=>building.doors.some(door=>
-    door.side===cross.side&&Math.abs(cross.coord-door.center)<=door.half+.10
-  ));
 }
 // V1.2 BESUCHER-KOLLISION:
 function aczoVisitorSegmentHitsRect(a,b,hx,hy){
@@ -20353,13 +20071,6 @@ function aczoP13TreeProtected(x,y){
   if(aczoP13NearBuildings(x,y))return true; // Gebaeude und direkte Umgebung
   return false;
 }
-function aczoP13RemoteTreeKeep(x,y,salt=0){
-  if(aczoP13TreeProtected(x,y))return true;
-  // Stabiler Orts-Hash: identischer Bestand bei jedem Laden, kein visuelles Flattern.
-  let h=(Math.imul(Math.round((x+180)*100),73856093)^Math.imul(Math.round((y+180)*100),19349663)^Math.imul((salt|0)+1,83492791))>>>0;
-  h^=h>>>16;h=Math.imul(h,0x7feb352d)>>>0;h^=h>>>15;
-  return (h>>>0)/4294967296<.22;
-}
 // P33: Zwei vom Nutzer markierte Fernbereiche werden zusaetzlich beruhigt.
 // Die direkte Uferkulisse bleibt erhalten; Sued/Mosel (y<=-42) bleibt komplett
 // nach P32 als hochwertige Vegetation inklusive Schatten bestehen.
@@ -20605,21 +20316,6 @@ function aczoSurveyBuildLowPolyBush(object,index){
 // P22: Unterwuchs fuer dichte Mischwaelder. Ein einzelner 20-Tri-Poly-Lappen
 // pro Position reicht, um aus Augenhoehe die sonst weissen Luecken zwischen
 // den Staemmen zu schliessen. Bewusst schattenfrei und statisch instanziert.
-function aczoSurveyBuildForestUnderstory(x,y,index,forestDepth){
-  if(forestDepth<8)return; // erste Uferreihe optisch unveraendert lassen
-  const rnd=aczoSurveyRandom(aczoSurveySeed(x,y,index+22900)),baseZ=ACZO_SATELLITE_GROUND_Z;
-  const species=aczoSurveySpecies[Math.floor(rnd()*aczoSurveySpecies.length)];
-  const toneBand=Math.floor(rnd()*aczoSurveyToneProfiles.length),tone=aczoSurveyToneProfiles[toneBand];
-  const height=1.8+rnd()*2.7;
-  const radius=1.15+rnd()*1.25;
-  aczoSurveyForestUnderstoryItems.push({
-    p:new THREE.Vector3(x,y,baseZ+height*.43),
-    scale:new THREE.Vector3(radius*(.90+rnd()*.24),radius*(.82+rnd()*.24),height*.43),
-    rot:new THREE.Euler(rnd()*.16,rnd()*.16,rnd()*Math.PI),
-    species,toneBand,variation:(rnd()-.5)*.28,
-    hueShift:tone.h,satShift:tone.s,lightShift:(tone.l||0)-.035
-  });
-}
 
 // P32: Keine Poly-Buesche mehr an Nord-, West- oder Ostufer.
 // Vermessene Buesche ausserhalb der direkten Uferkante werden nur an der
@@ -21417,18 +21113,27 @@ function randomFxPoint(minDepth,maxDepth){
   return null;
 }
 
+let aczoBubbleTransitAccumulator=0;
 function updateUnderwaterEffects(dt){
   const anglingUnderwater=anglingMode&&anglingCinematicView==='underwater';
-  // V1.2 BUBBLE TRANSIT: Grundelblasen muessen unabhaengig von der Kamera
-  // weiterlaufen. Beim Posenangeln steht die Kamera ueber Wasser, die Blasen
-  // steigen darunter aber real weiter und erzeugen erst beim Auftreffen den Ring.
-  // Unter Wasser wird derselbe Pool sichtbar gerendert.
+  // P62: Grundelblasen laufen auch bei einer Kamera ueber Wasser weiter, muessen
+  // dort aber nicht den 640er Pool in jedem Renderframe aktualisieren. 8 Hz
+  // reichen fuer die unsichtbare Transitphysik und erhalten die Oberflaechenringe.
+  if(!fishMode&&!anglingUnderwater){
+    aczoBubbleTransitAccumulator+=dt;
+    if(aczoBubbleTransitAccumulator>=.125){
+      updateParticlePool(bubblePool,aczoBubbleTransitAccumulator,true);
+      aczoBubbleTransitAccumulator=0;
+    }
+    bubblePool.points.visible=false;
+    return;
+  }
+  if(aczoBubbleTransitAccumulator>0){
+    updateParticlePool(bubblePool,aczoBubbleTransitAccumulator,true);
+    aczoBubbleTransitAccumulator=0;
+  }
   updateParticlePool(bubblePool,dt,true);
-  // Mehrere Kamera-/Angel-Übergänge setzen den Pool bewusst auf invisible.
-  // Für die aktive Unterwasseransicht muss er deshalb hier jedes Bild wieder
-  // eindeutig freigegeben werden. Von Land läuft nur die Physik weiter.
-  bubblePool.points.visible=!!(fishMode||anglingUnderwater);
-  if(!fishMode&&!anglingUnderwater) return;
+  bubblePool.points.visible=true;
   // PERF14: In der Kunstkoederkamera laufen die additiven Caustics deutlich
   // langsamer. Das verhindert das regelmaessige globale Hell/Dunkel-Pumpen,
   // ohne die Unterwasserwelt statisch wirken zu lassen.
@@ -21925,22 +21630,6 @@ function createFishMesh(name){
 }
 
 
-function deadwoodSpeciesAffinity(name){
-  switch(name){
-    case 'perch':return {chance:.80,radius:.95};
-    case 'sunfish':return {chance:.74,radius:.88};
-    case 'roach':return {chance:.55,radius:1.20};
-    case 'rudd':return {chance:.50,radius:1.26};
-    case 'bream':return {chance:.34,radius:1.12};
-    case 'tench':return {chance:.44,radius:.96};
-    case 'carp':case 'mirrorcarp':return {chance:.34,radius:1.36};
-    case 'pike':return {chance:.72,radius:.92};
-    case 'zander':return {chance:.60,radius:.96};
-    case 'eel':return {chance:.50,radius:.82};
-    case 'catfish':return {chance:.42,radius:1.08};
-    default:return null;
-  }
-}
 function randomDeadwoodFishPoint(name,out,options={}){
   if(options.avoidCover||!ACZO_COVER_PREDATORS.has(name)||!aczoFishCoverSites.length)return false;
   const lowLight=aczoFishLowLightFactor();
@@ -22176,9 +21865,8 @@ function centralFishStart(out){
 
 function enterFishView(){
   if(fishMode||anglingMode) return;
-  // PERF24: Gemeinsame Unterwasserwelt ist normalerweise bereits inklusive
-  // echtem Erst-Render vorgewärmt. Falls der Nutzer extrem früh klickt, wird der
-  // kleine Warmup wenigstens vor dem eigentlichen Tauchflug nachgezogen.
+  // P62: Die gemeinsame Unterwasserwelt wird bereits unter dem Startloader aufgebaut.
+  // Bei extrem frühem Zugriff wird nur derselbe Full-Warmup nachgeplant.
   ensureAnglingLureUnderwaterWorld();
   // PERF26: Kein synchroner GPU-Warmup mehr exakt auf dem ersten Klick. Falls
   // der Hintergrund-Prewarm wider Erwarten noch nicht fertig ist, wird er nur
@@ -22246,8 +21934,14 @@ function enterFishView(){
   depthPinLabel.style.display='none';
   tip.style.display='none';
   fishPreviousPixelRatio=renderer.getPixelRatio();
-  const fishTargetPixelRatio=Math.min(fishPreviousPixelRatio,1.25*aczoGraphicsScale());
-  if(Math.abs(fishTargetPixelRatio-renderer.getPixelRatio())>.001)renderer.setPixelRatio(fishTargetPixelRatio);
+  // P77 COLDSTART: Auf Desktop die Pixelratio beim Abtauchen nicht mehr
+  // umschalten. Ein setPixelRatio() baut den sichtbaren WebGL-Zeichenpuffer
+  // neu auf und kann gerade auf 125/150-%-Windows-Displays eine kurze Pause
+  // verursachen. Mobil bleibt die bestehende Begrenzung erhalten.
+  if(ACZO_MOBILE_PERF){
+    const fishTargetPixelRatio=Math.min(fishPreviousPixelRatio,1.25*aczoGraphicsScale());
+    if(Math.abs(fishTargetPixelRatio-renderer.getPixelRatio())>=.075)renderer.setPixelRatio(fishTargetPixelRatio);
+  }
   updateButtons();
   controls.enabled=false;
   savedSceneFog=scene.fog;
@@ -23060,7 +22754,6 @@ function anglingTriggerSnaggedFish(actor){
   // Keine alte kleine Toast-Meldung mehr. Die eindeutige große Meldung wird
   // erst nach der Kamerarückkehr gezeigt, unmittelbar vor dem Drill.
   setAnglingStatus('Fischkontakt','Kunstköder hat einen vorbeischwimmenden Fisch tatsächlich berührt.');
-  if(navigator.vibrate)navigator.vibrate([70,35,100]);
   // Wie bei einem erfolgreichen Anhieb fährt die Kamera sauber zum Angler zurück.
   // BETA 1.14: Während dieses Kameraflugs bleibt die First-Person-Rute aus.
   // Erst am fertigen Uferbild erscheint sie für den Drill.
@@ -24466,24 +24159,6 @@ function anglingShoreHasSafeLocalAxis(shore,inward){
   return anglingMaxCastDistance(yaw,shore)>=ANGLING_MIN_CAST_DISTANCE;
 }
 
-function createAnglingShorePhotoMaterial(tex){
-  // V7.02: Die Panoramafotos sind echte Hintergrundgeometrie.
-  // Sie laufen im OPAKEN Renderpass mit Alpha-Test und schreiben Tiefe.
-  // Dadurch können transparente Foto-Flächen niemals nachträglich Rute oder Schnur übermalen.
-  const mat=new THREE.MeshBasicMaterial({
-    map:tex,
-    color:0xffffff,
-    transparent:false,
-    opacity:1,
-    side:THREE.DoubleSide,
-    depthWrite:true,
-    depthTest:true,
-    fog:false,
-    alphaTest:.06
-  });
-  mat.toneMapped=false;
-  return mat;
-}
 
 function getAnglingShoreNumberFromPosition(shore,sample=null){
   if(!shore)return 0;
@@ -24504,60 +24179,7 @@ function getAnglingShoreNumberFromPosition(shore,sample=null){
   return 4;
 }
 
-function anglingWallSideName(wallNumber){
-  if(wallNumber===1)return 'bottom';
-  if(wallNumber===2)return 'top';
-  if(wallNumber===3)return 'right';
-  return 'left';
-}
 
-function makeAnglingWallPhotoGeometry(wallNumber,tex){
-  const side=anglingWallSideName(wallNumber);
-  const cx=(typeof anglingPondCenter!=='undefined'?anglingPondCenter.x:0);
-  const cy=(typeof anglingPondCenter!=='undefined'?anglingPondCenter.y:0);
-
-  // V6.96: Das komplette Panorama-Rechteck liegt bewusst deutlich HINTER
-  // dem eigentlichen Ufer. Die Angelkamera kann dadurch auch in den Ecken
-  // nicht mehr an/in eine Fotowand geraten. Gleichzeitig werden die Waende
-  // um denselben Betrag verlaengert, damit sich die vier Seiten hinter den
-  // Ecken sauber ueberlappen und keine Luecke entsteht.
-  const overscan=1.25;
-  const wallBackOffset=9.0;
-  const yEdge=D.pondH*.5+wallBackOffset;
-  const xEdge=D.pondW*.5+wallBackOffset;
-  const span=(side==='top'||side==='bottom')
-    ? D.pondW+wallBackOffset*2+overscan*2
-    : D.pondH+wallBackOffset*2+overscan*2;
-
-  const imgW=Math.max(1,Number(tex?.image?.width)||1800);
-  const imgH=Math.max(1,Number(tex?.image?.height)||500);
-  const naturalHeight=span*(imgH/imgW);
-
-  const stripHeight=THREE.MathUtils.clamp(naturalHeight*.58,6.2,12.2);
-
-  // Nur minimal unter die Wasserlinie fuer einen sauberen optischen Anschluss.
-  const zBottom=-.08;
-  const zTop=zBottom+stripHeight;
-  const halfSpan=span*.5;
-
-  let p;
-  if(side==='top'){
-    p=[cx-halfSpan,cy+yEdge,zBottom, cx+halfSpan,cy+yEdge,zBottom, cx+halfSpan,cy+yEdge,zTop, cx-halfSpan,cy+yEdge,zTop];
-  }else if(side==='bottom'){
-    p=[cx+halfSpan,cy-yEdge,zBottom, cx-halfSpan,cy-yEdge,zBottom, cx-halfSpan,cy-yEdge,zTop, cx+halfSpan,cy-yEdge,zTop];
-  }else if(side==='right'){
-    p=[cx+xEdge,cy+halfSpan,zBottom, cx+xEdge,cy-halfSpan,zBottom, cx+xEdge,cy-halfSpan,zTop, cx+xEdge,cy+halfSpan,zTop];
-  }else{
-    p=[cx-xEdge,cy-halfSpan,zBottom, cx-xEdge,cy+halfSpan,zBottom, cx-xEdge,cy+halfSpan,zTop, cx-xEdge,cy-halfSpan,zTop];
-  }
-
-  const geo=new THREE.BufferGeometry();
-  geo.setAttribute('position',new THREE.Float32BufferAttribute(p,3));
-  geo.setAttribute('uv',new THREE.Float32BufferAttribute([0,0,1,0,1,1,0,1],2));
-  geo.setIndex([0,1,2,0,2,3]);
-  geo.computeVertexNormals();
-  return geo;
-}
 
 
 function clearAnglingPhotoShadowMeshes(){
@@ -24573,193 +24195,9 @@ function clearAnglingPhotoShadowMeshes(){
   anglingPhotoShadowMeshes.length=0;
 }
 
-function makeGreyAnglingShadowTexture(tex){
-  try{
-    const img=tex&&tex.image;
-    if(!img)return tex;
-    const w=img.naturalWidth||img.videoWidth||img.width||1024;
-    const h=img.naturalHeight||img.videoHeight||img.height||512;
-    const canvas=document.createElement('canvas');
-    canvas.width=w;canvas.height=h;
-    const ctx=canvas.getContext('2d',{willReadFrequently:true});
-    if(!ctx)return tex;
-    ctx.clearRect(0,0,w,h);
-    ctx.drawImage(img,0,0,w,h);
-    const id=ctx.getImageData(0,0,w,h),d=id.data;
-    for(let i=0;i<d.length;i+=4){
-      const a=d[i+3]/255;
-      const lum=(d[i]*.2126+d[i+1]*.7152+d[i+2]*.0722);
-      // Nur dunklere, kompakte Bildbereiche (Bäume/Ufer) sollen Schatten werfen,
-      // nicht die farbige Panoramaoberfläche selbst.
-      const silhouette=Math.max(0,Math.min(1,(172-lum)/86));
-      const mask=Math.round(255*a*silhouette);
-      d[i]=mask;d[i+1]=mask;d[i+2]=mask;d[i+3]=255;
-    }
-    ctx.putImageData(id,0,0);
-    // V7.63: Schattenränder deutlich stärker auswaschen, ohne Form, Richtung oder Projektionslänge zu verändern.
-    // Fast die gesamte Maske kommt aus der weichgezeichneten Variante; nur ein sehr kleiner Rest der Originalkante
-    // bleibt erhalten, damit die Baumstruktur nicht vollständig zu einem grauen Nebelfleck zerläuft.
-    const soft=document.createElement('canvas');soft.width=w;soft.height=h;
-    const sctx=soft.getContext('2d');
-    if(sctx){
-      const blurPx=Math.max(6,Math.min(14,Math.round(w/220)));
-      sctx.clearRect(0,0,w,h);
-      sctx.filter='blur('+blurPx+'px)';
-      sctx.drawImage(canvas,0,0);
-      sctx.filter='none';
-      ctx.clearRect(0,0,w,h);
-      ctx.globalAlpha=.95;ctx.drawImage(soft,0,0);
-      ctx.globalAlpha=.05;ctx.drawImage(canvas,0,0);
-      ctx.globalAlpha=1;
-    }
-    const maskTex=new THREE.CanvasTexture(canvas);
-    maskTex.colorSpace=THREE.NoColorSpace;
-    maskTex.wrapS=THREE.ClampToEdgeWrapping;
-    maskTex.wrapT=THREE.ClampToEdgeWrapping;
-    maskTex.minFilter=THREE.LinearMipmapLinearFilter;
-    maskTex.magFilter=THREE.LinearFilter;
-    maskTex.generateMipmaps=true;
-    maskTex.needsUpdate=true;
-    return maskTex;
-  }catch(_err){
-    return tex;
-  }
-}
 
-function createAnglingPhotoShadowMaterial(tex){
-  const shadowMask=makeGreyAnglingShadowTexture(tex);
-  const shadowColor=new THREE.Color(0x4f5459);
-  const uniforms={
-    shadowMask:{value:shadowMask},
-    shadowColor:{value:shadowColor},
-    shadowOpacity:{value:0},
-    waveInfluence:{value:.35},
-    time:waterUniforms.time,
-    cloudWindDir:waterUniforms.cloudWindDir,
-    cloudWindSpeed:waterUniforms.cloudWindSpeed,
-    windStrength:waterUniforms.windStrength
-  };
-  const mat=new THREE.ShaderMaterial({
-    uniforms,
-    transparent:true,
-    depthWrite:false,
-    depthTest:true,
-    side:THREE.FrontSide,
-    blending:THREE.MultiplyBlending,
-    vertexShader:`
-      varying vec2 vUv;
-      varying vec3 vWorldPos;
-      void main(){
-        vUv=uv;
-        vec4 world=modelMatrix*vec4(position,1.0);
-        vWorldPos=world.xyz;
-        gl_Position=projectionMatrix*viewMatrix*world;
-      }
-    `,
-    fragmentShader:`
-      uniform sampler2D shadowMask;
-      uniform vec3 shadowColor;
-      uniform float shadowOpacity;
-      uniform float waveInfluence;
-      uniform float time;
-      uniform vec2 cloudWindDir;
-      uniform float cloudWindSpeed;
-      uniform float windStrength;
-      varying vec2 vUv;
-      varying vec3 vWorldPos;
 
-      // Exakt dieselben Funktionen wie im Wasser-Shader.
-      float waveBands(vec2 p){
-        vec2 dir=normalize(length(cloudWindDir)>.01 ? cloudWindDir : vec2(0.0,-1.0));
-        vec2 side=vec2(-dir.y,dir.x);
-        float speed=.62+cloudWindSpeed*.72;
-        float along=dot(p,dir)-time*speed;
-        float across=dot(p,side);
-        float curve=across+sin(along*.15)*1.25+sin(along*.061+2.2)*1.75;
-        float a=sin(curve*.47-along*.08);
-        float b=sin((curve+sin(along*.23)*.75)*.79-along*.11+1.7);
-        float c=sin((curve-sin(along*.18+1.1)*.55)*1.18-along*.15+3.8);
-        float breaks=.38+.62*smoothstep(-.35,.45,
-          sin(along*.34+sin(across*.12)*1.4)*sin(across*.19+along*.08+1.3));
-        return (a*.48+b*.32+c*.20)*breaks;
-      }
 
-      float surfaceRipples(vec2 p){
-        vec2 dir=normalize(length(cloudWindDir)>.01 ? cloudWindDir : vec2(0.0,-1.0));
-        vec2 side=vec2(-dir.y,dir.x);
-        float along=dot(p,dir);
-        float across=dot(p,side);
-        float speed=.78+cloudWindSpeed*.86;
-        along-=time*speed;
-        float curve=across+sin(along*.17)*.95+sin(along*.075+2.5)*1.25;
-        float r1=sin(curve*.78-along*.10);
-        float r2=sin((curve+sin(along*.25)*.65)*1.16-along*.14+1.9);
-        float r3=sin((curve-sin(along*.20)*.45)*1.63-along*.18+4.1);
-        float segments=.30+.70*smoothstep(-.42,.38,sin(along*.41+across*.16));
-        float n=(r1*.48+r2*.33+r3*.19)*segments;
-        return .5+.5*n;
-      }
-
-      void main(){
-        float mask=texture2D(shadowMask,vUv).r;
-        if(mask<.008)discard;
-
-        // Die Schattenposition bleibt fest. Nur die Deckung wird an exakt denselben
-        // Wellenzügen moduliert, die auch die sichtbare Wasseroberfläche erzeugen.
-        float ripples=surfaceRipples(vWorldPos.xy);
-        float bands=.5+.5*waveBands(vWorldPos.xy);
-        float physicalWave=mix(ripples,bands,.28);
-        float windFactor=mix(.55,1.0,clamp(windStrength,0.0,1.0));
-        float crestLift=smoothstep(.58,.92,physicalWave);
-        float troughDeep=1.0-smoothstep(.18,.48,physicalWave);
-        float modulation=1.0
-          - crestLift*(.16*waveInfluence*windFactor)
-          + troughDeep*(.045*waveInfluence*windFactor);
-
-        float a=clamp(mask*shadowOpacity*modulation,0.0,.88);
-        gl_FragColor=vec4(shadowColor,a);
-      }
-    `
-  });
-  mat.toneMapped=false;
-  mat.color=shadowColor;
-  mat.alphaMap=shadowMask;
-  Object.defineProperty(mat,'opacity',{
-    configurable:true,
-    get(){return uniforms.shadowOpacity.value;},
-    set(v){uniforms.shadowOpacity.value=v;}
-  });
-  mat.userData.shadowMap=shadowMask!==tex?shadowMask:null;
-  mat.userData.waveInfluence=uniforms.waveInfluence;
-  return mat;
-}
-
-function makeAnglingPhotoShadowGeometry(){
-  const geo=new THREE.BufferGeometry();
-  geo.setAttribute('position',new THREE.Float32BufferAttribute([
-    0,0,.03,
-    1,0,.03,
-    1,1,.03,
-    0,1,.03
-  ],3));
-  geo.setAttribute('uv',new THREE.Float32BufferAttribute([0,0,1,0,1,1,0,1],2));
-  geo.setIndex([0,1,2,0,2,3]);
-  geo.computeVertexNormals();
-  return geo;
-}
-
-function createAnglingPhotoShadowMesh(wallNumber,tex,imageKey){
-  const mat=createAnglingPhotoShadowMaterial(tex);
-  const mesh=new THREE.Mesh(makeAnglingPhotoShadowGeometry(),mat);
-  mesh.visible=false;
-  mesh.frustumCulled=false;
-  mesh.renderOrder=12;
-  mesh.userData.wallNumber=wallNumber;
-  mesh.userData.sourceShore=imageKey;
-  anglingPhotoShadowGroup.add(mesh);
-  anglingPhotoShadowMats.push(mat);
-  anglingPhotoShadowMeshes.push(mesh);
-}
 
 function updateAnglingPhotoShadowGeometry(mesh,shadowDir,length){
   if(!mesh||!mesh.geometry)return;
@@ -24936,36 +24374,6 @@ function updateAnglingPhotoBackdropEffects(photoSurfaceView,night,cloud,moonLigh
   }
 }
 
-function buildAnglingFixedPhotoWalls(){
-  while(anglingPhotoHorizon.children.length){
-    const child=anglingPhotoHorizon.children[0];
-    anglingPhotoHorizon.remove(child);
-    if(child.geometry)child.geometry.dispose();
-  }
-  anglingPhotoHorizonMats.length=0;
-  anglingPhotoHorizonMeshes.length=0;
-  clearAnglingPhotoShadowMeshes();
-
-  [1,2,3,4].forEach(wallNumber=>{
-    const tex=anglingShorePhotoTextures[wallNumber];
-    if(!tex)return;
-    const imageKey=ANGLING_FIXED_WALL_IMAGE_BY_WALL[wallNumber];
-    const mat=createAnglingShorePhotoMaterial(tex);
-    const mesh=new THREE.Mesh(makeAnglingWallPhotoGeometry(wallNumber,tex),mat);
-    mesh.visible=false;
-    mesh.frustumCulled=false;
-    mesh.renderOrder=2;
-    mesh.userData.wallNumber=wallNumber;
-    mesh.userData.sourceShore=imageKey;
-    mesh.userData.horizonLabel=`Wand ${wallNumber} · Bild ${imageKey}`;
-    anglingPhotoHorizon.add(mesh);
-    anglingPhotoHorizonMats.push(mat);
-    anglingPhotoHorizonMeshes.push(mesh);
-    createAnglingPhotoShadowMesh(wallNumber,tex,imageKey);
-  });
-  anglingPhotoHorizon.position.set(0,0,0);
-  anglingPhotoHorizon.rotation.set(0,0,0);
-}
 
 function setAnglingPhotoHorizonForSelection(){
   // V2.3.32 Test: Die vier alten Foto-Panoramen werden weder geladen noch
@@ -26300,7 +25708,7 @@ anglingReelMiniCamera.position.set(1.28,-1.48,-.18);anglingReelMiniCamera.lookAt
 const anglingFloatBufferSize=new THREE.Vector2();
 // V5.79: Das Kunstköderfenster rendert nicht mehr eine künstliche Nahszene,
 // sondern exakt dieselbe Unterwasserwelt wie die freie Fischsicht.
-let anglingLureUnderwaterWorldReady=false,aczoUnderwaterShadersReady=false;
+let anglingLureUnderwaterWorldReady=false;
 function ensureAnglingLureUnderwaterWorld(){
   if(anglingLureUnderwaterWorldReady){
     // V2.3.34 PERFORMANCE: Dieser Aufruf liegt auch im normalen
@@ -26321,148 +25729,30 @@ function ensureAnglingLureUnderwaterWorld(){
 }
 
 let aczoAnglingUwPrewarmHandle=0;
+// P62: Ein einziger Fallback fuer die Startvorbereitung. Der regulaere Loader
+// baut die Unterwasserwelt und fuehrt den vollstaendigen GPU-Warmup aus. Nur
+// falls dieser beim sehr fruehen Benutzerzugriff noch nicht fertig ist, wird
+// derselbe Full-Warmup in einer Leerlaufphase nachgeholt. Keine gestapelten
+// Compile-/96px-/Geometrie-Warmups mehr.
 function scheduleAnglingLureUnderwaterPrewarm(){
-  if(aczoUnderwaterShadersReady||aczoAnglingUwPrewarmHandle)return;
-
-  const schedule=(fn,timeout=900)=>{
-    if('requestIdleCallback' in window){
-      aczoAnglingUwPrewarmHandle=requestIdleCallback(fn,{timeout});
-    }else{
-      aczoAnglingUwPrewarmHandle=window.setTimeout(()=>fn({timeRemaining:()=>12,didTimeout:true}),120);
-    }
-  };
-
-  // P53: Zwei getrennte Leerlaufphasen. Erst Geometrie/Fischwelt bauen, danach
-  // in einem spaeteren ruhigen Slot die Shader vorbereiten. Dadurch landet die
-  // teure Erstinitialisierung nicht mehr genau auf dem Wasser-Einschlag.
-  const compileLater=()=>{
+  if(anglingLureUnderwaterWorldReady&&aczoPerf26UwFullWarmReady)return;
+  if(typeof aczoStartupUwPrewarmFinished!=='undefined'&&!aczoStartupUwPrewarmFinished){
+    aczoScheduleStartupUnderwaterPrewarm(0);
+    return;
+  }
+  if(aczoAnglingUwPrewarmHandle)return;
+  const run=()=>{
     aczoAnglingUwPrewarmHandle=0;
-    if(aczoUnderwaterShadersReady||document.hidden)return;
-    if(!anglingMode||anglingUi.classList.contains('line-active')||
-       !['ready','selecting'].includes(anglingState)){
-      // Niemals waehrend Auswurf/Drill/Unterwasserfahrt kompilieren.
+    if(document.hidden||viewerInputBusy()||fishMode||(anglingMode&&anglingUi.classList.contains('line-active'))){
+      window.setTimeout(scheduleAnglingLureUnderwaterPrewarm,420);
       return;
     }
-    try{aczoCompileUnderwaterShaders();}catch(err){
-      console.warn('UW-Shader-Prewarm uebersprungen',err);
-    }
+    try{ensureAnglingLureUnderwaterWorld();}catch(err){console.warn('UW-Fallback-Prewarm:',err);return;}
+    aczoPerf26ScheduleFullUnderwaterPrewarm(0);
   };
-
-  const buildFirst=()=>{
-    aczoAnglingUwPrewarmHandle=0;
-    if(document.hidden)return;
-    if(anglingUi.classList.contains('line-active'))return;
-    try{ensureAnglingLureUnderwaterWorld();}catch(err){
-      console.warn('UW-Prewarm uebersprungen',err);return;
-    }
-    schedule(compileLater,1200);
-  };
-
-  if(!anglingLureUnderwaterWorldReady)schedule(buildFirst,700);
-  else schedule(compileLater,900);
+  if(typeof requestIdleCallback==='function')aczoAnglingUwPrewarmHandle=requestIdleCallback(run,{timeout:1000});
+  else aczoAnglingUwPrewarmHandle=window.setTimeout(run,80);
 }
-
-function aczoCompileUnderwaterShaders(){
-  if(aczoUnderwaterShadersReady||!anglingLureUnderwaterWorldReady)return;
-  // Unsichtbare Objekte überspringt WebGLRenderer.compile(). Deshalb werden
-  // ausschließlich die Unterwasser-Layer für die Dauer des Compile-Passes
-  // sichtbar gesetzt und danach exakt wiederhergestellt. Kein Bild wird dabei
-  // ausgegeben; der Auftreff-Frame muss später keine Shader mehr übersetzen.
-  const objects=[fishPond,fishBottomDetails,fishBankWall,fishBankStones,fishShoreTalus,fishPlantMesh,fishCaustics,fishLightGlow,fishShadows,suspendedWater,bubblePool.points,sedimentPool.points,underwaterStones,northWood,deadwoodContactShadow,fishGroup].filter(Boolean);
-  const visibility=objects.map(o=>o.visible),oldFog=scene.fog;
-  try{
-    objects.forEach(o=>o.visible=true);scene.fog=fishUnderwaterFog;
-    renderer.compile(scene,camera);aczoUnderwaterShadersReady=true;
-  }finally{
-    objects.forEach((o,i)=>o.visible=visibility[i]);scene.fog=oldFog;
-  }
-}
-// PERF20: Shader ebenfalls VOR dem ersten sichtbaren Abtauchen kompilieren.
-// Die Geometrie war seit PERF14 bereits vorgebaut, der erste echte Renderpfad
-// musste aber weiterhin die Unterwasser-Shader synchron erzeugen. Deshalb war
-// der erste Einstieg zaeh, waehrend der zweite fluessig lief.
-let aczoPerf20UwCompileScheduled=false;
-function aczoPerf20ScheduleUnderwaterShaderPrewarm(delay=220){
-  if(aczoUnderwaterShadersReady||aczoPerf20UwCompileScheduled)return;
-  aczoPerf20UwCompileScheduled=true;
-  const tryCompile=()=>{
-    aczoPerf20UwCompileScheduled=false;
-    if(aczoUnderwaterShadersReady)return;
-    if(document.hidden||!anglingLureUnderwaterWorldReady||viewerInputBusy()||fishMode||
-       (anglingMode&&anglingUi.classList.contains('line-active'))){
-      window.setTimeout(()=>aczoPerf20ScheduleUnderwaterShaderPrewarm(0),500);return;
-    }
-    try{aczoCompileUnderwaterShaders();}
-    catch(err){console.warn('PERF20 UW-Shader-Prewarm:',err);window.setTimeout(()=>aczoPerf20ScheduleUnderwaterShaderPrewarm(0),900);}
-  };
-  window.setTimeout(()=>{
-    if(typeof window.requestIdleCallback==='function')window.requestIdleCallback(tryCompile,{timeout:1800});
-    else tryCompile();
-  },delay);
-}
-// V2.3.34: Die bisher beim ersten Kunstköder-Abtauchen gebündelte Erzeugung
-// von Bodentextur, Fischen, Uferwand und Unterwasserobjekten wird in eine echte
-// Leerlaufphase vorgezogen und einschließlich Shadern vorgewärmt.
-// PERF24: renderer.compile() allein lädt in Safari nicht zuverlässig alle
-// Texturen/Programme des ersten tatsächlich sichtbaren Unterwasserframes hoch.
-// Ein winziger unsichtbarer 64x64-Renderpass erledigt diese Erstkosten deshalb
-// schon nach dem Seitenstart. Die sichtbare Kamera und der Rendererzustand
-// werden vollständig wiederhergestellt.
-let aczoPerf24UwRenderWarmReady=false,aczoPerf24UwRenderWarmBusy=false,aczoPerf24UwRenderWarmScheduled=false;
-let aczoPerf24UwWarmTarget=null,aczoPerf24UwWarmCamera=null;
-function aczoPerf24ForceUnderwaterRenderWarmup(){
-  if(aczoPerf24UwRenderWarmReady||aczoPerf24UwRenderWarmBusy||document.hidden)return;
-  if(!anglingLureUnderwaterWorldReady)return;
-  aczoPerf24UwRenderWarmBusy=true;
-  const warmObjects=[fishPond,fishBottomDetails,fishBankWall,fishBankStones,fishShoreTalus,fishPlantMesh,
-    fishCaustics,fishLightGlow,suspendedWater,bubblePool.points,sedimentPool.points,underwaterStones,
-    northWood,deadwoodContactShadow,fishGroup].filter(Boolean);
-  const oldVis=warmObjects.map(o=>o.visible),oldFog=scene.fog;
-  const oldUnder=waterUniforms.underwaterView.value;
-  const oldTarget=renderer.getRenderTarget();
-  const oldViewport=renderer.getViewport(new THREE.Vector4());
-  const oldScissor=renderer.getScissor(new THREE.Vector4());
-  const oldScissorTest=renderer.getScissorTest();
-  try{
-    if(!aczoPerf24UwWarmTarget)aczoPerf24UwWarmTarget=new THREE.WebGLRenderTarget(96,96,{depthBuffer:true,stencilBuffer:false});
-    if(!aczoPerf24UwWarmCamera)aczoPerf24UwWarmCamera=new THREE.PerspectiveCamera(56,1,.05,420);
-    const start=new THREE.Vector3();centralFishStart(start);
-    aczoPerf24UwWarmCamera.position.copy(start);
-    aczoPerf24UwWarmCamera.lookAt(start.x+7,start.y+3,start.z-.35);
-    warmObjects.forEach(o=>o.visible=true);
-    deadwoodContactShadow.visible=simulationEnabled;
-    waterUniforms.underwaterView.value=1;
-    scene.fog=fishUnderwaterFog;
-    renderer.setRenderTarget(aczoPerf24UwWarmTarget);
-    renderer.setViewport(0,0,96,96);renderer.setScissor(0,0,96,96);renderer.setScissorTest(false);
-    renderer.render(scene,aczoPerf24UwWarmCamera);
-    renderer.render(scene,aczoPerf24UwWarmCamera);
-    aczoUnderwaterShadersReady=true;
-    aczoPerf24UwRenderWarmReady=true;
-  }catch(err){console.warn('PERF24 UW-Render-Warmup:',err);}
-  finally{
-    warmObjects.forEach((o,i)=>o.visible=oldVis[i]);
-    waterUniforms.underwaterView.value=oldUnder;scene.fog=oldFog;
-    renderer.setRenderTarget(oldTarget);renderer.setViewport(oldViewport);renderer.setScissor(oldScissor);renderer.setScissorTest(oldScissorTest);
-    aczoPerf24UwRenderWarmBusy=false;
-  }
-}
-function aczoPerf24ScheduleUnderwaterRenderWarmup(delay=120){
-  if(aczoPerf24UwRenderWarmReady||aczoPerf24UwRenderWarmBusy||aczoPerf24UwRenderWarmScheduled)return;
-  aczoPerf24UwRenderWarmScheduled=true;
-  window.setTimeout(()=>{
-    const run=()=>{
-      aczoPerf24UwRenderWarmScheduled=false;
-      if(document.hidden||viewerInputBusy()||fishMode||(anglingMode&&anglingUi.classList.contains('line-active'))){
-        aczoPerf24ScheduleUnderwaterRenderWarmup(420);return;
-      }
-      if(!anglingLureUnderwaterWorldReady){aczoPerf24ScheduleUnderwaterRenderWarmup(320);return;}
-      aczoPerf24ForceUnderwaterRenderWarmup();
-    };
-    if(typeof requestIdleCallback==='function')requestIdleCallback(run,{timeout:900});else run();
-  },delay);
-}
-
 
 // PERF26: Vollstaendiger Unterwasser-Prewarm fuer beide echten Einstiegspfade.
 // Neben Shadern/Geometrie werden die spaeteren Layer-Schalter, Wolkenreihenfolge,
@@ -26556,7 +25846,17 @@ function aczoPerf26ForceFullUnderwaterPrewarm(){
   const oldCameraNear=camera.near,oldCameraFov=camera.fov;
   const oldCameraPos=camera.position.clone(),oldCameraQuat=camera.quaternion.clone(),oldCameraUp=camera.up.clone();
   try{
-    if(!aczoPerf26UwFullTarget)aczoPerf26UwFullTarget=new THREE.WebGLRenderTarget(128,128,{depthBuffer:true,stencilBuffer:false});
+    if(!aczoPerf26UwFullTarget){
+      aczoPerf26UwFullTarget=new THREE.WebGLRenderTarget(128,128,{depthBuffer:true,stencilBuffer:false});
+      // P77: Gleiche Ausgabe-Encoding-Variante wie der echte Bildschirm.
+      // Sonst kann der erste sichtbare Canvas-Frame trotz Offscreen-Warmup
+      // noch eine zweite Shaderprogramm-Variante kompilieren.
+      if(aczoPerf26UwFullTarget.texture)aczoPerf26UwFullTarget.texture.encoding=renderer.outputEncoding;
+    }
+    const startupLoader=document.getElementById('mapStartupLoader');
+    const warmDefaultFramebuffer=!!startupLoader&&!startupLoader.classList.contains('is-done');
+    const warmDrawingBufferSize=new THREE.Vector2();
+    renderer.getDrawingBufferSize(warmDrawingBufferSize);
     const start=new THREE.Vector3();centralFishStart(start);
     camera.near=.05;camera.fov=56;camera.position.copy(start);camera.up.set(0,0,1);camera.lookAt(start.x+8,start.y+2,start.z-.2);camera.updateProjectionMatrix();
     renderer.setRenderTarget(aczoPerf26UwFullTarget);renderer.setViewport(0,0,128,128);renderer.setScissor(0,0,128,128);renderer.setScissorTest(false);renderer.autoClear=true;
@@ -26573,16 +25873,29 @@ function aczoPerf26ForceFullUnderwaterPrewarm(){
     anglingSpinnerBlade.visible=false;anglingSoftBody.visible=true;
     renderer.render(scene,camera);
 
-    // Exakt den echten Kunstkoeder-Unterwasserzweig nachbilden, jedoch ohne
-    // updateAnglingMode() und damit ohne Timer, Fanglogik oder Spielzustandslauf.
-    anglingMode=true;anglingCinematicView='underwater';waterUniforms.anglingView.value=1;
+    // P62: Auch alle im Shop vorhandenen Kunstkoeder-Geometrien einmal auf die
+    // GPU schicken. Die Geometrien existieren ohnehin bereits im Cache; damit
+    // verursacht der erste Wechsel auf einen Spezialblinker/-gummifisch spaeter
+    // keinen erstmaligen Buffer-Upload mitten im Angelbetrieb.
+    const warmSpoonBody=spoon.geometry,warmSpoonAccent=spoonStripe.geometry,warmSpoonMarks=spoonAccentPlate.geometry;
+    const warmSoftBodyGeometry=softCore.geometry;
+    for(const [warmId,warmDesign] of Object.entries(ACZO_LURE_DESIGNS)){
+      const warmGeometry=aczoLureGeometryCache[warmId];
+      if(warmDesign.family==='spoon'){
+        spoon.geometry=warmGeometry.body;spoonStripe.geometry=warmGeometry.accent;spoonAccentPlate.geometry=warmGeometry.marks;
+        anglingSpinnerBlade.visible=true;anglingSoftBody.visible=false;
+      }else{
+        softCore.geometry=warmGeometry.body;anglingSpinnerBlade.visible=false;anglingSoftBody.visible=true;
+      }
+      renderer.render(scene,camera);
+    }
+    spoon.geometry=warmSpoonBody;spoonStripe.geometry=warmSpoonAccent;spoonAccentPlate.geometry=warmSpoonMarks;softCore.geometry=warmSoftBodyGeometry;
+
+    // Gemeinsame echte Unterwasserlayer vorbereiten.
     contourGroup.visible=false;pond.visible=false;pondNeutral.visible=false;pondNightLift.visible=false;pondCelestialDepthLift.visible=false;
     ground.visible=true;satEdgeOverlay.visible=false;anglingPhotoHorizon.visible=false;anglingPhotoShadowGroup.visible=false;
     anglingBankGroup.visible=false;anglingMarkerGroup.visible=false;
-    setFishSubmergedLayers(true);fishGroup.visible=true;waterUniforms.underwaterView.value=1;scene.fog=fishUnderwaterFog;
     warmFishSamples.forEach(state=>{state.object.visible=true;state.object.frustumCulled=false;});
-    // Freier Tauchmodus verwendet fuer Sonne und Mond eine eigene
-    // depthTest/fog-Kombination. Auch diese Variante wird hier vorab erzeugt.
     const warmDirection=new THREE.Vector3();camera.getWorldDirection(warmDirection);
     warmCelestial.forEach((disc,index)=>{
       disc.visible=true;
@@ -26591,6 +25904,29 @@ function aczoPerf26ForceFullUnderwaterPrewarm(){
       disc.scale.setScalar(5+index);
       disc.material.depthTest=true;disc.material.fog=false;disc.material.needsUpdate=true;
     });
+
+    // P77: ZUERST den echten freien Tauchmodus rendern. PERF26 hatte bislang
+    // nur den Kunstkoeder-Unterwasserzustand warmgerendert; dort sind Caustics
+    // und der additive Lichtlayer absichtlich aus. Beim ersten freien Abtauchen
+    // mussten deren Bildschirm-Shader daher noch nachkompiliert werden.
+    anglingMode=false;anglingCinematicView='shore';waterUniforms.anglingView.value=0;
+    setFishSubmergedLayers(true);fishGroup.visible=true;waterUniforms.underwaterView.value=1;scene.fog=fishUnderwaterFog;
+    renderer.setRenderTarget(aczoPerf26UwFullTarget);renderer.setViewport(0,0,128,128);renderer.setScissorTest(false);renderer.autoClear=true;
+    renderer.render(scene,camera);
+    // Unter dem Startloader auch einmal auf den ECHTEN Default-Framebuffer.
+    // So werden exakt die sRGB-/Canvas-Shaderprogramme vorbereitet, die der
+    // erste sichtbare Tauchframe spaeter wirklich benutzt.
+    if(warmDefaultFramebuffer){
+      renderer.setRenderTarget(null);renderer.setViewport(0,0,warmDrawingBufferSize.x,warmDrawingBufferSize.y);renderer.setScissorTest(false);renderer.autoClear=true;
+      renderer.shadowMap.needsUpdate=true;
+      renderer.render(scene,camera);
+      renderer.setRenderTarget(aczoPerf26UwFullTarget);renderer.setViewport(0,0,128,128);
+    }
+
+    // Danach exakt den echten Kunstkoeder-Unterwasserzweig nachbilden, jedoch
+    // ohne updateAnglingMode() und damit ohne Timer/Fanglogik.
+    anglingMode=true;anglingCinematicView='underwater';waterUniforms.anglingView.value=1;
+    setFishSubmergedLayers(true);fishGroup.visible=true;waterUniforms.underwaterView.value=1;scene.fog=fishUnderwaterFog;
     anglingSpinnerBlade.visible=true;anglingSoftBody.visible=false;
     renderer.render(scene,camera);
     // Zweiter Blickwinkel wie die Kunstkoeder-Kamera: bodennah und leicht vorwaerts.
@@ -26612,9 +25948,54 @@ function aczoPerf26ForceFullUnderwaterPrewarm(){
     renderer.render(scene,camera);
     anglingSpinnerBlade.visible=false;anglingSoftBody.visible=true;
     renderer.render(scene,camera);
+
+    // P77: Auch die beiden echten Kunstkoeder-Unterwasservarianten einmal auf
+    // dem sichtbaren Canvas-Framebuffer kompilieren. Der Loader liegt darueber,
+    // daher ist davon nichts zu sehen. Genau dieser Zielwechsel fehlte bisher.
+    if(warmDefaultFramebuffer){
+      renderer.setRenderTarget(null);renderer.setViewport(0,0,warmDrawingBufferSize.x,warmDrawingBufferSize.y);renderer.setScissorTest(false);renderer.autoClear=true;
+      anglingSpinnerBlade.visible=true;anglingSoftBody.visible=false;renderer.render(scene,camera);
+      anglingSpinnerBlade.visible=false;anglingSoftBody.visible=true;renderer.render(scene,camera);
+    }
+    // P58 PERFORMANCE: Der Kunstkoeder startet nach dem Wasserkontakt zusaetzlich
+    // die zweite Live-Uferkamera des Ruten-/Rollenfensters. Dieser Renderpfad
+    // benutzt auf Mobilgeraeten eigene Wasser-Materialvarianten und war bisher
+    // NICHT Bestandteil des Start-Prewarms. Genau deren erste Shader-/GPU-
+    // Initialisierung konnte deshalb noch beim ersten Kunstkoeder-Eintauchen
+    // eine kurze Pause verursachen. Ein winziger unsichtbarer Render unter dem
+    // Startloader bereitet jetzt auch diesen echten Livefenster-Pfad vor.
+    if(typeof anglingReelLiveShoreCamera!=='undefined'&&typeof aczoRenderLightweightAnglingInset==='function'){
+      // P77: Wenn der Loader noch sichtbar ist, die echte zweite Uferkamera
+      // ebenfalls auf dem Default-Framebuffer warmrendern. Damit entsteht beim
+      // ersten Kunstkoeder-Wasserkontakt keine neue Canvas-Shader-Variante.
+      if(warmDefaultFramebuffer){
+        renderer.setRenderTarget(null);
+        renderer.setViewport(0,0,Math.min(192,warmDrawingBufferSize.x),Math.min(192,warmDrawingBufferSize.y));
+        renderer.setScissor(0,0,Math.min(192,warmDrawingBufferSize.x),Math.min(192,warmDrawingBufferSize.y));
+        renderer.setScissorTest(true);
+      }else{
+        renderer.setRenderTarget(aczoPerf26UwFullTarget);renderer.setViewport(0,0,128,128);renderer.setScissorTest(false);
+      }
+      const warmSurfaceZ=anglingSurfaceZ(start.x,start.y);
+      anglingReelLiveShoreCamera.position.set(start.x-8,start.y-10,Math.max(warmSurfaceZ+2.2,2.4));
+      anglingReelLiveShoreCamera.up.set(0,0,1);
+      anglingReelLiveShoreCamera.fov=46;anglingReelLiveShoreCamera.aspect=1;
+      anglingReelLiveShoreCamera.lookAt(start.x,start.y,warmSurfaceZ+.25);
+      anglingReelLiveShoreCamera.updateProjectionMatrix();
+      anglingReelLiveShoreCamera.updateMatrixWorld(true);
+      aczoRenderLightweightAnglingInset(anglingReelLiveShoreCamera);
+      renderer.setScissorTest(false);
+    }
+
     // Auch die separate Ruten-/Rollen-Szene einmal wirklich auf die GPU schicken.
-    if(typeof anglingReelScene!=='undefined'&&typeof anglingReelMiniCamera!=='undefined')renderer.render(anglingReelScene,anglingReelMiniCamera);
-    aczoUnderwaterShadersReady=true;aczoPerf24UwRenderWarmReady=true;aczoPerf26UwFullWarmReady=true;
+    // Wie im echten Livefenster wird vorher nur der Tiefenpuffer geloescht; damit
+    // ist auch der spaetere Zwei-Pass-Aufbau bereits einmal gelaufen.
+    if(typeof anglingReelScene!=='undefined'&&typeof anglingReelMiniCamera!=='undefined'){
+      renderer.autoClear=false;renderer.clearDepth();
+      renderer.render(anglingReelScene,anglingReelMiniCamera);
+      renderer.autoClear=true;
+    }
+    aczoPerf26UwFullWarmReady=true;
   }catch(err){console.warn('PERF26 UW-Full-Prewarm:',err);}
   finally{
     // Erst den Unterwasserzustand verlassen, danach ALLE sichtbaren Karten-
@@ -26689,49 +26070,6 @@ function aczoPerf26ScheduleFullUnderwaterPrewarm(delay=420){
   },delay);
 }
 
-function aczoPrewarmUnderwaterWorld(){
-  if(aczoUnderwaterShadersReady||document.hidden)return;
-  if(typeof viewerInputBusy==='function'&&viewerInputBusy()){
-    window.setTimeout(aczoPrewarmUnderwaterWorld,650);return;
-  }
-  try{ensureAnglingLureUnderwaterWorld();aczoCompileUnderwaterShaders();}catch(err){console.warn('Unterwasser-Vorbereitung wird beim ersten Einstieg nachgeholt:',err);}
-}
-// P30: Kein automatischer Unterwasser-Build/Shader-Compile mehr im normalen Kartenbetrieb.
-// renderer.compile() kann Safari fuer mehrere Sekunden synchron blockieren und damit Touch-Gesten einfrieren.
-// Die Unterwasserwelt wird erst beim bewussten Start/Auswaehlen des Kunstkoeders aufgebaut.
-
-// PERF14: Geometrie/Fischwelt in kleinen Leerlaufstufen vorbereiten. Anders als
-// renderer.compile() blockiert das nicht absichtlich den Browser in einem grossen
-// synchronen Schritt. So sind freier Tauchmodus und Kunstkoeder-Einschlag bereits
-// aufgebaut, bevor die Kamera sichtbar ins Wasser geht.
-let aczoPerf14UwPrewarmStage=0,aczoPerf14UwPrewarmScheduled=false;
-function aczoPerf14ScheduleUnderwaterGeometryPrewarm(delay=900){
-  if(aczoPerf14UwPrewarmScheduled||anglingLureUnderwaterWorldReady)return;
-  aczoPerf14UwPrewarmScheduled=true;
-  const run=()=>{
-    aczoPerf14UwPrewarmScheduled=false;
-    if(document.hidden||viewerInputBusy()||fishMode||(anglingMode&&anglingUi.classList.contains('line-active'))){
-      window.setTimeout(()=>aczoPerf14ScheduleUnderwaterGeometryPrewarm(0),500);return;
-    }
-    try{
-      if(aczoPerf14UwPrewarmStage===0){ensureUnderwaterStaticAssets();syncFishPondGeometryFromPond();rebuildFishBankWall();}
-      else if(aczoPerf14UwPrewarmStage===1){buildFishWorld();}
-      else if(aczoPerf14UwPrewarmStage===2){rebuildFishPlants();}
-      else if(aczoPerf14UwPrewarmStage===3){
-        rebuildUnderwaterObjects();anglingLureUnderwaterWorldReady=true;
-        aczoPerf20ScheduleUnderwaterShaderPrewarm(80);
-        aczoPerf24ScheduleUnderwaterRenderWarmup(120);
-        return;
-      }
-      aczoPerf14UwPrewarmStage++;
-    }catch(err){console.warn('PERF14 UW-Geometrie-Prewarm:',err);return;}
-    aczoPerf14ScheduleUnderwaterGeometryPrewarm(0);
-  };
-  window.setTimeout(()=>{
-    if(typeof window.requestIdleCallback==='function')window.requestIdleCallback(run,{timeout:1200});
-    else run();
-  },delay);
-}
 // iPhone-Startkoordination: Der vorhandene Ladebildschirm bleibt sichtbar,
 // während die später benötigte Unterwasserwelt artweise aufgebaut und einmal
 // unsichtbar gerendert wird. Dadurch entstehen die Erstkosten weder mitten in
@@ -26780,24 +26118,29 @@ function aczoRunStartupUnderwaterPrewarm(){
       anglingLureUnderwaterWorldReady=true;
       aczoStartupUwPrewarmStage=4;
     }else if(aczoStartupUwPrewarmStage===4){
-      // Die eingebetteten WebP-Fische werden asynchron dekodiert. Der letzte
-      // unsichtbare GPU-Lauf wartet kurz darauf, damit diese Kosten nicht erst
-      // beim ersten sichtbaren Tauchgang entstehen. Ein festes Zeitlimit
-      // verhindert, dass ein einzelnes Bild den Ladebildschirm blockiert.
+      // P77: Nicht mehr nach 2,2 s so tun, als waeren die Fischtexturen fertig.
+      // Alle eingebetteten Fischgrafiken muessen dekodiert sein, bevor der GPU-
+      // Warmup startet. Fehlerpfade reduzieren den Pending-Zaehler ebenfalls;
+      // als letztes Sicherheitsnetz existiert weiterhin der globale 15-s-Loader.
       if(!aczoStartupUwTextureWaitStartedAt)aczoStartupUwTextureWaitStartedAt=performance.now();
-      if(fishTexturePendingCount>0&&performance.now()-aczoStartupUwTextureWaitStartedAt<1500){
-        if(startupText)startupText.textContent='Fischgrafiken werden vorbereitet …';
+      if(fishTexturePendingCount>0){
+        if(startupText)startupText.textContent='Fischgrafiken werden vorbereitet … ('+fishTexturePendingCount+')';
         aczoScheduleStartupUnderwaterPrewarm(50);
         return;
       }
       aczoStartupUwPrewarmStage=5;
     }else if(aczoStartupUwPrewarmStage===5){
+      if(startupText)startupText.textContent='Unterwasser-Shader werden vorgewärmt …';
       aczoPerf26ForceFullUnderwaterPrewarm();
       if(aczoPerf26UwFullWarmReady)aczoStartupUwPrewarmStage=6;
-      else if(++aczoStartupUwWarmAttempts<4){
+      else{
+        // P77: Der Loader meldet Unterwasser erst dann als bereit, wenn der
+        // volle GPU-Warmup wirklich erfolgreich war. Kein "nach vier Versuchen
+        // trotzdem fertig" mehr. Der 15-s-Watchdog bleibt die Notbremse.
+        aczoStartupUwWarmAttempts++;
         aczoScheduleStartupUnderwaterPrewarm(160);
         return;
-      }else aczoStartupUwPrewarmStage=6;
+      }
     }else{
       aczoFinishStartupUnderwaterPrewarm();
       return;
@@ -27196,6 +26539,9 @@ const anglingDrillLineInnerMat=new THREE.MeshBasicMaterial({
   color:0xf5fff8,transparent:true,opacity:.98,depthTest:false,depthWrite:false,toneMapped:false
 });
 const anglingDrillLineOuter=[],anglingDrillLineInner=[];
+// P75: Die sichtbare Drill-Schnur braucht auf hochauflösenden Mobilgeräten
+// etwas mehr Weltstärke, sonst ist der Belastungs-Farbwechsel kaum erkennbar.
+const ANGLING_DRILL_LINE_RADIUS=ACZO_PERF10_IS_MOBILE_OS?.0049:.0038;
 const anglingDrillLineGeo=new THREE.CylinderGeometry(1,1,1,6,1,false);
 for(let i=0;i<ANGLING_DRILL_LINE_SEGMENTS;i++){
   const outer=new THREE.Mesh(anglingDrillLineGeo,anglingDrillLineOuterMat);
@@ -27223,25 +26569,45 @@ function updateAnglingDrillLine3D(){
   const fighting=anglingState==='drilling'||anglingState==='landing';
   if(!fighting||!anglingLine.visible){anglingDrillLineGroup.visible=false;return;}
   anglingDrillLineGroup.visible=true;
-  // Drill-Schnur beginnt IMMER an der echten Rutenspitze.
-  // Keine künstliche Verkürzung zum Ufer/Wassereintritt.
   anglingRodTip.getWorldPosition(anglingDrillLineP0);
   anglingFishLineTarget(anglingDrillLineP1);anglingDrillLineP1.z+=.025;
   const span=anglingDrillLineP0.distanceTo(anglingDrillLineP1);
   const tension=anglingClamp01(anglingDrillTension);
-  const sag=THREE.MathUtils.lerp(Math.min(.24,.07+span*.0045),.018,tension);
-  const innerColor=anglingDrillTension>.88?0xff5a42:anglingDrillTension>.72?0xffdd61:0xf5fff8;
-  anglingDrillLineInnerMat.color.setHex(innerColor);
+  // Die Farbe wird zentral in aczoUpdateDrillLineColor() gesetzt, damit UI-
+  // WebGL-Line und die wirklich sichtbare 3D-Drillschnur identisch reagieren.
+
+  // P72: Im Drill gibt es KEINEN künstlich gesetzten Wassereintritt mehr.
+  // Die gespannte Schnur ist eine einzige kontinuierliche Kurve von der real
+  // gebogenen Rutenspitze zum Fisch. Dadurch kann bei stark gebogener Rute
+  // kein steiler Luftabschnitt mit anschließend fast waagerechter Unterwasser-
+  // schnur entstehen. Der Schnitt mit der Wasseroberfläche ergibt sich allein
+  // aus der tatsächlichen 3D-Geometrie der Schnur.
+  // Bei hoher Spannung ist sie nahezu gerade; bei lockerer Bremse bekommt sie
+  // nur einen sehr kleinen, weichen Durchhang. Dieser ist bewusst begrenzt,
+  // damit die Schnur nicht schon direkt vor dem Ufer ins Wasser gezogen wird.
+  const sag=THREE.MathUtils.lerp(
+    THREE.MathUtils.clamp(.018+span*.0012,.020,.045),
+    .004,
+    tension
+  );
+  const dx=anglingDrillLineP1.x-anglingDrillLineP0.x;
+  const dy=anglingDrillLineP1.y-anglingDrillLineP0.y;
+  const horizontal=Math.max(.001,Math.hypot(dx,dy));
+  const sideX=dy/horizontal,sideY=-dx/horizontal;
+  const sideBow=THREE.MathUtils.lerp(.010,.002,tension);
+
   anglingDrillLinePoints[0].copy(anglingDrillLineP0);
   for(let i=0;i<ANGLING_DRILL_LINE_SEGMENTS;i++){
-    const t1=(i+1)/ANGLING_DRILL_LINE_SEGMENTS;
-    const next=anglingDrillLinePoints[i+1].set(
-      THREE.MathUtils.lerp(anglingDrillLineP0.x,anglingDrillLineP1.x,t1),
-      THREE.MathUtils.lerp(anglingDrillLineP0.y,anglingDrillLineP1.y,t1),
-      THREE.MathUtils.lerp(anglingDrillLineP0.z,anglingDrillLineP1.z,t1)-Math.sin(Math.PI*t1)*sag
+    const t=(i+1)/ANGLING_DRILL_LINE_SEGMENTS;
+    const curve=Math.sin(Math.PI*t);
+    const next=anglingDrillLinePoints[i+1];
+    next.set(
+      THREE.MathUtils.lerp(anglingDrillLineP0.x,anglingDrillLineP1.x,t)+sideX*curve*sideBow,
+      THREE.MathUtils.lerp(anglingDrillLineP0.y,anglingDrillLineP1.y,t)+sideY*curve*sideBow,
+      THREE.MathUtils.lerp(anglingDrillLineP0.z,anglingDrillLineP1.z,t)-curve*sag
     );
     anglingDrillLineOuter[i].visible=false;
-    setAnglingDrillLineSegment(anglingDrillLineInner[i],anglingDrillLinePoints[i],next,.0036);
+    setAnglingDrillLineSegment(anglingDrillLineInner[i],anglingDrillLinePoints[i],next,ANGLING_DRILL_LINE_RADIUS);
   }
 }
 
@@ -27424,6 +26790,11 @@ let anglingFastRetrieveDuration=.75;
 let anglingCinematicView='shore',anglingCinematicBlend=0;
 let anglingReturnToShorePendingReset=false;
 const anglingCinematicPos=new THREE.Vector3(),anglingCinematicTarget=new THREE.Vector3();
+// P63: Beim Kunstkoeder-Schnelleinholen bleibt die Unterwasserkamera in einer
+// einmal festgelegten Nachlaufperspektive. Sie wird nur mit dem Koeder verschoben.
+const anglingFastCameraDir=new THREE.Vector3(0,1,0);
+const anglingFastCameraSide=new THREE.Vector3(1,0,0);
+let anglingFastCameraLocked=false;
 const anglingShoreCameraPos=new THREE.Vector3(),anglingShoreCameraTarget=new THREE.Vector3();
 let anglingLureDepth=.18;
 let anglingLureGrounded=false;
@@ -27564,6 +26935,10 @@ let anglingObstacleSnagLossStreak=0;
 // erweiterten Kollisionsbereich geometrisch verlassen haben.
 let anglingReleasedSnagGuard=null;
 const anglingObstacleHookPoint=new THREE.Vector3();
+// P60: Beim Schnell-Einholen der Pose wird auch der Hakenweg zwischen zwei
+// Frames auf Hindernisse geprüft. So kann "Zum Ufer" denselben Hänger nicht
+// mehr überspringen, den Doppeltipp/Rechtsklick korrekt erkennen würde.
+const anglingFastRigSweepStart=new THREE.Vector3(),anglingFastRigSweepEnd=new THREE.Vector3();
 const anglingDeadwoodTmpA=new THREE.Vector3();
 const anglingDeadwoodTmpB=new THREE.Vector3();
 const anglingDeadwoodTmpC=new THREE.Vector3();
@@ -28529,12 +27904,16 @@ const aczoRodVisual={model:ACZO_ROD_MODELS.rod_standard,bend:0,side:0,lastBend:N
  forward:new THREE.Vector3().subVectors(anglingRodC,anglingRodB).normalize(),
  down:new THREE.Vector3(),across:new THREE.Vector3(),normal:new THREE.Vector3(),tmp:new THREE.Vector3(),
  matrix:new THREE.Matrix4(),quat:new THREE.Quaternion(),scale:new THREE.Vector3(),axis:new THREE.Vector3(0,1,0),axisZ:new THREE.Vector3(0,0,1),
- length:anglingRodB.distanceTo(anglingRodC),phase:0,cache:{}};
+ length:anglingRodB.distanceTo(anglingRodC),phase:0,cache:{},afterFlex:0,lastRunPower:0};
 aczoRodVisual.restDown=new THREE.Vector3(0,-1,0);
 aczoRodVisual.restDown.addScaledVector(aczoRodVisual.forward,-aczoRodVisual.restDown.dot(aczoRodVisual.forward)).normalize();
 aczoRodVisual.bendDirection=aczoRodVisual.restDown.clone();
 aczoRodVisual.lastDirection=new THREE.Vector3(Infinity,Infinity,Infinity);
 aczoRodVisual.pullAim=new THREE.Vector3();aczoRodVisual.pullLocal=new THREE.Vector3();
+// P73: Physikalische Kopplung zwischen Rutenwinkel und Schnurzug.
+// angleSin=0 bedeutet: Rute zeigt praktisch direkt auf den Fisch -> kaum Biegemoment.
+// buffer=1 bedeutet: großer Winkel -> der Blank kann Fluchtspitzen als Feder abfangen.
+aczoRodVisual.angleSin=.62;aczoRodVisual.angleDeg=38;aczoRodVisual.buffer=.56;aczoRodVisual.directLoad=.44;
 
 function aczoReplaceMesh(mesh,geometry,material){
  mesh.geometry.dispose();mesh.geometry=geometry;
@@ -28551,18 +27930,6 @@ function aczoJoinGeometry(parts){
  }
  const g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.Float32BufferAttribute(pos,3));
  g.setAttribute('normal',new THREE.Float32BufferAttribute(normal,3));g.setAttribute('uv',new THREE.Float32BufferAttribute(uv,2));return g;
-}
-function aczoGripGeometry(a,b,split,mat){
- const mid=t=>a.clone().lerp(b,t);
- return aczoJoinGeometry([
-  aczoTube(a,mid(.22),.027,.025,mat),
-  aczoTube(mid(.22+split),b,.023,.024,mat)
- ]);
-}
-function aczoGapGeometry(a,b,split,mat,radius){
- // Kein innenliegender Zylinder mehr unter den Griffhülsen: dieser würde
- // beim sortierten Zeichnen ohne Tiefentest wieder über dem Griff liegen.
- return aczoJoinGeometry([aczoTube(a.clone().lerp(b,.2205),a.clone().lerp(b,.2195+split),radius,radius,mat)]);
 }
 const aczoHousingMain=anglingRodAccentMat.clone(),aczoHousingMini=reelMiniAccent.clone();
 for(const m of [aczoHousingMain,aczoHousingMini,anglingRodMetalMat,reelMiniMetal]){
@@ -28693,24 +28060,68 @@ function aczoDeformRod(){
 }
 function aczoUpdateRodLoad(dt,tension,strength,direction,rodLift=0,reeling=false,runPower=0,pullLocal=null){
  const v=aczoRodVisual,load=THREE.MathUtils.clamp(tension,0,1),s=THREE.MathUtils.clamp(strength,0,1.18);
- const lift=THREE.MathUtils.clamp(rodLift,-1,1),step=Math.max(0,dt);
- // Tatsächlicher Fischdruck bleibt auch bei Kurbelpause wirksam. Bei loser
- // Schnur verschwindet die Biegung; die Anzeige verändert keine Drillkräfte.
- const engagement=1-Math.exp(-load*7);
- const posture=.82+.46*Math.max(0,lift)+.24*Math.min(0,lift);
- const pressure=.30+.88*Math.sqrt(load)+.26*THREE.MathUtils.clamp(runPower,0,1.5);
- const target=THREE.MathUtils.clamp((.20+1.48*Math.pow(s,1.05))*pressure*posture*(reeling?1:.92)*engagement*v.model.flex,0,2.15);
- const blend=1-Math.exp(-step*(target>v.bend?7:4.2));
- v.bend+=(target-v.bend)*blend;
- // Schnurzug im lokalen Koordinatensystem, senkrecht zur unbelasteten Achse.
- // Kein festes Links/Rechts-Vorzeichen aus der Fisch-KI bei vorhandenem Zugvektor.
+ const step=Math.max(0,dt);
  const aim=v.pullAim;
- if(pullLocal)aim.copy(pullLocal);else aim.set(THREE.MathUtils.clamp(direction,-1,1)*.7,-1,0);
- aim.addScaledVector(v.forward,-aim.dot(v.forward));
- if(aim.lengthSq()<1e-10)aim.copy(v.restDown);else aim.normalize();
- const turn=1-Math.exp(-step*7);
- v.bendDirection.lerp(aim,turn);
- if(v.bendDirection.lengthSq()<1e-10)v.bendDirection.copy(aim);
+ let angleSin=v.angleSin||0;
+ if(pullLocal&&pullLocal.lengthSq()>1e-10){
+  // Zugrichtung Rutenspitze -> Fisch im lokalen Rutenkoordinatensystem.
+  aim.copy(pullLocal).normalize();
+  // Biegemoment entsteht ausschließlich aus dem Anteil quer zur Blankachse.
+  // Parallel zur Rute wirkt die Last fast nur axial: Blank richtet sich auf.
+  const axial=Math.abs(THREE.MathUtils.clamp(aim.dot(v.forward),-1,1));
+  angleSin=Math.sqrt(Math.max(0,1-axial*axial));
+ }
+ // Sanft filtern, damit beim Absenken in Richtung Fisch kein Richtungsflattern entsteht.
+ const angleBlend=1-Math.exp(-step*9.0);
+ v.angleSin+=((Number.isFinite(angleSin)?angleSin:0)-v.angleSin)*angleBlend;
+ v.angleSin=THREE.MathUtils.clamp(v.angleSin,0,1);
+ v.angleDeg=Math.asin(v.angleSin)*180/Math.PI;
+ v.buffer=THREE.MathUtils.smoothstep(v.angleSin,.14,.90);
+ v.directLoad=1-v.buffer;
+
+ // Tatsächlicher Fischdruck bleibt wirksam, aber nur der QUERANTEIL kann den Blank biegen.
+ const engagement=1-Math.exp(-load*7);
+ const runNow=THREE.MathUtils.clamp(runPower,0,1.5);
+ const runRise=Math.max(0,runNow-(Number.isFinite(v.lastRunPower)?v.lastRunPower:0));
+ // P74: Kleine elastische Nachfederung beim Beginn einer Flucht. Kein Wackeln,
+ // sondern nur ein kurzer zusätzlicher Federweg des bereits belasteten Blanks.
+ v.afterFlex=Math.min(.11,(v.afterFlex||0)+runRise*.050);
+ v.afterFlex*=Math.exp(-step*3.5);
+ v.lastRunPower=runNow;
+ const pressure=.30+.88*Math.sqrt(load)+.26*runNow;
+ // Schon bei 35–50° arbeitet die Rute deutlich; nahe 0° richtet sie sich konsequent auf.
+ const angularBend=Math.pow(v.angleSin,.78);
+ const target=THREE.MathUtils.clamp(
+   (.20+1.48*Math.pow(s,1.05))*pressure*(reeling?1:.92)*engagement*v.model.flex*angularBend
+   +(v.afterFlex||0)*angularBend,
+   0,2.15
+ );
+ const blend=1-Math.exp(-step*(target>v.bend?7.4:5.4));
+ v.bend+=(target-v.bend)*blend;
+
+ // Nur der quer zur Rute wirkende Zug bestimmt die Biegerichtung.
+ // Wird dieser Anteil sehr klein, behalten wir die bisherige Richtung und entspannen
+ // den Blank. Kein Fallback-Sprung mehr auf restDown -> keine Schnur-/Ruten-Kapriolen.
+ if(pullLocal&&pullLocal.lengthSq()>1e-10){
+  aim.copy(pullLocal).normalize();
+  aim.addScaledVector(v.forward,-aim.dot(v.forward));
+  if(aim.lengthSq()>2.5e-5){
+   aim.normalize();
+   const turn=1-Math.exp(-step*7.5);
+   v.bendDirection.lerp(aim,turn).normalize();
+  }else{
+   const settle=1-Math.exp(-step*2.2);
+   v.bendDirection.lerp(v.restDown,settle);
+   if(v.bendDirection.lengthSq()>1e-10)v.bendDirection.normalize();
+  }
+ }else{
+  const fallback=v.pullAim.set(THREE.MathUtils.clamp(direction,-1,1)*.7,-1,0);
+  fallback.addScaledVector(v.forward,-fallback.dot(v.forward));
+  if(fallback.lengthSq()>1e-10){
+   fallback.normalize();
+   v.bendDirection.lerp(fallback,1-Math.exp(-step*5.5)).normalize();
+  }
+ }
  v.side=v.bendDirection.x;
  aczoDeformRod();
 }
@@ -28719,7 +28130,7 @@ function aczoRelaxRod(dt){
  v.bendDirection.lerp(v.restDown,k);v.side=v.bendDirection.x;
  if(v.bend<.0002){v.bend=0;v.bendDirection.copy(v.restDown);v.side=0;}aczoDeformRod();
 }
-function aczoResetRodCurve(){const v=aczoRodVisual;v.bend=v.side=0;v.bendDirection.copy(v.restDown);aczoDeformRod();}
+function aczoResetRodCurve(){const v=aczoRodVisual;v.bend=v.side=0;v.bendDirection.copy(v.restDown);v.angleSin=.62;v.angleDeg=38;v.buffer=.56;v.directLoad=.44;v.afterFlex=0;v.lastRunPower=0;aczoDeformRod();}
 function aczoAnimateSpinningReel(dt,speed){
  const v=aczoRodVisual;v.phase=(v.phase+dt*4.4*speed)%(Math.PI*20);
  anglingReelCrank.rotation.x=-v.phase;anglingReelCrank.rotation.z=0;
@@ -28759,7 +28170,7 @@ function aczoRenderRodOverlay(){
  aczoRodSun.color.copy(sun.color);aczoRodSun.intensity=sun.intensity;aczoRodSun.visible=sun.visible;sun.getWorldPosition(aczoRodSun.position);sun.target.getWorldPosition(aczoRodSun.target.position);
  aczoRodMoon.color.copy(moonLight.color);aczoRodMoon.intensity=moonLight.intensity;aczoRodMoon.visible=moonLight.visible;moonLight.getWorldPosition(aczoRodMoon.position);moonLight.target.getWorldPosition(aczoRodMoon.target.position);
  const clear=renderer.autoClear,shadow=renderer.shadowMap.autoUpdate;renderer.autoClear=false;renderer.shadowMap.autoUpdate=false;
- try{renderer.clearDepth();markViewerRenderCall();renderer.render(aczoRodScene,camera);}
+ try{renderer.clearDepth();renderer.render(aczoRodScene,camera);}
  finally{renderer.autoClear=clear;renderer.shadowMap.autoUpdate=shadow;}
 }
 // Die kleine Rute hat nun dieselbe Ringanordnung; ihre Schnur bleibt lokal.
@@ -30001,7 +29412,6 @@ function aczoTickReward(){
  f.chip.style.opacity=String(Math.min(1,(1-t)*5));
 }
 
-let anglingWormBundleMountedAt=0;
 function equipAnglingNaturalBait(id){
  if(anglingUi.classList.contains('line-active')){
    showAnglingToast('Köder nur vor dem Auswurf wechseln.',1450);
@@ -30012,9 +29422,6 @@ function equipAnglingNaturalBait(id){
    const worms=Math.max(0,Math.floor(Number(anglingProgress.naturalInventory.dew_worm)||0));
    if(worms<12){showAnglingToast('Wurmbündel benötigt 12 Tauwürmer · '+worms+' vorhanden.',2200);openAnglingShop();return;}
    anglingProgress.naturalInventory.dew_worm=worms-12;
-   // Lokaler Schutz gegen eine bereits laufende, ältere Cloud-Antwort, die direkt
-   // nach dem Montieren sonst wieder den vorherigen Köder auswählen könnte.
-   anglingWormBundleMountedAt=Date.now();
  }
  const stock=anglingNaturalStock(id);
  if(id==='baitfish'&&stock<1){showAnglingToast('Fange zuerst einen Köderfisch.',1500);return;}
@@ -30481,15 +29888,23 @@ function applyAnglingCloudPlayer(player){
         ?player.bonusState.lastFirstCatchDay:'';
   }
 
-  const protectMountedBundleInventory=anglingSelectedBait==='worm_bundle'&&Date.now()-anglingWormBundleMountedAt<15000&&player.selectedBait!=='worm_bundle';
+  // P72: Eine verzögerte Cloud-Antwort darf während eines laufenden Wurfs
+  // niemals den tatsächlich ausgeworfenen Köder austauschen. Das war besonders
+  // beim virtuellen Wurmbündel kritisch: nach Ablauf des früheren 15-s-Schutzes
+  // konnte ein älterer Serverstand wieder Tauwurm/Wurm als Auswahl setzen.
+  const activeLineSelection=!!(anglingUi&&anglingUi.classList.contains('line-active'));
+  // Das virtuelle Wurmbündel bleibt lokal montiert, bis es wirklich verbraucht
+  // oder vom Spieler gewechselt wird. Solange darf eine Cloud-Antwort weder die
+  // Auswahl noch die bereits bezahlten 12 Tauwürmer zurücksetzen.
+  const protectMountedBundleInventory=anglingSelectedBait==='worm_bundle';
   const mountedBundleDewWorms=protectMountedBundleInventory?anglingProgress.naturalInventory.dew_worm:null;
   anglingApplyInventory(anglingProgress.naturalInventory,player.naturalInventory);
   if(protectMountedBundleInventory)anglingProgress.naturalInventory.dew_worm=mountedBundleDewWorms;
   anglingApplyInventory(anglingProgress.lureInventory,player.lureInventory);
   anglingApplyInventory(anglingProgress.feedInventory,player.feedInventory);anglingApplyInventory(anglingProgress.equipmentInventory,player.equipmentInventory);
   if(typeof player.selectedBait==='string'&&player.selectedBait){
-    const protectMountedBundle=anglingSelectedBait==='worm_bundle'&&Date.now()-anglingWormBundleMountedAt<15000&&player.selectedBait!=='worm_bundle';
-    if(!protectMountedBundle){
+    const protectMountedBundle=anglingSelectedBait==='worm_bundle';
+    if(!activeLineSelection&&!protectMountedBundle){
       anglingProgress.selectedBait=player.selectedBait;
       anglingSelectedBait=player.selectedBait;
     }
@@ -32925,18 +32340,7 @@ function setAnglingAimFromPointer(clientX,clientY,panView=false,moveX=0,pointerT
   applyAnglingStraightShoreCamera(false);
 }
 
-function anglingCenterInwardForShore(shore,out=new THREE.Vector2()){
-  // Kompatibilitaetsfunktion fuer aeltere Aufrufer: auch hier dieselbe lokale
-  // 90-Grad-Ufernormale verwenden, niemals eine Kartenachse oder den Mittelpunkt.
-  const hit=nearestAnglingBoundary(shore);
-  if(hit&&hit.sample)return anglingLocalPerpendicularInward(hit.sample,out);
-  return out.set(anglingPondCenter.x-shore.x,anglingPondCenter.y-shore.y).normalize();
-}
 
-function anglingCenterLookTarget(z=.18,out=new THREE.Vector3()){
-  buildAnglingBoundary();
-  return out.set(anglingPondCenter.x,anglingPondCenter.y,z);
-}
 
 // V6.98: Die Uferkamera speichert keine Ziel-Koordinate mehr als eigentliche
 // Blicklogik. Entscheidend ist ausschließlich DERSELBE Richtungsvektor wie beim
@@ -33949,6 +33353,8 @@ function beginAnglingObstacleSnag(type,collision){
   };
   anglingObstacleSnagCooldownUntil=performance.now()+1200;
   anglingState='obstacle-snag';anglingStateTime=0;
+  // P69: kurzer optischer Schlag beim echten Hängerkontakt, ohne Kameraruckler.
+  anglingUi.classList.remove('snag-impact');void anglingUi.offsetWidth;anglingUi.classList.add('snag-impact');
   anglingExitBtn.disabled=true;anglingExitBtn.textContent='Hänger …';
   if(type==='artificial'){
     if(!anglingObstacleSnag.aboveWater){
@@ -33966,7 +33372,6 @@ function beginAnglingObstacleSnag(type,collision){
     anglingActionBtn.disabled=true;anglingActionBtn.textContent='Fest';
   }
   setAnglingStatus('Hänger im Hindernis','Der Köder sitzt fest. Warte einen Moment, dann kannst du versuchen ihn zu lösen.');
-  if(navigator.vibrate)navigator.vibrate([60,35,60]);
   return true;
 }
 function finishAnglingSnagLoss(){
@@ -35179,6 +34584,23 @@ function updateAnglingBobberWaterTint(surface){
 }
 
 const anglingBobberDeepWaterColor=new THREE.Color(0x426b70);
+// P79: Ein vorher tief eingetauchter Schwimmer darf seine reduzierte
+// Unterwasser-Deckkraft nicht in die Bereitschaftsposition mitnehmen.
+function resetAnglingBobberVisualState(){
+  anglingBobber.scale.setScalar(1);
+  anglingBobber.traverse(o=>{
+    if(!o.isMesh||!o.material)return;
+    if(o.userData.anglingBobBaseColor&&o.material.color){
+      o.material.color.copy(o.userData.anglingBobBaseColor);
+      o.material.opacity=1;
+    }
+  });
+  anglingBobHalo.material.opacity=.30;
+  anglingBobGlowStick.material.opacity=1;
+  anglingBobGlowHalo.material.opacity=.78;
+  anglingBobGlowReflectionMat.opacity=0;
+  anglingBobGlowReflectionSoftMat.opacity=0;
+}
 function updateAnglingBobberDepthLook(depth=0){
   const underwater=THREE.MathUtils.smoothstep(Math.max(0,depth),.06,1.05);
   // Mit zunehmender Tiefe wirkt die Pose perspektivisch kleiner. Weniger
@@ -35377,12 +34799,12 @@ function updateAnglingLine(){
         }
       }
     }else{
-      const sag=fighting?THREE.MathUtils.lerp(.12,.018,tension):(lureFlight?THREE.MathUtils.clamp(.025+span*.0018,.025,.15):THREE.MathUtils.clamp(.18+span*.006,.18,.58));
+      const sag=fighting?THREE.MathUtils.lerp(.026,.0035,tension):(lureFlight?THREE.MathUtils.clamp(.025+span*.0018,.025,.15):THREE.MathUtils.clamp(.18+span*.006,.18,.58));
       const sideX=(lineEnd.y-anglingTmpA.y)/Math.max(.01,span);
       const sideY=-(lineEnd.x-anglingTmpA.x)/Math.max(.01,span);
       for(let i=0;i<ANGLING_LINE_POINTS;i++){
         const t=i/(ANGLING_LINE_POINTS-1),curve=Math.sin(Math.PI*t);
-        const windCurve=curve*Math.sin(waterUniforms.time.value*.72+t*2.3)*(fighting?.012:(lureFlight?.012:.045));
+        const windCurve=curve*Math.sin(waterUniforms.time.value*.72+t*2.3)*(fighting?.0025:(lureFlight?.012:.045));
         pos.setXYZ(i,
           THREE.MathUtils.lerp(anglingTmpA.x,lineEnd.x,t)+sideX*windCurve,
           THREE.MathUtils.lerp(anglingTmpA.y,lineEnd.y,t)+sideY*windCurve,
@@ -36120,7 +35542,7 @@ function startAnglingCast(){
   if(!anglingMode||anglingState!=='ready'||!anglingSelection) return;
   aczoResetSoftMotion();
   if(anglingUsesArtificialLure()&&!anglingLureUnderwaterWorldReady) scheduleAnglingLureUnderwaterPrewarm();
-  if(anglingUsesArtificialLure()&&!aczoPerf24UwRenderWarmReady)aczoPerf24ScheduleUnderwaterRenderWarmup(0);
+  if(anglingUsesArtificialLure()&&!aczoPerf26UwFullWarmReady)aczoPerf26ScheduleFullUnderwaterPrewarm(0);
   resetAnglingFastTap();
   if(!anglingAimLocked){showAnglingToast('Zuerst die Angelstelle mit einem Tipp festlegen.');return;}
   if(anglingUsesArtificialLure()&&anglingLureStock(anglingSelectedLureId)<1){
@@ -36550,7 +35972,10 @@ function beginAnglingDrill(){
   anglingDrillTension=anglingStrikeQuality==='perfect'?.34:.42;
   anglingDrillDirectionValue=Math.random()<.5?-1:1;anglingHookSetKick=.24;
   anglingDrillRunTime=0;anglingDrillRunDuration=1.2+Math.random()*1.9;
-  anglingRunCalloutTime=0;anglingUi.classList.remove('fight-pulse');
+  anglingRunCalloutTime=0;anglingUi.classList.remove('fight-pulse','line-paying-out','line-tension-high','line-tension-critical','rod-direct-load');
+  anglingFightDistanceText.classList.remove('taking-line');
+  anglingUi.style.setProperty('--aczo-run-opacity','.18');
+  anglingUi.style.setProperty('--aczo-run-period','.92s');
   anglingDrillSteer=0;anglingDrillSteerTime=0;anglingDrillDangerTime=0;anglingDrillSlackTime=0;
   anglingDrillRodX=anglingDrillRodY=anglingDrillRodTargetX=anglingDrillRodTargetY=0;anglingDrillAngleQuality=0;
   anglingFightStartDistance=Math.max(ANGLING_MIN_CAST_DISTANCE,anglingCastDistance);
@@ -36610,7 +36035,6 @@ function beginAnglingLanding(){
   anglingNetGroup.scale.setScalar(anglingNetVisualScale());
   anglingNetGroup.visible=true;setupAnglingFishVisual();anglingFishVisual.visible=true;anglingFishVisualMat.color.setHex(0xd7e9e7);
   setAnglingStatus('Fisch am Ufer','Kescher mit Maus/Finger links/rechts bewegen · Klick oder Tipp: keschern.');
-  if(navigator.vibrate)navigator.vibrate([55,45,90]);
 }
 
 function failAnglingLanding(){
@@ -36632,7 +36056,6 @@ function attemptAnglingLanding(){
   if(inside){
     anglingLandingBtn.classList.add('on');
     anglingLandingFirstTrySuccess=(anglingLandingAttempts===0&&anglingLandingTapMisses===0);
-    if(navigator.vibrate)navigator.vibrate([35,25,80]);
     finishAnglingCatch();
   }else if(anglingLandingTapMisses===0){
     // Der erste knapp gesetzte Kescher kostet nicht sofort den ganzen Versuch.
@@ -36640,7 +36063,6 @@ function attemptAnglingLanding(){
     anglingLandingPanel.classList.remove('net-miss');void anglingLandingPanel.offsetWidth;
     anglingLandingPanel.classList.add('net-miss');
     showAnglingToast('Knapp vorbei – noch ein Kescherzug!',1050);
-    if(navigator.vibrate)navigator.vibrate(25);
   }else failAnglingLanding();
 }
 
@@ -36831,7 +36253,7 @@ function loseCurrentArtificialLure(){
 }
 function loseAnglingFish(reason){
   const lureLoss=(reason==='Schnur gerissen')?loseCurrentArtificialLure():'';
-  anglingUi.classList.remove('is-drilling','is-landing','fight-pulse');setAnglingReeling(false);
+  anglingUi.classList.remove('is-drilling','is-landing','fight-pulse','line-paying-out','line-tension-high','line-tension-critical','rod-direct-load');anglingFightDistanceText.classList.remove('taking-line');setAnglingReeling(false);
   anglingUi.classList.remove('bite-alert','bite-focus','perfect-hit');
   anglingDrillPanel.classList.remove('line-danger');anglingDrillWarningLatched=false;
   anglingQte.classList.remove('show','now');anglingStrikeMeter.classList.remove('show','now');
@@ -36894,6 +36316,29 @@ function missArtificialLureStrike(reason='Reaktion verpasst'){
   showAnglingToast(reason+' · Fisch schwimmt weg',900);
 }
 
+// P65: Ein erfolgreicher Anhieb braucht keinen Kameraflug zum Ufer.
+// Kunstkoeder schneiden direkt aus der Unterwasseransicht auf die bereits
+// gespeicherte Uferkamera; Pose/Naturkoeder bleiben ohnehin dort stehen.
+// Dadurch gibt es weder den alten Rueckflug noch den kurzen Kamera-Huepfer.
+function aczoCutToShoreForDrill(){
+  // P70: Im Angelmodus NICHT den globalen Fischsicht-Restore verwenden.
+  // resetAnglingUnderwaterState() setzt nur die vom Kunstkoederpfad aktivierten
+  // Unterwasserlayer zurueck und laesst Fang/Drillzustand unangetastet.
+  if(anglingUsesArtificialLure()){
+    resetAnglingUnderwaterState(false);
+    setAnglingMobilePerformance(false);
+  }else{
+    anglingCinematicView='shore';anglingCinematicBlend=0;
+  }
+  anglingSafeReturnStart=null;
+  camera.position.copy(anglingShoreCameraPos);
+  controls.target.copy(anglingShoreCameraTarget);
+  camera.up.set(0,0,1);
+  camera.fov=anglingShoreFieldOfView();camera.updateProjectionMatrix();
+  camera.lookAt(controls.target);
+  anglingRodGroup.visible=true;
+}
+
 function finishAnglingStrike(success,reason=''){ 
   anglingQte.classList.remove('show','now');anglingStrikeMeter.classList.remove('show','now');
   anglingUi.classList.remove('bite-alert','bite-focus');
@@ -36909,17 +36354,11 @@ function finishAnglingStrike(success,reason=''){
     }
     return;
   }
-  // P59: Ein erfolgreicher Kunstköder-Anhieb bekommt sofort einen eigenen
-  // Rückkehrzustand. Bisher blieb anglingState während des ca. 1-s-Kameraflugs
-  // auf 'strike'. Dadurch lief der QTE-Timer im Hintergrund weiter und konnte
-  // nach einem KORREKTEN Treffer noch finishAnglingStrike(false) auslösen,
-  // anglingPendingCatch löschen und den anschließenden Drill verhindern.
-  if(anglingUsesArtificialLure()){
-    // Fangzustand vor der Kamerarückfahrt unveränderlich sichern.
-    anglingLockedStrikeCatch=anglingPendingCatch?{...anglingPendingCatch}:null;
-    anglingState='strike-return';
-    anglingStateTime=0;
-  }
+  // P71: Den gehakten Fisch fuer JEDE Angelart sofort sichern. Beim Posenangeln
+  // gab es selten einen Rueckfall auf den Bereitschaftsbildschirm, wenn ein
+  // Nebenpfad den fluechtigen Fangzustand zwischen QTE und Drill verlor.
+  // beginAnglingDrill() kann diese Kopie bereits gefahrlos wiederherstellen.
+  anglingLockedStrikeCatch=anglingPendingCatch?{...anglingPendingCatch}:null;
 
   // Sichtbarer Kunstköder-Räuber wird jetzt erst NACH erfolgreichem Anhieb
   // aus der Unterwasserpopulation genommen. Bis dahin war exakt derselbe Fisch sichtbar.
@@ -36934,13 +36373,15 @@ function finishAnglingStrike(success,reason=''){
   }
   // Sobald der Fisch sauber gehakt ist, ist Wurm/Made/Mais verbraucht.
   consumeAnglingNaturalBait(1);
-  // BETA 1.14: Beim Kunstköder-Rückflug darf die First-Person-Rute noch
-  // NICHT sichtbar sein. Sie erscheint erst wieder, wenn die Kamera wirklich
-  // am Angelplatz angekommen ist und der Drill beginnt.
-  anglingCinematicView='return';anglingCinematicBlend=0;
-  anglingRodGroup.visible=!anglingUsesArtificialLure();
   anglingActionBtn.disabled=true;anglingActionBtn.textContent='Anhieb!';
-  setAnglingStatus('Anhieb sitzt!','Kamera zurück zum Angler …');
+  setAnglingStatus('Anhieb sitzt!','Drill beginnt …');
+
+  // Kunstkoeder: harter, sauberer Schnitt von Unterwasser zur gespeicherten
+  // Uferperspektive. Pose/Naturkoeder bleiben ohne jede Kamerabewegung dort,
+  // wo der Spieler den Anhieb ausgefuehrt hat.
+  if(anglingUsesArtificialLure())aczoCutToShoreForDrill();
+  else{anglingCinematicView='shore';anglingCinematicBlend=0;anglingRodGroup.visible=true;}
+  beginAnglingDrill();
 }
 
 function attemptAnglingStrike(){
@@ -36967,7 +36408,6 @@ function attemptAnglingStrike(){
     if(anglingStrikeQuality==='perfect'){
       anglingUi.classList.add('perfect-hit');
       showAnglingToast('⚡ Perfekter Anhieb · +8 EP bei Fang',1250);
-      if(navigator.vibrate)navigator.vibrate([28,24,42]);
     }
     if(!anglingUsesArtificialLure())spawnAnglingSurfaceEffect(anglingBobber.position,1.15,1.25);
     finishAnglingStrike(true);
@@ -36978,7 +36418,6 @@ function attemptAnglingStrike(){
   if(lap===1&&!anglingQteFirstAttemptUsed){
     anglingQteFirstAttemptUsed=true;
     showAnglingToast('Knapp daneben – zweite Runde bleibt!',780);
-    if(navigator.vibrate)navigator.vibrate(18);
   }else if(lap===2){
     showAnglingToast('Noch Zeit – grünen Bereich treffen!',520);
   }
@@ -37311,6 +36750,7 @@ function beginFastAnglingRetrieve(){
   anglingQte.classList.remove('show','now','second-lap');
   const artificial=anglingUsesArtificialLure();
   anglingFastObstaclePull=false;
+  anglingFastCameraLocked=false;
   const terminal=anglingUsesDeeper()?anglingDeeper:(artificial?anglingLure:anglingBobber);
   anglingRetrieveStart.copy(terminal.position);
 
@@ -37360,7 +36800,9 @@ function beginFastAnglingRetrieve(){
   anglingRetrieveEnd.set(shore.x+ux*.45,shore.y+uy*.45,terminal.position.z);
   const surface=anglingSurfaceZ(anglingRetrieveEnd.x,anglingRetrieveEnd.y);
   anglingRetrieveEnd.z=anglingUsesDeeper()?surface+.035:(anglingUsesArtificialLure()?surface-.12:surface-.005);
-  anglingFastRetrieveDuration=THREE.MathUtils.clamp(.48+dist*.012,.52,1.15);
+  // P64: Schnelleinholen bleibt zuegig, skaliert bei weiten Wuerfen aber realistisch
+  // mit der Strecke. 100 m werden nicht mehr in knapp 1,5 s zum Ufer teleportiert.
+  anglingFastRetrieveDuration=THREE.MathUtils.clamp(1.00+dist*.055,1.15,6.20);
   anglingState='fast-retrieving';anglingStateTime=0;
   // V8.52: Beim Rechtsklick/Schnelleinholen verschwinden beide Livefenster
   // SOFORT. Nur CSS reicht hier nicht, weil ältere !important-Regeln das
@@ -37371,10 +36813,26 @@ function beginFastAnglingRetrieve(){
   anglingReelZoom.style.display='none';
   anglingReelZoom.setAttribute('aria-hidden','true');
   if(artificial){
-    anglingCinematicView='reset-return';anglingCinematicBlend=0;
-    // Die Rute steht weiterhin am Ufer und wird beim Abbruch sofort wieder
-    // sichtbar. So entsteht beim Eintreffen der Rückflugkamera kein Leerbild.
-    anglingRodGroup.visible=true;
+    // P62: Kein kuenstlicher Kameraflug mehr ueber die Wasseroberflaeche.
+    // Die Unterwasserkamera bleibt am Koeder und folgt seinem schnellen Weg
+    // bis kurz vors Ufer. Erst dort springt die Ansicht sauber zum Angelplatz.
+    const startSurface=anglingSurfaceZ(anglingRetrieveStart.x,anglingRetrieveStart.y);
+    anglingLureRetrieveStartDepth=Math.max(.12,startSurface-anglingRetrieveStart.z);
+    // P63: Die Rueckholrichtung genau einmal einfrieren. Dadurch bleibt die
+    // Kamera waehrend des kompletten Unterwasser-Rueckwegs fest hinter dem
+    // Koeder, statt ihre Perspektive pro Frame neu zum Ufer auszurichten.
+    anglingFastCameraDir.set(
+      anglingRetrieveEnd.x-anglingRetrieveStart.x,
+      anglingRetrieveEnd.y-anglingRetrieveStart.y,
+      0
+    );
+    if(anglingFastCameraDir.lengthSq()<1e-6)anglingFastCameraDir.set(0,1,0);
+    else anglingFastCameraDir.normalize();
+    anglingFastCameraSide.copy(anglingFastCameraDir).applyAxisAngle(anglingUp,Math.PI/2).normalize();
+    anglingFastCameraLocked=true;
+    anglingCinematicView='underwater';anglingCinematicBlend=0;
+    anglingLureEntryTime=0;
+    anglingRodGroup.visible=false;
   }
   setAnglingStatus('Schnell einholen','');
 }
@@ -37567,6 +37025,9 @@ function resetAnglingCast(){
   if(!anglingMode||!anglingSelection) return;
   resetAnglingFastTap();
   resetAnglingUnderwaterState(false);
+  // P79: Biss-/Tiefenoptik der Pose vollständig zurücksetzen, bevor sie in der
+  // Bereitschaftsposition an der Rute wieder sichtbar wird.
+  resetAnglingBobberVisualState();
 
   // V6.35: Nach Drill/Keschern/Fangkarte immer exakt zur zuvor gespeicherten
   // Uferkamera zurückkehren. Die Kescher-Nahaufnahme verschiebt die Hauptkamera
@@ -37637,6 +37098,21 @@ function setAnglingDrillRodFromPointer(clientX,clientY){
   anglingDrillRodTargetY=THREE.MathUtils.clamp((.5-ny)*2,-1,1);
   return true;
 }
+const aczoDrillLineColor=new THREE.Color();
+const aczoDrillLineWhite=new THREE.Color(0xf2fff6);
+const aczoDrillLineYellow=new THREE.Color(0xffe04b);
+const aczoDrillLineOrange=new THREE.Color(0xff8a2a);
+const aczoDrillLineRed=new THREE.Color(0xff342e);
+function aczoUpdateDrillLineColor(tension){
+  const t=THREE.MathUtils.clamp(tension,0,1);
+  // P75: Auf kleinen Displays früher und kräftiger sichtbar.
+  if(t<.48)aczoDrillLineColor.copy(aczoDrillLineWhite);
+  else if(t<.65)aczoDrillLineColor.copy(aczoDrillLineWhite).lerp(aczoDrillLineYellow,(t-.48)/.17);
+  else if(t<.80)aczoDrillLineColor.copy(aczoDrillLineYellow).lerp(aczoDrillLineOrange,(t-.65)/.15);
+  else aczoDrillLineColor.copy(aczoDrillLineOrange).lerp(aczoDrillLineRed,(t-.80)/.20);
+  anglingLine.material.color.copy(aczoDrillLineColor);
+  anglingDrillLineInnerMat.color.copy(aczoDrillLineColor);
+}
 function updateAnglingDrillUi(){
   const tensionPct=Math.round(anglingDrillTension*100),staminaPct=Math.round(anglingDrillStamina*100);
   anglingTensionFill.style.width=tensionPct+'%';anglingStaminaFill.style.width=staminaPct+'%';
@@ -37675,6 +37151,25 @@ function updateAnglingDrillUi(){
   anglingFightDistanceFill.classList.toggle('distance-away',distanceAway);
   anglingFightDistanceFill.classList.toggle('distance-near',distanceNear);
   anglingFightDistanceFill.classList.toggle('distance-fast',distanceMoving&&anglingDistanceUiSpeed>.90);
+
+  // P69: Visuelle Spannung folgt der TATSAECHLICHEN Schnurbewegung, nicht nur
+  // dem theoretischen Fluchtzustand. Je schneller der Fisch Entfernung gewinnt,
+  // desto deutlicher pulsiert der Rand. Kamera und 3D-Szene bleiben unangetastet.
+  const runFxStrength=THREE.MathUtils.clamp((anglingDistanceUiSpeed-.035)/.92,0,1);
+  const linePayingOut=distanceAway&&anglingDistanceUiSpeed>.040;
+  const rodBuffer=THREE.MathUtils.clamp(aczoRodVisual.buffer??.55,0,1);
+  const directLoad=1-rodBuffer;
+  anglingUi.classList.toggle('line-paying-out',linePayingOut);
+  anglingUi.classList.toggle('line-tension-high',anglingDrillTension>=.74);
+  anglingUi.classList.toggle('line-tension-critical',anglingDrillTension>=.87);
+  anglingUi.classList.toggle('rod-direct-load',directLoad>.68&&anglingDrillTension>.55);
+  // Bei einer echten Flucht wird der Rand klar sichtbar. Direkte Rutenstellung
+  // verstärkt ihn zusätzlich, weil dann kaum Federweg zwischen Fisch und Schnur liegt.
+  const runVisual=THREE.MathUtils.clamp(runFxStrength*(.78+.32*directLoad),0,1);
+  anglingUi.style.setProperty('--aczo-run-opacity',(0.27+runVisual*.51).toFixed(3));
+  anglingUi.style.setProperty('--aczo-run-period',THREE.MathUtils.clamp(.80-runVisual*.50,.30,.80).toFixed(3)+'s');
+  anglingFightDistanceText.classList.toggle('taking-line',linePayingOut);
+
   // Bewusst deutlich langsamer als zuvor. Selbst starke Fluchten bleiben
   // visuell ruhig; Tempo wird erkennbar, ohne dass der Balken flimmert.
   const flowDuration=THREE.MathUtils.clamp(
@@ -37695,11 +37190,14 @@ function updateAnglingDrillUi(){
   else if(anglingDrillTension<.18){tensionWord='locker';color='#58c96b';}
   anglingTensionFill.style.color=color;anglingTensionText.textContent=tensionWord;
   anglingStaminaText.textContent=staminaPct+' %';
-  anglingDrillDirection.textContent=anglingDrillTension>.88
+  anglingDrillDirection.textContent=anglingDrillTension>.87
     ? '⚠ ACHTUNG – Schnur kurz vor dem Reißen!'
-    : anglingDrillTension>.78?'⚠ Belastung hoch – loslassen'
+    : anglingDrillTension>.74?'⚠ Belastung hoch – loslassen'
+    : linePayingOut&&directLoad>.66?'⚡ FLUCHT – Rute anheben, Blank puffern!'
     : anglingRunCalloutTime>0?(anglingFishTowardRun?'↙ FISCH KOMMT AUF DICH ZU – SCHNUR AUFNEHMEN!':'⚡ FLUCHT – Bremse beobachten!')
-    : anglingDrillAngleQuality>.45?'✓ Guter Rutenwinkel'
+    : directLoad>.74&&anglingDrillTension>.48?'↗ Rute anheben – zu direkter Zug auf der Schnur'
+    : rodBuffer>.62&&anglingDrillTension>.42?'✓ Rute puffert die Belastung'
+    : anglingDrillAngleQuality>.45?'✓ Gute Gegenführung'
     : anglingDrillAngleQuality<-.35?'↔ Rute auf die Gegenseite führen'
     : anglingDrillReeling?'🎣 Fisch wird eingeholt …':'EINHOLEN gedrückt halten';
 }
@@ -37752,11 +37250,22 @@ function updateAnglingDrill(dt){
     if(Math.random()<THREE.MathUtils.clamp(.52+.24*fight.lateral,.45,.88))anglingDrillDirectionValue*=-1;
     // Manche Arten drehen plötzlich auf den Angler zu. Dann fällt die Spannung
     // ab und schnelles Kurbeln ist wichtiger als Kraft gegen Kraft.
-    anglingFishTowardRun=Math.random()<fight.toward*anglingDrillStamina;
+    // P76: Ein kräftiger, noch frischer Großfisch darf sich direkt am Ufer nicht
+    // in einer langen "zum Angler"-Flucht an der Mindestdistanz festfahren.
+    // In Ufernähe erzwingen wir bei genügend Reserve die nächste Flucht nach draußen.
+    const shoreEscapePowerAtRun=THREE.MathUtils.clamp(
+      (anglingDrillStrength-.52)/.60,0,1
+    )*THREE.MathUtils.clamp(((fight.maxRun||7)-6)/24,0,1);
+    const shoreEscapeDistanceAtRun=THREE.MathUtils.lerp(3.0,5.8,shoreEscapePowerAtRun);
+    const forceOutwardFromShore=shoreEscapePowerAtRun>.12&&anglingDrillStamina>.18&&
+      anglingFightDistance<shoreEscapeDistanceAtRun;
+    anglingFishTowardRun=forceOutwardFromShore
+      ?false
+      :Math.random()<fight.toward*anglingDrillStamina;
     if(anglingDrillStrength>.42&&Math.random()<THREE.MathUtils.clamp(.54+.20*fight.run,.54,.86)){
+      // P67: Fluchtimpuls wieder sichtbar, aber ohne die alten hellen Lichtpunkte.
       anglingRunCalloutTime=.72;anglingUi.classList.remove('fight-pulse');
       void anglingUi.offsetWidth;anglingUi.classList.add('fight-pulse');
-      if(navigator.vibrate&&anglingDrillStrength>.72)navigator.vibrate([28,22,38]);
     }
   }
   const runPhase=anglingDrillRunTime/Math.max(.01,anglingDrillRunDuration);
@@ -37769,6 +37278,28 @@ function updateAnglingDrill(dt){
   const attack=THREE.MathUtils.smoothstep(rp,0,.16);
   const release=1-THREE.MathUtils.smoothstep(rp,.72,1);
   const runPulse=Math.pow(Math.max(0,Math.min(attack,release)),1.18);
+
+  // P76: Nah-Ufer-Ausbruch für starke, noch nicht ermüdete Fische.
+  // Wenn der Fisch mit viel Reserve bereits direkt vorm Ufer steht, darf eine
+  // laufende Einwärtsphase nicht bis zu 20–30 s gegen den 1,55-m-Clamp drücken.
+  // Sie wird in eine Außenflucht umgewandelt. Ist das aktuelle Fluchtfenster
+  // ohnehin praktisch beendet, starten wir im nächsten Physikframe sofort ein
+  // neues Fluchtfenster, statt den Fisch dort seitlich pendeln zu lassen.
+  const shoreEscapePower=THREE.MathUtils.clamp(
+    (anglingDrillStrength-.52)/.60,0,1
+  )*THREE.MathUtils.clamp(((fight.maxRun||7)-6)/24,0,1);
+  const shoreEscapeDistance=THREE.MathUtils.lerp(3.0,5.8,shoreEscapePower);
+  const shoreEscapeNeeded=shoreEscapePower>.12&&anglingDrillStamina>.18&&
+    anglingFightDistance<shoreEscapeDistance;
+  if(shoreEscapeNeeded&&anglingFishTowardRun){
+    anglingFishTowardRun=false;
+    // Befand sich die Einwärtsflucht schon im Auslauf, bekommt der Fisch einen
+    // neuen sauberen Antritt nach draußen statt nur die alte Restkurve umzudrehen.
+    if(rp>.58)anglingDrillRunTime=anglingDrillRunDuration;
+  }else if(shoreEscapeNeeded&&runPulse<.08&&rp>.42){
+    anglingDrillRunTime=anglingDrillRunDuration;
+  }
+
   const trophyReserve=THREE.MathUtils.clamp((anglingFightSizeFactor-.50)/.50,0,1);
   const effectiveStrength=anglingDrillStrength*
     (THREE.MathUtils.lerp(.20,.43,trophyReserve)+THREE.MathUtils.lerp(.80,.57,trophyReserve)*anglingDrillStamina);
@@ -37780,19 +37311,42 @@ function updateAnglingDrill(dt){
 
   // Die Bremse verhindert keine Flucht. Sie entscheidet, ob deren Energie
   // als Schnurabzug oder als gefährliche Schnurspannung endet.
-  const dragRunTension=anglingSelectedDrag==='loose'
+  // P73: Die Rute ist ein Federpuffer. Zeigt sie fast auf den Fisch, wird ein
+  // Fluchtimpuls nahezu direkt auf Schnur/Bremse übertragen. Bei größerem Winkel
+  // nimmt der Blank einen Teil der Spitze auf. Der statische Grundzug bleibt erhalten.
+  const rodBuffer=THREE.MathUtils.clamp(aczoRodVisual.buffer??.55,0,1);
+  const rodDirect=1-rodBuffer;
+  // P75: Der Rutenwinkel bleibt physikalisch relevant, aber die Bremse bleibt
+  // die dominante Sicherheitsinstanz. P73 hat den Direktzug zu aggressiv
+  // multipliziert, wodurch selbst die lockere Bremse bei Großwelsen reißen konnte.
+  const shockTransfer=THREE.MathUtils.lerp(1.10,.84,rodBuffer);
+  const dragRunTension=(anglingSelectedDrag==='loose'
     ?runPower*.045
-    :anglingSelectedDrag==='tight'?runPower*.285:runPower*.145;
+    :anglingSelectedDrag==='tight'?runPower*.285:runPower*.145)*shockTransfer;
   const mediumBigFishLoad=(anglingSelectedDrag==='medium'&&drillPointerReeling)
-    ?THREE.MathUtils.clamp((effectiveStrength-.48)/.52,0,1)*(.045+.065*runPulse)
+    ?THREE.MathUtils.clamp((effectiveStrength-.48)/.52,0,1)*(.045+.065*runPulse)*THREE.MathUtils.lerp(1.08,.88,rodBuffer)
     :0;
   const tightBigFishLoad=(anglingSelectedDrag==='tight'&&drillPointerReeling)
-    ?THREE.MathUtils.clamp((effectiveStrength-.58)/.52,0,1)*(.045+.070*runPulse)
+    ?THREE.MathUtils.clamp((effectiveStrength-.58)/.52,0,1)*(.045+.070*runPulse)*THREE.MathUtils.lerp(1.10,.86,rodBuffer)
     :0;
-  const targetTension=.12+drag.tension+effectiveStrength*(.20+.16*runPulse)
+  const dragShockScale=anglingSelectedDrag==='loose'?.18:(anglingSelectedDrag==='medium'?.65:1);
+  const directShock=runPower*rodDirect*.040*dragShockScale;
+  const bufferRelief=runPower*rodBuffer*.025;
+  let targetTension=.12+drag.tension+effectiveStrength*(.20+.16*runPulse*shockTransfer)
     +(drillPointerReeling?.38:-.08)-(anglingFishTowardRun&&runPulse>.48?.24:0)
-    +angleTension+mediumBigFishLoad+tightBigFishLoad+dragRunTension;
-  anglingDrillTension+=THREE.MathUtils.clamp(targetTension-anglingDrillTension,-dt*.72,dt*(1.05+runPower*.65));
+    +angleTension+mediumBigFishLoad+tightBigFishLoad+dragRunTension+directShock-bufferRelief;
+  // Lockere Bremse = Sicherheitsventil: Der Fisch darf viel Schnur nehmen und
+  // den Drill verlängern, aber ein normaler Run allein soll die Schnur nicht
+  // in die Abrisszone treiben. Beim aktiven Kurbeln darf sie etwas höher steigen.
+  if(anglingSelectedDrag==='loose')targetTension=Math.min(targetTension,drillPointerReeling?.87:.84);
+  // Der Blank puffert weiterhin Spannungsspitzen, nur deutlich weniger brutal
+  // als in P73. Direkte Rutenstellung bleibt spürbar, ohne die Bremse auszuhebeln.
+  const tensionRise=THREE.MathUtils.lerp(1.10,.82,rodBuffer);
+  anglingDrillTension+=THREE.MathUtils.clamp(
+    targetTension-anglingDrillTension,
+    -dt*THREE.MathUtils.lerp(.68,.84,rodBuffer),
+    dt*(1.05+runPower*.65)*tensionRise
+  );
   anglingDrillTension=anglingClamp01(anglingDrillTension);
 
   const safe=anglingDrillTension>.16&&anglingDrillTension<.86;
@@ -37894,9 +37448,9 @@ function updateAnglingDrill(dt){
   anglingDrillPanel.classList.toggle('line-danger',lineDanger);
   if(lineDanger&&!anglingDrillWarningLatched){
     anglingDrillWarningLatched=true;showAnglingToast('⚠ Achtung – Schnur kurz vor dem Reißen!',1100);
-    if(navigator.vibrate)navigator.vibrate([70,35,70]);
   }else if(anglingDrillTension<.72){anglingDrillWarningLatched=false;}
-  anglingLine.material.color.setHex(anglingDrillTension>.88?0xff4c38:anglingDrillTension>.72?0xffd34f:0xe6eee7);
+  // P74: Schnurfarbe folgt weich der tatsächlichen Belastung: weiß -> gelb -> orange -> rot.
+  aczoUpdateDrillLineColor(anglingDrillTension);
   // Kurbelrotation wird zentral in updateAnglingMode animiert.
   const direction=anglingCurrentDirection(anglingTmpA);
   const side=anglingTmpB.copy(direction).applyAxisAngle(anglingUp,Math.PI/2);
@@ -38034,7 +37588,7 @@ function aczoRenderLightweightAnglingInset(cam,keepShoreNature=false){
     waterUniforms.viewportOrigin.value.set(ws.viewport.x,ws.viewport.y);
     setProjectedCelestialScreen(sunDisc,waterUniforms.sunScreen,simulationEnabled&&sun.visible,cam);
     setProjectedCelestialScreen(moonDisc,waterUniforms.moonScreen,simulationEnabled&&!!moonDisc.userData.astronomicallyVisible,cam);
-    markViewerRenderCall();renderer.render(scene,cam);
+    renderer.render(scene,cam);
   }finally{
     waterSurface.material=savedPondMaterial;moselWaterSurface.material=savedRiverMaterial;
     waterUniforms.viewportSize.value.copy(ws.size);waterUniforms.viewportOrigin.value.copy(ws.origin);
@@ -38424,7 +37978,7 @@ function renderAnglingReelCamera(){
     // Hintergrund erhalten; Rute und Rolle werden transparent daruebergelegt.
     renderer.autoClear=false;
     renderer.clearDepth();
-    markViewerRenderCall();renderer.render(anglingReelScene,anglingReelMiniCamera);
+    renderer.render(anglingReelScene,anglingReelMiniCamera);
   }finally{
     anglingReelLiveVisObjects.forEach((o,i)=>{if(o)o.visible=anglingReelLiveSavedVis[i];});
     waterUniforms.underwaterView.value=liveSavedUnderwater;
@@ -38457,6 +38011,18 @@ function returnAnglingToShoreForRecast(){
   const returningDeeper=anglingUsesDeeper();
   const returningArtificial=anglingUsesArtificialLure();
   const returningFloat=!returningDeeper&&!returningArtificial;
+
+  // P60: "Zum Ufer" darf bei Pose/Kunstköder keinen eigenen Bypass mehr
+  // benutzen. Solange ein normaler Schnell-Einholvorgang möglich ist, läuft
+  // exakt derselbe Pfad wie bei Doppeltipp/Rechtsklick. Dadurch bleiben
+  // Schnurauflagen, Umlenkpunkte und die Hängererkennung vollständig aktiv.
+  if(!returningDeeper&&anglingCanFastAbort()){
+    beginFastAnglingRetrieve();
+    return;
+  }
+  // Ein bereits laufendes Schnell-Einholen darf durch einen zweiten Klick auf
+  // "Zum Ufer" ebenfalls nicht in den alten Direkt-Rückweg springen.
+  if(!returningDeeper&&anglingState==='fast-retrieving')return;
 
   // BETA 1.4: Rückflug zuerst atomar sperren, bevor Biss/QTE/andere UI-Logik
   // im selben Frame noch einen konkurrierenden Zustand starten kann.
@@ -38768,6 +38334,23 @@ function updateAnglingCinematicCamera(dt){
      anglingCinematicPos.z=Math.min(surfaceHere-.20,anglingLure.position.z-.10);
      anglingCinematicTarget.copy(snagPoint);
      constrainAnglingUnderwaterColumn(anglingCinematicPos,anglingLure.position,'camera');
+   }else if(anglingState==='fast-retrieving'&&anglingUsesArtificialLure()&&anglingFastCameraLocked){
+     // P63: Starre Nachlaufkamera beim Schnelleinholen. Horizontaler Winkel,
+     // Abstand und Blickrichtung bleiben konstant; nur Koeder und Kamera fahren
+     // gemeinsam zum Ufer. Erst beim finalen Auftauchen darf der Blick leicht
+     // nach oben folgen, ohne seitliches Drehen oder Herumschwenken.
+     const surfaceHere=anglingSurfaceZ(anglingLure.position.x,anglingLure.position.y);
+     anglingCinematicPos.copy(anglingLure.position)
+       .addScaledVector(anglingFastCameraDir,-3.05)
+       .addScaledVector(anglingFastCameraSide,.30);
+     // P64: Kamera nicht direkt unter die Wasserhaut kleben. Selbst wenn der
+     // Koeder zum Schluss auftaucht, bleibt der Blick ruhig unter Wasser.
+     anglingCinematicPos.z=Math.min(surfaceHere-.42,anglingLure.position.z+.48);
+     anglingCinematicTarget.copy(anglingLure.position)
+       .addScaledVector(anglingFastCameraDir,2.75);
+     anglingCinematicTarget.z=anglingLure.position.z-.14;
+     constrainAnglingUnderwaterColumn(anglingCinematicPos,anglingLure.position,'camera');
+     constrainAnglingUnderwaterColumn(anglingCinematicTarget,anglingLure.position,'target');
    }else{
    const lureSurface=anglingSurfaceZ(anglingLure.position.x,anglingLure.position.y);
    const lureDepthNow=Math.max(.15,lureSurface-anglingLure.position.z);
@@ -38843,13 +38426,17 @@ function updateAnglingCinematicCamera(dt){
      return false;
    }
 
-   anglingCinematicBlend=Math.min(1,anglingCinematicBlend+dt/.70);
+   const resetReturnDuration=.70;
+   anglingCinematicBlend=Math.min(1,anglingCinematicBlend+dt/resetReturnDuration);
    const u=anglingEase(anglingCinematicBlend);
 
-   // Während des Rückflugs bleibt die kameragebundene Rute komplett aus.
-   // Erst resetAnglingCast() am fertigen Uferbild blendet sie wieder ein.
-   anglingRodGroup.visible=!anglingReturnToShorePendingReset;
-   camera.position.copy(aczoSafeAnglingReturnPosition(u));controls.target.lerp(anglingShoreCameraTarget,u);camera.up.set(0,0,1);camera.lookAt(controls.target);
+   // Während des Kunstkoeder-Rückflugs bleibt die kameragebundene Rute komplett
+   // aus. Erst resetAnglingCast() am fertigen Uferbild blendet sie wieder ein.
+   const artificialFastReturn=anglingUsesArtificialLure()&&anglingState==='fast-retrieving';
+   anglingRodGroup.visible=artificialFastReturn?false:!anglingReturnToShorePendingReset;
+   camera.position.copy(aczoSafeAnglingReturnPosition(u));
+   controls.target.lerp(anglingShoreCameraTarget,u);
+   camera.up.set(0,0,1);camera.lookAt(controls.target);
    // V8.96: Beim Rechtsklick beginnt der Rückflug noch unter Wasser. Solange
    // die Kamera die bewegte Oberfläche nicht wirklich verlassen hat, muss der
    // Unterwasser-Shader aktiv bleiben. Sonst wird für einzelne Frames die sehr
@@ -39216,11 +38803,34 @@ function updateAnglingMode(dt){
   }else if(anglingState==='fast-retrieving'){
     const u=anglingClamp01(anglingStateTime/Math.max(.1,anglingFastRetrieveDuration)),eased=anglingEase(u);
     const deeper=anglingUsesDeeper(),artificial=anglingUsesArtificialLure(),terminal=deeper?anglingDeeper:(artificial?anglingLure:anglingBobber);
+    // P64: Kunstkoeder laufen anfangs noch klar zuegig, bremsen aber zunehmend
+    // Richtung Ufer ab. Die Kurve bleibt monoton und ohne sichtbaren Zwischenstopp.
+    const fastTravel=artificial?THREE.MathUtils.clamp(u+.35*u*(1-u),0,1):eased;
     if(artificial)anglingLureFrameSweepStart.copy(terminal.position);
-    terminal.position.lerpVectors(anglingRetrieveStart,anglingRetrieveEnd,eased);
+    else if(!deeper)anglingCurrentRigHookWorld(anglingFastRigSweepStart);
     if(artificial){
+      // P62: Der Koeder wird wirklich unter Wasser schnell eingeholt. Horizontal
+      // folgt er dem direkten Rueckweg; seine Tiefe bleibt bis in Ufernaehe
+      // weitgehend erhalten und steigt erst in den letzten Metern zur Oberflaeche.
+      terminal.position.x=THREE.MathUtils.lerp(anglingRetrieveStart.x,anglingRetrieveEnd.x,fastTravel);
+      terminal.position.y=THREE.MathUtils.lerp(anglingRetrieveStart.y,anglingRetrieveEnd.y,fastTravel);
+      const fastSurface=anglingSurfaceZ(terminal.position.x,terminal.position.y);
+      const fastLimits=anglingLureDepthLimits(terminal.position.x,terminal.position.y);
+      // Erst in Ufernaehe langsam hochkommen. Durch die gleichzeitig sinkende
+      // Vorwaertsgeschwindigkeit ist der Austritt aus dem Wasser gut lesbar.
+      const rise=THREE.MathUtils.smoothstep(fastTravel,.82,.955);
+      let fastDepth=THREE.MathUtils.lerp(Math.max(.12,anglingLureRetrieveStartDepth),.12,rise);
+      if(fastLimits)fastDepth=THREE.MathUtils.clamp(fastDepth,fastLimits.minDepth,fastLimits.maxDepth);
+      terminal.position.z=fastSurface-fastDepth;
+      // Erst unmittelbar am Ufer den Koeder sichtbar aus dem Wasser ziehen.
+      if(fastTravel>.955){
+        const exit=THREE.MathUtils.smoothstep(fastTravel,.955,1);
+        terminal.position.z=THREE.MathUtils.lerp(terminal.position.z,fastSurface+.075,exit);
+      }
       const fastHit=findAnglingDeadwoodSweepCollision(anglingLureFrameSweepStart,terminal.position,.075);
       if(fastHit){beginAnglingObstacleSnag('artificial',fastHit);return;}
+    }else{
+      terminal.position.lerpVectors(anglingRetrieveStart,anglingRetrieveEnd,eased);
     }
     if(deeper){const surface=anglingSurfaceZ(terminal.position.x,terminal.position.y);terminal.position.z=surface+.035;sampleAnglingDeeper(false);}
     else if(!artificial){
@@ -39228,8 +38838,16 @@ function updateAnglingMode(dt){
       terminal.position.z=surface-.005;
       updateAnglingBobberWaterTint(surface);
       updateAnglingRetrieveWake(dt,terminal,false);
+      // P60: Nicht nur die Pose, sondern der reale Haken unter ihr bewegt sich
+      // beim Schnell-Einholen durchs Wasser. Seine tatsächlich zurückgelegte
+      // Strecke wird deshalb pro Frame gegen Holz/Stege geprüft. Ein Treffer
+      // wechselt sofort in exakt denselben Hängerzustand wie beim normalen
+      // Einholen, statt bis zum Ufer durch das Hindernis zu springen.
+      anglingCurrentRigHookWorld(anglingFastRigSweepEnd);
+      const fastRigHit=findAnglingDeadwoodSweepCollision(anglingFastRigSweepStart,anglingFastRigSweepEnd,.05);
+      if(fastRigHit){beginAnglingObstacleSnag('natural',fastRigHit);return;}
     }
-    else{const surface=anglingSurfaceZ(terminal.position.x,terminal.position.y);anglingLureDepth=Math.max(.10,surface-terminal.position.z);}
+    else{const surface=anglingSurfaceZ(terminal.position.x,terminal.position.y);anglingLureDepth=Math.max(0,surface-terminal.position.z);}
     const metres=Math.max(0,Math.hypot(terminal.position.x-anglingSelection.shore.x,terminal.position.y-anglingSelection.shore.y));
     anglingLineSummary.textContent=(deeper?'📡 Deeper · ':(artificial?'🌀 ':'🎣 ')+(anglingBaitLabels[anglingSelectedBait]||'Köder')+' · ')+metres.toFixed(1).replace('.',',')+' m';
     if(u>=1){
@@ -39237,6 +38855,7 @@ function updateAnglingMode(dt){
       anglingUnderwaterEntry.classList.remove('show');anglingLureEntryTime=0;anglingCinematicView='shore';
       camera.position.copy(anglingShoreCameraPos);controls.target.copy(anglingShoreCameraTarget);camera.up.set(0,0,1);camera.lookAt(controls.target);
       anglingRodGroup.visible=true;
+      anglingFastCameraLocked=false;
       // Ein per "Zum Ufer" gestartetes Posen-Schnelleinholen ist jetzt fertig.
       // Die Sperre muss vor dem normalen Bereitschafts-Reset geloest werden.
       anglingReturnToShorePendingReset=false;
@@ -39671,6 +39290,36 @@ document.querySelectorAll('[data-angling-drag]').forEach(btn=>{
     e.preventDefault();e.stopPropagation();e.stopImmediatePropagation();
   },{capture:true,passive:false});
 });
+
+// P78: Desktop-Mausrad stellt im laufenden Drill die Rollenbremse um.
+// Wheel down / zum Spieler = lockerer, wheel up / vom Spieler = fester.
+// Ein kleiner Akkumulator verhindert, dass hochauflösende Mausräder/Trackpads
+// bei einem einzigen Fingerimpuls sofort mehrere Bremsstufen überspringen.
+const ACZO_DRAG_WHEEL_LEVELS=['loose','medium','tight'];
+let anglingDragWheelAccumulator=0;
+let anglingDragWheelLastStep=0;
+function aczoHandleDrillBrakeWheel(e){
+  if(!anglingMode||anglingState!=='drilling')return;
+  if(window.matchMedia&&!window.matchMedia('(pointer:fine)').matches)return;
+  const raw=Number(e.deltaY)||0;
+  if(!raw)return;
+  e.preventDefault();
+  e.stopPropagation();
+  e.stopImmediatePropagation();
+  const scaled=e.deltaMode===1?raw*16:(e.deltaMode===2?raw*120:raw);
+  anglingDragWheelAccumulator+=scaled;
+  const now=performance.now();
+  if(Math.abs(anglingDragWheelAccumulator)<38||now-anglingDragWheelLastStep<90)return;
+  const current=Math.max(0,ACZO_DRAG_WHEEL_LEVELS.indexOf(anglingSelectedDrag));
+  // deltaY > 0 = Rad nach unten/zu dir -> lockerer; deltaY < 0 -> fester.
+  const step=anglingDragWheelAccumulator>0?-1:1;
+  const next=THREE.MathUtils.clamp(current+step,0,ACZO_DRAG_WHEEL_LEVELS.length-1);
+  anglingDragWheelAccumulator=0;
+  anglingDragWheelLastStep=now;
+  if(next!==current)chooseAnglingDragSetting(ACZO_DRAG_WHEEL_LEVELS[next]);
+}
+viewer.addEventListener('wheel',aczoHandleDrillBrakeWheel,{capture:true,passive:false});
+
 anglingDepth.addEventListener('input',()=>{
   if(anglingState!=='ready')return;
   anglingRigDepth=THREE.MathUtils.clamp(Number(anglingDepth.value)||1.5,.2,6);
@@ -39982,7 +39631,6 @@ function updateCelestialDepthLighting(){
   const anglingUnderwater=typeof anglingCinematicView!=='undefined'
     &&anglingMode&&anglingCinematicView==='underwater';
   const active=waterVisible&&(!is2D||allowIn2D)&&simulationEnabled
-    &&(typeof diagnosticState==='undefined'||diagnosticState.depthSpots)
     &&!(typeof fishMode!=='undefined'&&fishMode)&&!anglingUnderwater
     &&(!anglingMode||hallOfFameSurface);
   pondCelestialDepthLift.visible=active;
@@ -40054,10 +39702,10 @@ function updateCelestialLensFlare(){
 
 // ---------------- Jahreszeiten- und Wetterdarstellung ----------------
 const seasonParticleGroup=new THREE.Group();scene.add(seasonParticleGroup);
-const seasonFlakeCount=1100,seasonLeafCount=180;
+const seasonFlakeCount=1100;
 function makeSeasonPoints(count,color,size){const arr=new Float32Array(count*3);for(let i=0;i<count;i++){arr[i*3]=(Math.random()-.5)*D.sceneW;arr[i*3+1]=(Math.random()-.5)*D.sceneH;arr[i*3+2]=2+Math.random()*55;}const geo=new THREE.BufferGeometry();geo.setAttribute('position',new THREE.BufferAttribute(arr,3));const mat=new THREE.PointsMaterial({color,size,transparent:true,opacity:.72,depthWrite:false,sizeAttenuation:true});const pts=new THREE.Points(geo,mat);pts.visible=false;pts.renderOrder=80;seasonParticleGroup.add(pts);return pts;}
-const seasonSnowPoints=makeSeasonPoints(seasonFlakeCount,0xf2f7ff,.42),seasonLeafPoints=makeSeasonPoints(seasonLeafCount,0xc28a3a,.18);
-function updateSeasonTestVisuals(dt){const now=viewerNow(),day=seasonDayOfDate(now),p=seasonVisualProfile(day),winterFactor=seasonWinterFactor(day),winterBrown=seasonWinterBrownStrength();if(typeof satUniforms!=='undefined'){const targetR=THREE.MathUtils.lerp(.66,.54,winterBrown);const targetG=THREE.MathUtils.lerp(.58,.40,winterBrown);const targetB=THREE.MathUtils.lerp(.46,.28,winterBrown);const tintR=THREE.MathUtils.lerp(p.tint[0],targetR,winterFactor*.98);const tintG=THREE.MathUtils.lerp(p.tint[1],targetG,winterFactor*1.00);const tintB=THREE.MathUtils.lerp(p.tint[2],targetB,winterFactor*.96);satUniforms.seasonTint.value.setRGB(tintR,tintG,tintB);satUniforms.seasonStrength.value=THREE.MathUtils.clamp(p.strength+winterFactor*(.16+.18*winterBrown),0,.88);satUniforms.seasonSnow.value=seasonTestMode?seasonTestSnowCover/100:0;}const snowing=seasonTestSnowing(),snowIntensity=snowing?Math.min(1,Math.max(.18,(liveWeather.precipitation||0)/2.2)):0;seasonSnowPoints.visible=!is2D&&snowIntensity>.01;seasonSnowPoints.material.opacity=.42+.48*snowIntensity;if(seasonSnowPoints.visible){const a=seasonSnowPoints.geometry.attributes.position.array;for(let i=0;i<seasonFlakeCount;i++){const k=i*3;a[k+2]-=dt*(3.0+snowIntensity*5.4);a[k]+=cloudWindWorld.x*dt*(.42+cloudWindWorldSpeed*1.15);a[k+1]+=cloudWindWorld.y*dt*(.42+cloudWindWorldSpeed*1.15);if(a[k+2]<.4){a[k]=(Math.random()-.5)*D.sceneW;a[k+1]=(Math.random()-.5)*D.sceneH;a[k+2]=42+Math.random()*34;}}seasonSnowPoints.geometry.attributes.position.needsUpdate=true;}const leafIntensity=p.leaves*(seasonTestMode?Math.min(1,.25+liveWeather.windSpeed/18):1);seasonLeafPoints.visible=!is2D&&leafIntensity>.08&&!snowing;seasonLeafPoints.material.opacity=.18+.55*leafIntensity;if(seasonLeafPoints.visible){const a=seasonLeafPoints.geometry.attributes.position.array;for(let i=0;i<seasonLeafCount;i++){const k=i*3;a[k+2]-=dt*(.25+leafIntensity*.65);a[k]+=cloudWindWorld.x*dt*(.6+cloudWindWorldSpeed*1.2)+Math.sin(waterUniforms.time.value+i)*dt*.15;a[k+1]+=cloudWindWorld.y*dt*(.6+cloudWindWorldSpeed*1.2);if(a[k+2]<.35){a[k]=(Math.random()-.5)*D.sceneW;a[k+1]=(Math.random()-.5)*D.sceneH;a[k+2]=5+Math.random()*18;}}seasonLeafPoints.geometry.attributes.position.needsUpdate=true;}}
+const seasonSnowPoints=makeSeasonPoints(seasonFlakeCount,0xf2f7ff,.42);
+function updateSeasonTestVisuals(dt){const now=viewerNow(),day=seasonDayOfDate(now),p=seasonVisualProfile(day),winterFactor=seasonWinterFactor(day),winterBrown=seasonWinterBrownStrength();if(typeof satUniforms!=='undefined'){const targetR=THREE.MathUtils.lerp(.66,.54,winterBrown);const targetG=THREE.MathUtils.lerp(.58,.40,winterBrown);const targetB=THREE.MathUtils.lerp(.46,.28,winterBrown);const tintR=THREE.MathUtils.lerp(p.tint[0],targetR,winterFactor*.98);const tintG=THREE.MathUtils.lerp(p.tint[1],targetG,winterFactor*1.00);const tintB=THREE.MathUtils.lerp(p.tint[2],targetB,winterFactor*.96);satUniforms.seasonTint.value.setRGB(tintR,tintG,tintB);satUniforms.seasonStrength.value=THREE.MathUtils.clamp(p.strength+winterFactor*(.16+.18*winterBrown),0,.88);satUniforms.seasonSnow.value=seasonTestMode?seasonTestSnowCover/100:0;}const snowing=seasonTestSnowing(),snowIntensity=snowing?Math.min(1,Math.max(.18,(liveWeather.precipitation||0)/2.2)):0;seasonSnowPoints.visible=!is2D&&snowIntensity>.01;seasonSnowPoints.material.opacity=.42+.48*snowIntensity;if(seasonSnowPoints.visible){const a=seasonSnowPoints.geometry.attributes.position.array;for(let i=0;i<seasonFlakeCount;i++){const k=i*3;a[k+2]-=dt*(3.0+snowIntensity*5.4);a[k]+=cloudWindWorld.x*dt*(.42+cloudWindWorldSpeed*1.15);a[k+1]+=cloudWindWorld.y*dt*(.42+cloudWindWorldSpeed*1.15);if(a[k+2]<.4){a[k]=(Math.random()-.5)*D.sceneW;a[k+1]=(Math.random()-.5)*D.sceneH;a[k+2]=42+Math.random()*34;}}seasonSnowPoints.geometry.attributes.position.needsUpdate=true;}}
 
 const clock=new THREE.Clock();
 let aczoLastRenderedFrameAt=0;
@@ -40076,61 +39724,6 @@ document.addEventListener('visibilitychange',()=>{
 });
 
 
-// PERF7 CPU/SCENE PROFILER -------------------------------------------------
-// BETA 1: CPU-Profiler deaktiviert.
-const aczoPerf7CpuEnabled=false;
-const aczoPerf7Cpu={};
-function aczoPerf7Record(name,ms){
-  let r=aczoPerf7Cpu[name];
-  if(!r)r=aczoPerf7Cpu[name]={ms:0,calls:0,max:0};
-  r.ms+=ms;r.calls++;if(ms>r.max)r.max=ms;
-}
-function aczoPerf7Wrap(name,label){
-  if(!aczoPerf7CpuEnabled)return;
-  const fn=globalThis[name];
-  if(typeof fn!=='function'||fn.__aczoPerf7Wrapped)return;
-  const wrapped=function(...args){
-    const t=performance.now();
-    try{return fn.apply(this,args);}finally{aczoPerf7Record(label,performance.now()-t);}
-  };
-  wrapped.__aczoPerf7Wrapped=true;
-  try{globalThis[name]=wrapped;}catch(e){}
-}
-if(aczoPerf7CpuEnabled){
-  [
-    ['updateSkyClouds','Clouds'],['updateRealCloudReflections','CloudRefl'],
-    ['updateRainRipples','Rain'],['updateBirds','Birds'],['updateTraffic','Traffic'],
-    ['updateAczoPropertyVisitScheduler','Visits'],['updateCarVisit','Visits'],
-    ['updateBmwX3Visit','Visits'],['updateGolfFamilyVisit','Visits'],
-    ['updateAczoSurveyForestLod','ForestLOD'],['updateAczoRealBirchFineLod','BirchLOD'],
-    ['updateAczoWildBoars','Wildlife'],['updateClubFlagPole','Flag'],
-    ['updateFishView','Fish'],['updateFishActors','Fish'],['updateFishShadows','Fish'],
-    ['updateUnderwaterEffects','Underwater'],['updateAnglingMode','Angling'],
-    ['updateAnglingClockDisplay','AnglingUI'],['updateDirectCelestialWaterReflections','SunReflect'],
-    ['positionCelestialDiscsForMainCamera','Celestial'],['enforceCelestialDiscVisibility','Celestial'],
-    ['updateCelestialReflectionScreens','Celestial'],['updateCelestialDepthLighting','Celestial'],
-    ['updateCelestialLensFlare','Celestial'],['updateContourDistanceLod','Contours'],
-    ['updateWaterStarReflectionPoints','Celestial'],['updateCompass','UI'],
-    ['applyDiagnosticLayers','StaticChecks'],['updateCleanOverhangVisibility','StaticChecks'],
-    ['aczoRefreshAboveWaterShadowCasters','ShadowChecks'],['updateUnderwaterObstacleShadows','ShadowChecks'],
-    ['updateAnglingAmbientStatus','Angling'],['renderAnglingFloatCamera','ExtraRender'],
-    ['renderAnglingReelCamera','ExtraRender'],['drawAnglingDeeperSonar','Sonar']
-  ].forEach(([n,l])=>aczoPerf7Wrap(n,l));
-  // OrbitControls ist kein globaler Funktionsname; dessen Update separat messen.
-  const _cu=controls.update.bind(controls);
-  controls.update=function(...args){const t=performance.now();try{return _cu(...args);}finally{aczoPerf7Record('Controls',performance.now()-t);}};
-  // CPU-submit-Zeit aller Three.js Renderaufrufe. Das ist KEINE echte GPU-Zeit,
-  // zeigt aber sehr gut, ob der Hauptthread im Renderer festhaengt.
-  const _rr=renderer.render.bind(renderer);
-  renderer.render=function(...args){const t=performance.now();try{return _rr(...args);}finally{aczoPerf7Record('RendererCPU',performance.now()-t);}};
-}
-function aczoPerf7Summary(){
-  if(!aczoPerf7CpuEnabled)return 'PERF7 CPU AUS · mit &cpu=1 starten';
-  const rows=Object.entries(aczoPerf7Cpu).map(([name,r])=>({name,ms:r.ms,calls:r.calls,max:r.max})).sort((a,b)=>b.ms-a.ms).slice(0,8);
-  if(!rows.length)return 'PERF7 CPU sammelt…';
-  return rows.map(r=>`${r.name} ${r.ms.toFixed(0)}ms/${r.calls} max${r.max.toFixed(1)}`).join('\n');
-}
-// -------------------------------------------------------------------------
 
 (function loop(frameNow=performance.now()){
  requestAnimationFrame(loop);
@@ -40147,8 +39740,7 @@ function aczoPerf7Summary(){
  // funktionierte IDLE nach dem Seitenstart zunächst und später scheinbar nie mehr.
  const aczoInteractive=viewerInputBusy()||fishMode||skyLookMode||anglingMode
    ||!!fishTransition
-   ||!!(anglingUi&&anglingUi.classList.contains('time-shifting'))
-   ||(typeof aczoPerf5ProfilerEnabled!=='undefined'&&aczoPerf5ProfilerEnabled&&aczoPerf5Phase!=='DONE');
+   ||!!(anglingUi&&anglingUi.classList.contains('time-shifting'));
 
  // Autonome sichtbare Bewegung bekommt ein eigenes, deutlich günstigeres Budget.
  // So bleiben Besucher/BMW/Regen/Schnee lesbar, blockieren aber nicht dauerhaft 30 FPS.
@@ -40477,33 +40069,10 @@ function aczoPerf7Summary(){
  const aczoStaticDue=frameNow-aczoPerf4LastStaticAt>=(aczoDeepIdle?500:250);
  if(aczoStaticDue){
    aczoPerf4LastStaticAt=frameNow;
-   applyDiagnosticLayers();
    if(typeof updateCleanOverhangVisibility==='function')updateCleanOverhangVisibility();
    if(simulationEnabled){
      aczoRefreshAboveWaterShadowCasters();
      updateUnderwaterObstacleShadows(!!window.__aczoUnderwaterSceneActive);
-   }
- }
- // PERF5 Profiling-Phasen unmittelbar vor dem Rendern hart durchsetzen,
- // damit keine Wetter-/Ansichtsroutine den Testzustand zwischenzeitlich reaktiviert.
- if(typeof aczoPerf5ProfilerEnabled!=='undefined'&&aczoPerf5ProfilerEnabled){
-   const aczoDirectOff=aczoPerf5Phase==='DIRECT REFLECT OFF'||aczoPerf5Phase==='WATER REFLECTION LITE';
-   aczoPerf6SunReflectionEnabled=!aczoDirectOff;
-   if(aczoDirectOff)directCelestialReflectionGroup.visible=false;
-   if(typeof waterUniforms!=='undefined'&&waterUniforms.reflectionLite){
-     waterUniforms.reflectionLite.value=aczoPerf5Phase==='WATER REFLECTION LITE'?1:0;
-   }
-   if(aczoPerf5Phase==='WATER OFF'){try{syncWaterVisibility(false);}catch(e){}}
- }
-
- // Harte Objekt-Isolation unmittelbar vor dem Rendern. Dadurch kann keine
- // Wetter- oder Animationsroutine ein ausgeschaltetes Diagnoseobjekt reaktivieren.
- if(typeof diagnosticState!=='undefined'){
-   if(!diagnosticState.waterObject) syncWaterVisibility(false);
-   if(!diagnosticState.pondObject){pond.visible=false;pondNeutral.visible=false;}
-   if(!diagnosticState.extraObjects){
-     pondNightLift.visible=false;
-     pondCelestialDepthLift.visible=false;
    }
  }
  if(typeof aczoShoreSeal!=='undefined'){
@@ -40515,7 +40084,7 @@ function aczoPerf7Summary(){
      &&!fishMode&&!(anglingMode&&anglingCinematicView==='underwater');
    aczoShoreSeal.visible=regularSurface||fishDiveTransition;
  }
- markViewerRenderCall();renderer.render(scene,camera);
+ renderer.render(scene,camera);
  aczoRenderRodOverlay();
  restoreCelestialDiscWorldPositions();
  if(window.__markMapStartupFirstFrame){
@@ -40525,7 +40094,7 @@ function aczoPerf7Summary(){
  updateAnglingAmbientStatus(dt);
  renderAnglingFloatCamera();if(anglingUsesDeeper()&&anglingUi.classList.contains('line-active'))drawAnglingDeeperSonar();
   renderAnglingReelCamera();
- updateViewerDebug(rawDt);
+ 
  // Der Zehn-Sekunden-Timer beginnt erst nach dem ersten wirklich gezeichneten
  // Kartenbild. Der Viewer selbst bleibt dadurch beim Start sofort bedienbar.
  schedulePersonalCampScene();
