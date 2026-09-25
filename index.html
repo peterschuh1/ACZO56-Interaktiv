@@ -22896,6 +22896,97 @@ function triggerAnglingLureScare(f,cfg){
   f.pause=0;
 }
 
+
+// P80: Unterwasserschnur scheucht Fische bei echtem Körperkontakt.
+// Fische, die bereits am Kunstköder interessiert sind / ihn verfolgen / angreifen,
+// bleiben davon ausgenommen, damit die Schnur eine laufende Räuberjagd nicht sabotiert.
+const ACZO_LINE_FISH_SAMPLES=12;
+const aczoLineFishPoints=Array.from({length:ACZO_LINE_FISH_SAMPLES+1},()=>new THREE.Vector3());
+const aczoLineFishEnd=new THREE.Vector3();
+const aczoLineFishClosest=new THREE.Vector3();
+const aczoLineFishAB=new THREE.Vector3();
+const aczoLineFishAP=new THREE.Vector3();
+const aczoLineFishAway=new THREE.Vector3();
+const aczoLineFishBounds={minX:0,maxX:0,minY:0,maxY:0,minZ:0,maxZ:0,ready:false};
+function aczoFishProtectedFromLineScare(f){
+  if(!f)return true;
+  if(f===anglingVisibleStrikeActor)return true;
+  if(activeHunt&&(activeHunt.predator===f||activeHunt.prey===f))return true;
+  const b=f.predatorBrain;
+  if(b&&['notice','follow','inspect','burst'].includes(b.mode))return true;
+  return !!((f.lureChaseUntil||0)>fishWorldTime&&b&&(b.interest||0)>.12);
+}
+function aczoPrepareLineFishCollisionPath(){
+  const active=!!(anglingMode&&anglingSelection&&anglingUsesArtificialLure()&&anglingLure.visible&&
+    anglingCinematicView==='underwater'&&!anglingFastObstaclePull&&
+    ['lure-waiting','lure-retrieving'].includes(anglingState));
+  aczoLineFishBounds.ready=false;
+  if(!active)return false;
+  const start=aczoLineFishPoints[0];
+  computeAnglingLureLineEntry(start);
+  const end=anglingTerminalPoint(aczoLineFishEnd);
+  let minX=Infinity,minY=Infinity,minZ=Infinity,maxX=-Infinity,maxY=-Infinity,maxZ=-Infinity;
+  for(let i=0;i<=ACZO_LINE_FISH_SAMPLES;i++){
+    const t=i/ACZO_LINE_FISH_SAMPLES,p=aczoLineFishPoints[i];
+    if(i===0)p.copy(start);
+    else if(anglingLineObstacleContacts.length)sampleAnglingSupportedLinePath(start,end,t,p,.004);
+    else p.lerpVectors(start,end,t).addScaledVector(anglingUp,-Math.sin(Math.PI*t)*.012);
+    minX=Math.min(minX,p.x);maxX=Math.max(maxX,p.x);
+    minY=Math.min(minY,p.y);maxY=Math.max(maxY,p.y);
+    minZ=Math.min(minZ,p.z);maxZ=Math.max(maxZ,p.z);
+  }
+  Object.assign(aczoLineFishBounds,{minX,maxX,minY,maxY,minZ,maxZ,ready:true});
+  return true;
+}
+function aczoPointSegmentDistanceSq(point,a,b,outClosest){
+  aczoLineFishAB.subVectors(b,a);aczoLineFishAP.subVectors(point,a);
+  const len2=aczoLineFishAB.lengthSq();
+  const t=len2>1e-9?THREE.MathUtils.clamp(aczoLineFishAP.dot(aczoLineFishAB)/len2,0,1):0;
+  outClosest.copy(a).addScaledVector(aczoLineFishAB,t);
+  return point.distanceToSquared(outClosest);
+}
+function aczoTriggerLineContactFlee(f,closest){
+  const species=f.obj.userData.species;
+  aczoLineFishAway.set(f.obj.position.x-closest.x,f.obj.position.y-closest.y,0);
+  if(aczoLineFishAway.lengthSq()<.0025){
+    const a=aczoLineFishPoints[0],b=aczoLineFishPoints[ACZO_LINE_FISH_SAMPLES];
+    aczoLineFishAway.set(-(b.y-a.y),b.x-a.x,0);
+    if(aczoLineFishAway.lengthSq()<.0025)aczoLineFishAway.set(Math.random()-.5,Math.random()-.5,0);
+  }
+  aczoLineFishAway.normalize();
+  const big=['catfish','pike','zander','carp','mirrorcarp','grasscarp','sturgeon'].includes(species);
+  const fleeDistance=(big?4.0:2.8)+Math.random()*(big?2.0:1.5);
+  if(!f.huntFleeTarget)f.huntFleeTarget=new THREE.Vector3();
+  f.huntFleeTarget.copy(f.obj.position).addScaledVector(aczoLineFishAway,fleeDistance);
+  const d=pondDepthAt(f.huntFleeTarget.x,f.huntFleeTarget.y);
+  if(d==null||d<.38)randomSpeciesPoint(species,f.huntFleeTarget);
+  else{
+    const floor=-d*exaggeration;
+    f.huntFleeTarget.z=THREE.MathUtils.clamp(f.obj.position.z+(Math.random()-.5)*.18,floor+.20,-.14);
+  }
+  f.huntFleeUntil=fishWorldTime+1.8+Math.random()*1.2;
+  f.lineScareCooldownUntil=fishWorldTime+2.8+Math.random()*1.2;
+  f.pause=0;f.feedBottomUntil=0;f.feedSource='';f.lureChaseUntil=0;
+  if(f.predatorBrain&&f.predatorBrain.mode==='idle')f.predatorCooldown=Math.max(f.predatorCooldown||0,fishWorldTime+2.2);
+}
+function aczoTryScareFishFromLine(f){
+  if(!aczoLineFishBounds.ready||!f?.obj||aczoFishProtectedFromLineScare(f)||
+     (f.lineScareCooldownUntil||0)>fishWorldTime||(f.huntFleeUntil||0)>fishWorldTime)return false;
+  const w=Math.abs(f.obj.userData.baseFishWidth||f.obj.scale.x||.18);
+  const h=Math.abs(f.obj.userData.baseFishHeight||f.obj.scale.y||.08);
+  const radius=THREE.MathUtils.clamp(h*.46+w*.065,.045,.24);
+  const p=f.obj.position,b=aczoLineFishBounds,pad=radius+.035;
+  if(p.x<b.minX-pad||p.x>b.maxX+pad||p.y<b.minY-pad||p.y>b.maxY+pad||p.z<b.minZ-pad||p.z>b.maxZ+pad)return false;
+  const r2=radius*radius;
+  for(let i=0;i<ACZO_LINE_FISH_SAMPLES;i++){
+    if(aczoPointSegmentDistanceSq(p,aczoLineFishPoints[i],aczoLineFishPoints[i+1],aczoLineFishClosest)<=r2){
+      aczoTriggerLineContactFlee(f,aczoLineFishClosest);
+      return true;
+    }
+  }
+  return false;
+}
+
 // Kunstköder sind Reize. Jeder Räuber behält seine eigene Geschwindigkeit und sein eigenes Sichtziel.
 const aczoPredatorProfiles={
  zander:{range:7.4,notice:.20,cruise:1.14,burst:3.45,accel:1.9,turn:1.02,follow:20.5,rest:3.2,night:.82,day:.68,bottom:.82,spoon:.82,spontaneous:.12},
@@ -23118,10 +23209,15 @@ function aczoPredatorUpdate(f,dt,dist){
  const decisiveAttackBoost=b.decisive?2.15:1;
  // Ein Räuber, der den Köder bereits sauber verfolgt, soll nicht endlos folgen.
  // Der Bonus baut sich langsam auf und bleibt gedeckelt; ein Biss wird nie garantiert.
- const trackingAttackBoost=1+Math.min(.75,(b.trackingTime||0)*.16);
- const attackRate=(.082+p.spontaneous*.31)*b.aggression*steadyAttackBoost*actionBonus*decisiveAttackBoost*trackingAttackBoost*(l.rest?.38:1)*
+ const trackingAttackBoost=1+Math.min(.95,(b.trackingTime||0)*.20);
+ // P80: Die seitliche Nachlaufspur liegt bei großen Räubern oft schon mehr als
+ // einen Meter neben dem Köder. Die frühere 1,55-m-Schwelle konnte dadurch einen
+ // sauberen Nachläufer technisch vom Angriff ausschließen. Diese Distanz gibt
+ // nur den Angriff frei; der Biss selbst braucht weiterhin echten Maulkontakt.
+ const followGeometryAllowance=(s==='zander'||s==='pike'||s==='catfish')?Math.min(.62,(b.sideAmount||0)*.34):0;
+ const attackRate=(.105+p.spontaneous*.33)*b.aggression*steadyAttackBoost*actionBonus*decisiveAttackBoost*trackingAttackBoost*(l.rest?.38:1)*
    (s==='perch'?THREE.MathUtils.lerp(1,.17,night):s==='catfish'?THREE.MathUtils.lerp(.48,1.65,night):1);
- const attackDistance=b.decisive?(s==='catfish'?2.55:1.90):(s==='catfish'?2.2:1.55);
+ const attackDistance=(b.decisive?(s==='catfish'?2.65:2.08):(s==='catfish'?2.35:1.78))+followGeometryAllowance;
  const interestGate=b.decisive?.36:.43;
  if(b.mode!=='burst'&&dist<attackDistance&&b.interest>interestGate&&
     Math.random()<1-Math.exp(-attackRate*elapsed)){
@@ -23191,8 +23287,11 @@ function aczoPredatorUpdate(f,dt,dist){
    }
    // Der virtuelle Maulpunkt bleibt ausschliesslich fuer echten Angriff/Kontakt.
    if(b.mode==='burst')aczoPredatorAimBodyForMouth(f,sight,b.aim);
-   const aimDelay=b.mode==='burst'?(b.shockAttack?.10:.16):b.mode==='follow'?(b.decisive?.16:.23):(.30+Math.random()*.42);
-   b.nextAim=fishWorldTime+aimDelay*(b.mode==='follow'?(.80+Math.random()*.55):1);
+   // P80: Bewegte Kunstköder werden in der Nachlaufphase etwas häufiger neu
+   // erfasst. Das bleibt weit unter einer harten Kopplung pro Frame, verhindert
+   // aber das sichtbare Zurückfallen hinter einem normal geführten Köder.
+   const aimDelay=b.mode==='burst'?(b.shockAttack?.10:.16):b.mode==='follow'?(b.decisive?.11:.16):(.30+Math.random()*.42);
+   b.nextAim=fishWorldTime+aimDelay*(b.mode==='follow'?(.82+Math.random()*.42):1);
  }
  return true;
 }
@@ -23238,15 +23337,23 @@ function aczoPredatorSwim(f,dt){
      // Leichter Geschwindigkeitsüberschuss gegenüber dem sichtbaren Köder.
      // Artspezifische Profile bleiben erhalten; dies ist nur eine Untergrenze
      // während einer aktiven Verfolgung, kein permanenter Turbo.
-     const catchup=s==='perch'?1.30:s==='pike'?1.26:s==='zander'?1.22:1.16;
-     const lureCatchSpeed=THREE.MathUtils.clamp(anglingLureWorldSpeed*catchup,p.cruise,p.burst*.82);
+     // P80: Nachläufer müssen den sichtbaren Köder halten können. Die alte
+     // Obergrenze von 82 % des Burst-Tempos machte vor allem Zander/Wels bei
+     // gleichmäßiger Führung technisch langsamer als den Köder.
+     const catchup=s==='perch'?1.38:s==='pike'?1.35:s==='zander'?1.32:1.27;
+     const lureCatchSpeed=THREE.MathUtils.clamp(anglingLureWorldSpeed*catchup,p.cruise,p.burst*1.02);
      targetSpeed=Math.max(targetSpeed,lureCatchSpeed);
-     // Direkt am Nachlaufpunkt nicht mit Überschuss durch das Ziel schießen.
-     if(horizontal<.48)targetSpeed=Math.min(targetSpeed,Math.max(p.cruise*.34,anglingLureWorldSpeed*.96));
+     // Erst unmittelbar am Ankerpunkt abbremsen und dort ungefähr das
+     // Ködertempo halten, statt absichtlich langsamer zu werden.
+     if(horizontal<.26)targetSpeed=Math.min(targetSpeed,Math.max(p.cruise*.42,anglingLureWorldSpeed*1.01));
    }
  }
  const diff=targetSpeed-b.speed;
- b.speed+=THREE.MathUtils.clamp(diff,-p.accel*dt*.9,p.accel*dt*(b.mode==='burst'?1.65:1));
+ // P80: In FOLLOW beschleunigen besonders Zander und Wels zügiger nach. Das
+ // verändert nicht ihr normales Schwimmen, sondern nur eine bereits begonnene
+ // Kunstköderverfolgung.
+ const followAccelBoost=b.mode==='follow'?(s==='catfish'?1.62:s==='zander'?1.48:s==='pike'?1.32:1.24):1;
+ b.speed+=THREE.MathUtils.clamp(diff,-p.accel*dt*.9,p.accel*dt*(b.mode==='burst'?1.65:followAccelBoost));
  b.velocity.set(Math.cos(b.heading)*b.speed,Math.sin(b.heading)*b.speed,0);
  const oldX=position.x,oldY=position.y,oldZ=position.z;
  position.x+=b.velocity.x*dt;position.y+=b.velocity.y*dt;
@@ -23357,6 +23464,7 @@ function updateFishActors(dt){
     anglingLureSweepStart.copy(anglingLure.position);
   }
   aczoPredatorSampleLure(dt,lureUnderwaterActive,aczoPreviousLureZ);
+  const aczoLineFishCollisionActive=aczoPrepareLineFishCollisionPath();
   updateAnglingFeedUnderwaterVisual(dt,lureUnderwaterActive);
   if(!fishVisualActive&&!feedWorldActive) return;
   fishWorldTime+=dt;
@@ -23393,13 +23501,16 @@ function updateFishActors(dt){
       keepFishAboveFloor(f);
     }
 
+    // P80: Berührt ein unbeteiligter Fisch die Unterwasserschnur, flüchtet er.
+    // Bereits interessierte/verfolgende Räuber sind davon bewusst ausgenommen.
+    const lineScared=aczoLineFishCollisionActive&&aczoTryScareFishFromLine(f);
     const predatorProfile=aczoPredatorProfiles[species];
     if(predatorProfile){
       const lureDist=aczoPredatorMouthPoint(f).distanceTo(anglingLure.position);
-      if(lureUnderwaterActive&&fishNow>=anglingSnagCooldownUntil&&
+      if(!lineScared&&lureUnderwaterActive&&fishNow>=anglingSnagCooldownUntil&&
          ['lure-waiting','lure-retrieving'].includes(anglingState)){
         aczoPredatorUpdate(f,dt,lureDist);
-      }else if(f.predatorBrain&&f.predatorBrain.mode!=='idle'&&f.predatorBrain.mode!=='abort'){
+      }else if(!lineScared&&f.predatorBrain&&f.predatorBrain.mode!=='idle'&&f.predatorBrain.mode!=='abort'){
         aczoPredatorDisengage(f,f.predatorBrain);
       }
     }else if(lureUnderwaterActive&&fishNow>=anglingSnagCooldownUntil){
