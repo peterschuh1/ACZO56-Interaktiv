@@ -3,9 +3,9 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
-<title>ACZO56-Interaktiv-V1.5</title>
+<title>ACZO56-Interaktiv-V1.6</title>
 <!-- ACZO56 BETA 1.2: Hänger-, Fischkontakt-, Touch- und Idle-Korrekturen auf bestehender Basis. -->
-<!-- ACZO56 V1.5 ALLE ANIMATIONEN: Bewegungsreduktion für Spiel-/UI-Animationen vollständig entfernt. -->
+<!-- ACZO56 V1.6: Drill, Unterwasser-KI, mobile Wasserreflexe, Fischgrößen/Gewichte und Cloud-Bestenliste erweitert. -->
 <!-- V7.83: Kritische Viewer-Ressourcen früh anfordern. -->
 <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
 <link rel="preconnect" href="https://geo4.service24.rlp.de" crossorigin>
@@ -4922,17 +4922,18 @@ html,body{
          <section><h3>📡 Deeper-Echolot</h3><p>Kaufe und montiere den Deeper in der Tacklebox, wähle einen Messpunkt und wirf ihn wie einen Köder aus. Das Sonar zeigt aktuelle Tiefe, Bodenverlauf, Messkegel und erkannte Fischsignale. Mit „Stelle speichern“ setzt du am Messpunkt eine Markierung. Ziehe den Deeper normal ein oder hole ihn am Desktop per Rechtsklick und mobil per Doppeltipp schnell zurück.</p></section>
          <section><h3>🌽 Naturköder</h3><p>Wurm, Made, Mais und Spezial-Naturköder werden beim erfolgreichen Anhieb verbraucht. Bei einem verpassten Anhieb besteht eine kleinere Chance auf Köderverlust. Einfaches Einholen verbraucht keinen Naturköder. Das Wurmbündel wird aus 12 Tauwürmern montiert und ist ausschließlich als spezieller Welsköder gedacht; ein montiertes Bündel bleibt bis zum tatsächlichen Verbrauch als Wurmbündel aktiv.</p></section>
          <section><h3>🐟 Köderfisch</h3><p>Geeignete gefangene Kleinfische erhöhen deinen Köderfischbestand. Ein Köderfisch wird bei einer Raubfischattacke verbraucht. Er kann nicht gekauft werden.</p></section>
-         <section><h3>🌀 Kunstköder</h3><p>Blinker und Gummifisch fangen nur in Bewegung. Klick oder Tipp holt etwa 0,5 m ein, Halten kurbelt kontinuierlich. Mobil holt ein Doppeltipp schnell komplett ein; am Desktop übernimmt der Rechtsklick. Beim Schnelleinholen folgt die Unterwasserkamera dem Köder ruhig bis kurz vor das Ufer; dort steigt der Köder weich aus dem Wasser und die Uferansicht übernimmt. Während dieses Schnellrückwegs kann kein Fisch gerissen werden, die Hängerkollisionen mit Unterwasserholz, Bäumen und Stegen bleiben aber vollständig aktiv. Dasselbe Hängerprinzip gilt für „Zum Ufer“, es gibt keinen Hindernis-Bypass. Maus- oder Fingerbewegung nach oben/unten verändert die Rutenhöhe und Lauftiefe; links/rechts gibt einen kleinen seitlichen Impuls. Ein Fisch kann nur dann gerissen werden, wenn der Kunstköder beim normalen aktiven Einkurbeln den Fischkörper unmittelbar berührt. Beim freien Absinken oder reglosen Köder ist das ausgeschlossen. Läuft die Schnur über mehrere Hindernisse, kann sie auf mehreren Punkten gleichzeitig aufliegen und mehrere Knicke bilden; beim Einholen wird der Köder zuerst zum jeweils nächsten Kontaktpunkt geführt.</p></section>
+         <section><h3>🌀 Kunstköder</h3><p>Blinker und Gummifisch fangen nur in Bewegung. Klick oder Tipp holt etwa 0,5 m ein, Halten kurbelt kontinuierlich. Mobil holt ein Doppeltipp schnell komplett ein; am Desktop übernimmt der Rechtsklick. Beim Schnelleinholen folgt die Unterwasserkamera dem Köder ruhig bis kurz vor das Ufer; dort steigt der Köder weich aus dem Wasser und die Uferansicht übernimmt. Während dieses Schnellrückwegs kann kein Fisch gerissen werden, die Hängerkollisionen mit Unterwasserholz, Bäumen und Stegen bleiben aber vollständig aktiv. Dasselbe Hängerprinzip gilt für „Zum Ufer“, es gibt keinen Hindernis-Bypass. Maus- oder Fingerbewegung nach oben/unten verändert die Rutenhöhe und Lauftiefe; links/rechts gibt einen kleinen seitlichen Impuls. Ein Fisch kann nur dann gerissen werden, wenn der Kunstköder beim normalen aktiven Einkurbeln den Fischkörper unmittelbar berührt. Beim freien Absinken oder reglosen Köder ist das ausgeschlossen. Berührt die Unterwasserschnur einen unbeteiligten Fisch, flüchtet dieser zügig; Räuber, die den Köder bereits interessiert beobachten, verfolgen oder angreifen, sind davon ausgenommen. Verfolgende Räuber beschleunigen beim Aufholen stärker und aktualisieren ihre Nachlaufspur häufiger, ein Biss bleibt aber weiterhin eine echte Attacke und ist nicht garantiert. Läuft die Schnur über mehrere Hindernisse, kann sie auf mehreren Punkten gleichzeitig aufliegen und mehrere Knicke bilden; beim Einholen wird der Köder zuerst zum jeweils nächsten Kontaktpunkt geführt.</p></section>
          <section><h3>🐊 Spezialköder</h3><p>Premium- und artspezifische Köder erhöhen die Gewichtung bestimmter Fischarten, garantieren aber keinen Biss. Standort, Tiefe, Aktivität und Zufall bleiben relevant.</p></section>
          <section><h3>⚡ Biss, Anhieb & Hänger</h3><p>Beim Posenangeln zeigt der Schwimmer zuerst den Biss. Danach läuft das Reaktions-QTE zweimal vollständig. Ein exakt mittiger Treffer gilt als perfekter Anhieb und bringt beim Fang +8 EP. Triff den grünen beziehungsweise besonders guten Bereich. Ein früher Fehlversuch beendet nicht sofort den gesamten Versuch. Kurze Randimpulse unterstützen Biss und Hänger visuell; der Hänger bleibt anschließend ein echter Zustand und muss gelöst werden, statt durch Schnelleinholen oder „Zum Ufer“ übersprungen zu werden.</p></section>
          <section><h3>🎣 Drill & Bremse</h3><p>Beobachte Schnurspannung, Fisch-Ausdauer und Entfernung. Halte „Kurbeln“ gedrückt und führe die Rute auf die Gegenseite des Fisches: Fisch links bedeutet Rute rechts, Fisch rechts bedeutet Rute links. Die Rutenhaltung ist Teil der Drillphysik: Zeigt die Rute fast direkt zum Fisch, richtet sich der Blank auf und die Schnur übernimmt mehr Last; mit größerem Winkel biegt die Rute stärker und puffert Fluchtspitzen. Eine lockere Bremse lässt mehr Schnur frei und schützt besonders bei starken Fischen, eine feste Bremse holt direkter ein, erhöht aber das Risiko. Auf dem Desktop stellst du die Bremse zusätzlich mit dem Mausrad ein: ↑ fester, ↓ lockerer. Die sichtbare Drillschnur wechselt mit der Belastung von Weiß über Gelb und Orange zu Rot. Bei echter Flucht und Schnurabzug reagieren Randpuls, Belastungsbalken und Rutenfederung sichtbar stärker. Große Fische mit viel Rest-Ausdauer können kurz vor dem Ufer erneut nach draußen flüchten. Bei zu hoher Spannung musst du Last herausnehmen, sonst droht Schnurbruch; ein montierter Kunstköder geht dabei verloren.</p></section>
          <section><h3>🥅 Keschern</h3><p>Bewege den Kescher mit Maus oder Finger nach links/rechts unter den Fisch und keschere im passenden Moment. Der Standardkescher gehört zur Startausrüstung. Der größere Pro Kescher kann im Shop gekauft werden und vergrößert die reale Fangzone um rund 18 %. Der erste knappe Fehlversuch wird weiterhin verziehen.</p></section>
          <section><h3>⏱️ Zeitwechsel</h3><p>Der Zeitwechsel steht ausschließlich in der Ufer-Angelperspektive bereit, solange die Angel noch nicht ausgeworfen wurde und du den Auswurfpunkt wählen kannst. In Stellenauswahl, Unterwasseransicht, nach dem Auswurf, bei Biss, Drill und Keschern ist die Funktion ausgeblendet. Du kannst die Spielzeit in 1-Stunden-Schritten bis maximal 24 Stunden vor- oder zurückspulen. Jede Stunde kostet 1 EP und läuft in 0,5 Sekunden ab. Einsteiger besitzen pro Sitzung einen Vorwärts- und einen Rückwärtswechsel; höhere Anglerstufen erhalten zusätzliche Wechsel.</p></section>
          <section><h3>🌗 Aktivitätszeiten</h3><p>Die Fischaktivität verändert sich mit der Tageszeit. Hecht und Barsch profitieren vor allem von Morgen- und Abendphasen. Zander wird besonders in Dämmerung, Nacht und bei Bewölkung aktiv; Aal und Wels bevorzugen überwiegend Abend und Nacht. Zwischen ungefähr 13 und 15 Uhr tritt eine allgemeine, leicht schwankende Mittags-Beißflaute auf. Sie reduziert die Bisschance deutlich, aber niemals auf null.</p></section>
+         <section><h3>📏 Fischgrößen &amp; Gewichte</h3><p>Version 1.6 erweitert die möglichen Kapitalfische und kalibriert die Gewichte artspezifisch neu. Unter anderem sind jetzt Hechte bis 140 cm, Welse bis 260 cm, Zander bis 105 cm, Störe bis 160 cm, Graskarpfen bis 150 cm und Aale bis 130 cm möglich. Das Gewicht wird aus Fischart und Länge berechnet und im Fangbuch, Highscore und in der Online-Bestenliste nach derselben V1.6-Gewichtskurve bewertet. Die früheren Maximalgrößen bleiben zugleich Referenz für die bekannte Kampfstärke: bisherige Großfische werden durch die höheren Limits nicht schwächer; nur Fische oberhalb der alten Maximalgröße erhalten progressiv zusätzliche Kraft, Ausdauer, Explosivität und Fluchtraum. Der einmalige gelbe Koi bleibt unverändert exakt 70 cm groß.</p></section>
          <section><h3>⭐ EP & Shop</h3><p>Gefangene Fische bringen EP. Große und seltene Fische sind deutlich wertvoller; der einzigartige Koi bringt 1.000 EP. Gute Aktionen bringen Zusatz-EP, zum Beispiel ein perfekter Anhieb, eine präzise Pose im Futterplatz, sauberes Keschern, ein Fang am aktiven Futterplatz oder aktive Kunstköderführung. Ein gerissener Fisch zählt nur zu 50 % und erhält keine Fangboni. EP sind die ausgebbare Währung. Zusätzlich sammeln sich Gesamt-EP für deine dauerhafte Anglerstufe; Einkäufe senken diese Gesamt-EP nicht.</p></section>
          <section><h3>🎯 Tagesaufgaben</h3><p>Jeden Spieltag warten drei Aufgaben mit unterschiedlicher Schwierigkeit. Jede erledigte Aufgabe bringt EP; wer alle drei schafft, erhält den zusätzlichen Tagesbonus. Nach der kurzen Einblendung bleiben die Aufgaben jederzeit im Hauptmenü abrufbar.</p></section>
          <section><h3>☁️ Cloud-Spielstand</h3><p>EP, Gesamt-EP, Fortschritt, persönliche Bestwerte, Köderfische, gekaufte Köder und Futterbestände sowie die in der 3D-Unterwasseransicht entdeckten Fischarten werden automatisch online gespeichert. Das Fangbuch mit den einzelnen Fangereignissen bleibt ausschließlich lokal.</p></section><section><h3>🔑 Gerätewechsel</h3><p>Unter „Spielstand“ findest du einen privaten Wiederherstellungscode. Mit ihm kannst du deinen Cloud-Spielstand auf einem anderen Gerät übernehmen. Der übernommene Datensatz wird dem neuen Gerät zugeordnet; ein neu erzeugter Code macht den bisherigen Code ungültig.</p></section>
-         <section><h3>🏆 Highscore & Bestenliste</h3><p>Deine persönlichen Bestfänge stehen im Highscore. Wenn du einen Anzeigenamen festlegst und die Veröffentlichung aktivierst, werden deine freigegebenen Artenrekorde automatisch mit der öffentlichen Bestenliste abgeglichen. Die Liste lädt beim Öffnen selbstständig; ein Aktualisieren-Knopf ist nicht nötig.</p></section><section><h3>✨ Hall of Fame</h3><p>Die Hall of Fame besitzt im Hauptmenü einen eigenen Knopf und präsentiert öffentliche Rekorde über dem Weiher. Öffentlich eingetragene Fänger des einzigen gelben Koi erhalten dort zusätzlich eine eigene Ehrenfolie. Das Spiel pausiert während der Präsentation vollständig. „Zurück“ fliegt exakt in die zuvor gespeicherte Ansicht zurück. Während Biss, Drill, Kameraflug oder Kunstköder-Unterwasseransicht bleibt die Funktion gesperrt.</p></section>
+         <section><h3>🏆 Highscore & Bestenliste</h3><p>Deine persönlichen Bestfänge stehen im Highscore. Wenn du einen Anzeigenamen festlegst und die Veröffentlichung aktivierst, werden deine freigegebenen Artenrekorde automatisch mit der öffentlichen Bestenliste abgeglichen. Länge und Fangdatum bleiben der eigentliche Rekord; das Gewicht wird passend zur Fischart und Länge nach der aktuellen V1.6-Kurve berechnet. Bereits vorhandene öffentliche Rekorde bleiben erhalten und ihre gespeicherten Gewichte werden einmalig auf die neue Berechnung umgestellt. Die Liste lädt beim Öffnen selbstständig; ein Aktualisieren-Knopf ist nicht nötig.</p></section><section><h3>✨ Hall of Fame</h3><p>Die Hall of Fame besitzt im Hauptmenü einen eigenen Knopf und präsentiert öffentliche Rekorde über dem Weiher. Öffentlich eingetragene Fänger des einzigen gelben Koi erhalten dort zusätzlich eine eigene Ehrenfolie. Das Spiel pausiert während der Präsentation vollständig. „Zurück“ fliegt exakt in die zuvor gespeicherte Ansicht zurück. Während Biss, Drill, Kameraflug oder Kunstköder-Unterwasseransicht bleibt die Funktion gesperrt.</p></section>
          <section><h3>🟢 Angler online</h3><p>Ist die Namenssichtbarkeit aktiviert, meldet eine kurze Einblendung andere gerade aktive Angler. Die Meldung verschwindet selbstständig und zeigt keine private Spieler-ID oder Wiederherstellungscodes.</p></section>
        </div>
      </div>
@@ -5156,7 +5157,7 @@ html,body{
          <div class="help-item"><strong>↻ Reset</strong><span>Stellt Kamera, Zoom, Drehung und Neigung wieder auf die Ausgangsansicht zurück.</span></div>
          <div class="help-item"><strong>💧 Wasser: AN/AUS</strong><span>Blendet die bewegten Oberflächen von Weiher und Mosel ein oder aus. Standardmäßig ist Wasser aktiv.</span></div>
          <div class="help-item"><strong>🌦️ Wetter LIVE / NEUTRAL</strong><span>LIVE verwendet aktuelle Wetterdaten und Tageszeit. NEUTRAL entfernt Wetter- und Tageszeiteinflüsse und dient als klare Referenzansicht.</span></div>
-         <div class="help-item"><strong>☀️ Sonne & 🌙 Mond</strong><span>Folgen Datum, Uhrzeit und Standort. Licht, Schatten und Wasserwirkung verändern sich mit Tageszeit und Blickrichtung. Auf Mobil ist die besonders rechenintensive direkte Lichtbahn der normalen Kartenansicht reduziert.</span></div>
+         <div class="help-item"><strong>☀️ Sonne & 🌙 Mond</strong><span>Folgen Datum, Uhrzeit und Standort. Licht, Schatten und Wasserwirkung verändern sich mit Tageszeit und Blickrichtung. Desktop nutzt die aufwendige direkte Spiegelbahn; mobil erscheinen auf Weiher und Mosel bewusst leichtere, weich bewegte Sonne-/Mondreflexe ohne die rechenintensiven Strahlen.</span></div>
          <div class="help-item"><strong>✨ Sterne & Wolken</strong><span>Sternenhimmel und Himmelskörper sind astronomisch ausgerichtet. Die Wolken ziehen entsprechend Windrichtung und Windgeschwindigkeit und bleiben auch aus der Unterwasseransicht sichtbar.</span></div>
          <div class="help-item"><strong>🌧️ Wind und Regen</strong><span>Wellenrichtung, Wolkenbewegung, Regen und Regentropfen reagieren auf die aktuellen Wetter- und Winddaten.</span></div>
          <div class="help-item"><strong>🖨️ Drucken / Export</strong><span>Erstellt aus der aktuellen 3D-/2D-Kartenansicht ein eigenes hochauflösendes Druckbild und öffnet dafür ein separates Druckdokument. So werden auf Mobilgeräten und in Safari das Abdunkeln sowie das Durchscheinen der eigentlichen Webseite deutlich reduziert.</span></div>
@@ -5180,6 +5181,41 @@ Bitte gefundene Darstellungs-, Steuerungs- oder Spielfehler mit Gerät, Browser 
 </div>
        <details class="help-note" style="cursor:pointer">
          <summary style="font-weight:800">Update-History</summary>
+         <div style="margin-top:8px;cursor:default;overflow-wrap:anywhere">
+           <strong>Version 1.6 · 28.09.2026</strong>
+           <p><strong>Drill, Rute &amp; Bremse</strong></p>
+           <ul style="padding-left:20px">
+             <li>Rutenwinkel physikalisch stärker eingebunden: direkt zum Fisch gehaltene Rute richtet sich auf und überträgt mehr Last, größere Winkel lassen den Blank stärker puffern.</li>
+             <li>Bremse für Großfische neu ausbalanciert; „Locker“ arbeitet wieder klar als Sicherheitsventil, ohne den Einfluss der Rutenhaltung aufzuheben.</li>
+             <li>Desktop: Rollenbremse im Drill zusätzlich per Mausrad steuerbar (hoch = fester, runter = lockerer).</li>
+             <li>Drillschnur zeigt die Belastung sichtbar von Weiß über Gelb und Orange bis Rot; Fluchten, kritische Spannung und Rutenfederung erhalten stärkeres visuelles Feedback.</li>
+             <li>Kräftige Großfische mit Rest-Ausdauer können direkt vor dem Ufer erneut nach außen ausbrechen, statt nur seitlich zu pendeln.</li>
+             <li>Posen-Deckkraft nach Fang und Drill wird vollständig restauriert; kein halbtransparenter Schwimmer mehr vor dem nächsten Auswurf.</li>
+           </ul>
+           <p><strong>Kunstköder &amp; Unterwasser-KI</strong></p>
+           <ul style="padding-left:20px">
+             <li>Schnelles Einholen von Kunstködern bleibt unter Wasser in einer ruhigen Nachlaufkamera und geht erst kurz vor dem Ufer weich in die Uferansicht über.</li>
+             <li>Hängerkollisionen bleiben auch beim Schnellrückweg und „Zum Ufer“ aktiv; Fische können während des reinen Schnellrückwegs nicht gerissen werden.</li>
+             <li>Wurmbündel bleibt nach Auswurf und verzögertem Cloud-Abgleich zuverlässig montiert, bis es tatsächlich verbraucht oder bewusst gewechselt wird.</li>
+             <li>Unterwasserschnur löst bei berührten, unbeteiligten Fischen eine schnelle Flucht aus; bereits interessierte, folgende oder angreifende Räuber werden nicht verscheucht.</li>
+             <li>Raubfisch-Nachläufer beschleunigen kräftiger, erfassen den bewegten Köder häufiger neu und erreichen das reale Attackenfenster zuverlässiger, ohne künstlich am Köder festzukleben.</li>
+           </ul>
+           <p><strong>Performance &amp; Darstellung</strong></p>
+           <ul style="padding-left:20px">
+             <li>Unterwasser-Vorwärmung zusammengeführt und erweitert: Fischtexturen, freie Tauchansicht, Kunstköder-Unterwasseransicht, echte Bildschirm-Shadervarianten und relevante Kamerapfade werden bereits beim Start vorbereitet.</li>
+             <li>Desktop-Pixelratio bleibt beim ersten Abtauchen stabil; redundante Warmups und unnötige Partikel wurden reduziert, ohne das Live-Rutenfenster zu beschneiden.</li>
+             <li>Mobil: leichte Sonne- und Mondreflexion auf Weiher und Mosel ergänzt. Die aufwendigen Desktop-Strahlen und Spiegelbahnen bleiben dort bewusst deaktiviert.</li>
+           </ul>
+           <p><strong>Fischgrößen, Gewichte &amp; Cloud</strong></p>
+           <ul style="padding-left:20px">
+             <li>Maximalgrößen mehrerer Arten erweitert, darunter Hecht 140 cm, Wels 260 cm, Spiegelkarpfen 120 cm, Graskarpfen 150 cm, Stör 160 cm, Zander 105 cm, Aal 130 cm und Schleie 80 cm.</li>
+             <li>Artspezifische Gewichtskurven neu kalibriert; Kapitalfische erhalten realistischere Maximalgewichte, z. B. bis ca. 120 kg beim 260-cm-Wels.</li>
+             <li>Kampfstärke an die erweiterten Größen angepasst: Fische bis zur früheren Maximalgröße behalten exakt ihre bisherige Größen-Skalierung; darüber steigt die Kampfkraft progressiv mit zusätzlicher Länge und Gewicht, inklusive mehr Ausdauer, Burst und Fluchtraum.</li>
+             <li>Bestehende öffentliche Rekorde bleiben vollständig erhalten. Nur ihre gespeicherten Gewichte werden einmalig aus Fischart und Länge nach V1.6 neu berechnet.</li>
+             <li>Neue Bestenlisten-Einträge erhalten ihr Gewicht serverseitig aus Art und Länge, damit Frontend, Highscore und Cloud nicht mehr auseinanderlaufen können.</li>
+             <li>Der einmalige gelbe Koi bleibt als Sonderfall unverändert exakt 70 cm.</li>
+           </ul>
+         </div>
          <div style="margin-top:8px;cursor:default;overflow-wrap:anywhere">
            <strong>Version 1.5 · 23.09.2026</strong>
            <p><strong>Angelspiel &amp; Technik erweitert</strong></p>
@@ -5280,8 +5316,8 @@ Wetterdaten: Open-Meteo · Astronomische Berechnungen: SunCalc<br>
 <script>
 // V7.75: Der Startlayer ist bereits durch HTML/CSS sichtbar, bevor dieser schwere
 // Three.js-Block ausgeführt wird. Er wird erst nach einem echten Renderbild freigegeben.
-// Öffentliche Version 1.5: aktualisierter Stand vom 23.09.2026.
-const VIEWER_VERSION='ACZO56-Interaktiv-V1.5';
+// Öffentliche Version 1.6: aktualisierter Stand vom 28.09.2026.
+const VIEWER_VERSION='ACZO56-Interaktiv-V1.6';
 const ACZO_INTERNAL_BUILD='1.38';
 const helpVersion=document.getElementById('helpVersion');
 if(helpVersion) helpVersion.textContent=VIEWER_VERSION;
@@ -27666,8 +27702,8 @@ function updateAnglingLevelUi(){
 }
 
 const ANGLING_WEIGHT_COEFF={
-  roach:.012,rudd:.011,pike:.008,catfish:.005,carp:.014,mirrorcarp:.014,grasscarp:.011,
-  sturgeon:.007,zander:.009,eel:.0022,tench:.013,bream:.012,koi:.014,perch:.012,sunfish:.015,goby:.013
+  roach:.0176,rudd:.0184,pike:.010932945,catfish:.006827492,carp:.021040519,mirrorcarp:.020833333,grasscarp:.013333333,
+  sturgeon:.009765625,zander:.012957564,eel:.002730997,tench:.016601563,bream:.015946202,koi:.017492711,perch:.021036814,sunfish:.022222222,goby:.0192
 };
 function anglingEstimatedKg(species,cm){
   return Math.max(.01,(ANGLING_WEIGHT_COEFF[species]||.01)*Math.pow(Number(cm)||1,3)/1000);
@@ -35805,9 +35841,9 @@ function pickAnglingCandidate(){
 // bleiben bewusst unter publizierten Extremgrößen. Der einzige gelbe Koi ist
 // die Ausnahme und bleibt unverändert exakt 70 cm groß.
 const anglingCatchSizes={
-  roach:[8,46],rudd:[8,48],bream:[18,76],perch:[6,55],sunfish:[5,30],goby:[4,25],
-  tench:[15,72],carp:[30,115],mirrorcarp:[30,115],grasscarp:[40,138],
-  pike:[25,125],zander:[20,96],eel:[25,115],catfish:[40,230],sturgeon:[50,120],koi:[70]
+  roach:[8,50],rudd:[8,50],bream:[18,76],perch:[6,55],sunfish:[5,30],goby:[4,25],
+  tench:[15,80],carp:[30,115],mirrorcarp:[30,120],grasscarp:[40,150],
+  pike:[25,140],zander:[20,105],eel:[25,130],catfish:[40,260],sturgeon:[50,160],koi:[70]
 };
 const ANGLING_SIZE_TIERS=[
   {chance:.55,from:.12,to:.55},
@@ -35914,6 +35950,15 @@ function beginAnglingStrikeQte(){
 const ANGLING_STRENGTH={
   roach:.22,rudd:.24,bream:.46,perch:.34,sunfish:.22,goby:.14,tench:.62,carp:.92,
   mirrorcarp:.96,grasscarp:1.05,pike:.86,zander:.72,eel:.58,catfish:1.08,sturgeon:.94,koi:.92
+};
+// V1.6/P83: Die bisherigen Maximalgroessen bleiben die Referenz fuer die
+// bislang bekannte Kampfkraft. Dadurch wird z.B. ein alter 230-cm-Wels durch
+// die Erweiterung auf 260 cm nicht nachtraeglich schwaecher. Nur Fische, die
+// ueber die fruehere Maximalgroesse hinausgehen, erhalten einen progressiven
+// Kapitalfisch-Bonus auf Kraft, Ausdauer und Explosivitaet.
+const ANGLING_FIGHT_REFERENCE_MAX_CM={
+  roach:46,rudd:48,bream:76,perch:55,sunfish:30,goby:25,tench:72,carp:115,
+  mirrorcarp:115,grasscarp:138,pike:125,zander:96,eel:115,catfish:230,sturgeon:120,koi:70
 };
 
 // Artspezifische Drillhandschrift. Werte modifizieren nur das bereits
@@ -36056,21 +36101,45 @@ function beginAnglingDrill(){
   anglingBobber.visible=false;
   anglingLure.visible=false;anglingLine.visible=true;anglingDrillLineGroup.visible=true;
   anglingHookPoint.copy(anglingCastEnd);anglingHookPoint.z=anglingSurfaceZ(anglingHookPoint.x,anglingHookPoint.y)-.11;
-  const sizeMax=(anglingCatchSizes[anglingPendingCatch.species]||[10,30]).slice(-1)[0]||30;
-  const sizeFactor=THREE.MathUtils.clamp(anglingPendingCatch.cm/sizeMax,.45,1.15);
-  anglingCurrentFightProfile=ANGLING_FIGHT_PROFILE[anglingPendingCatch.species]||ANGLING_FIGHT_PROFILE.roach;
+  const species=anglingPendingCatch.species;
+  const sizeMax=(anglingCatchSizes[species]||[10,30]).slice(-1)[0]||30;
+  const fightReferenceMax=ANGLING_FIGHT_REFERENCE_MAX_CM[species]||sizeMax;
+  // Bis zur alten Maximalgroesse exakt dieselbe Groessen-Skalierung wie vor
+  // V1.6. Erst oberhalb dieser Referenz beginnt der neue Kapitalfisch-Bereich.
+  const baseSizeFactor=THREE.MathUtils.clamp(anglingPendingCatch.cm/fightReferenceMax,.45,1.15);
+  const extensionRoom=Math.max(.001,sizeMax-fightReferenceMax);
+  const trophyLengthProgress=THREE.MathUtils.clamp((anglingPendingCatch.cm-fightReferenceMax)/extensionRoom,0,1);
+  // Das Gewicht wird mit derselben neuen V1.6-Kurve einbezogen. Entscheidend
+  // ist nur der Zuwachs oberhalb des alten Referenzfisches, damit bestehende
+  // Groessen ihre fruehere Kampfkraft behalten.
+  const currentFightKg=anglingEstimatedKg(species,anglingPendingCatch.cm);
+  const referenceFightKg=anglingEstimatedKg(species,fightReferenceMax);
+  const maximumFightKg=anglingEstimatedKg(species,sizeMax);
+  const trophyWeightProgress=maximumFightKg>referenceFightKg+.001
+    ?THREE.MathUtils.clamp((currentFightKg-referenceFightKg)/(maximumFightKg-referenceFightKg),0,1)
+    :0;
+  const trophyPower=THREE.MathUtils.clamp(.55*trophyLengthProgress+.45*trophyWeightProgress,0,1);
+  // Der erweiterte Faktor wirkt auf Fluchtraum/Run-Drive, ohne die alten
+  // Fische umzuschreiben. Absolute Kapitalfische duerfen sichtbar darueber liegen.
+  const sizeFactor=THREE.MathUtils.clamp(baseSizeFactor+trophyPower*.12,.45,1.27);
+  anglingCurrentFightProfile=ANGLING_FIGHT_PROFILE[species]||ANGLING_FIGHT_PROFILE.roach;
   const temp=ANGLING_TEMPERAMENTS.find(t=>t.name===anglingFishTemperament)||ANGLING_TEMPERAMENTS[1];
   anglingFightSizeFactor=sizeFactor;
   anglingDistanceUiPrev=anglingFightDistance;
   anglingDistanceUiSpeed=0;
   anglingDistanceMotion=0;
   anglingDistanceFlowState=0;
-  anglingDrillStrength=THREE.MathUtils.clamp((ANGLING_STRENGTH[anglingPendingCatch.species]||.4)*(.72+.36*sizeFactor)*temp.run,.12,1.18);
-  anglingFishBurstIndividual=.92+Math.random()*.16;
+  const legacyStrength=THREE.MathUtils.clamp(
+    (ANGLING_STRENGTH[species]||.4)*(.72+.36*baseSizeFactor)*temp.run,
+    .12,1.18
+  );
+  anglingDrillStrength=THREE.MathUtils.clamp(legacyStrength*(1+.16*Math.pow(trophyPower,1.08)),.12,1.38);
+  anglingFishBurstIndividual=(.92+Math.random()*.16)*(1+.10*trophyPower);
   anglingFishEnduranceIndividual=.92+Math.random()*.16;
   anglingDrillStamina=anglingStrikeQuality==='perfect'?.92:1;
-  anglingStaminaResistance=anglingCurrentFightProfile.stamina*temp.stamina*anglingFishEnduranceIndividual*
-    THREE.MathUtils.lerp(.84,1.34,THREE.MathUtils.clamp((sizeFactor-.45)/.70,0,1));
+  const legacyStaminaResistance=anglingCurrentFightProfile.stamina*temp.stamina*anglingFishEnduranceIndividual*
+    THREE.MathUtils.lerp(.84,1.34,THREE.MathUtils.clamp((baseSizeFactor-.45)/.70,0,1));
+  anglingStaminaResistance=legacyStaminaResistance*(1+.22*Math.pow(trophyPower,1.05));
   setupAnglingFishVisual();anglingFishVisual.visible=false;anglingNetGroup.visible=false;
   anglingFishVisualPrevValid=false;anglingFishVisualDepthYaw=0;anglingFishVisualMotionState='drilling';
   anglingDrillTension=anglingStrikeQuality==='perfect'?.34:.42;
