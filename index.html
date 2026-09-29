@@ -3,9 +3,10 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
-<title>ACZO56-Interaktiv-V1.6</title>
+<title>ACZO56-Interaktiv-V1.7</title>
 <!-- ACZO56 BETA 1.2: Hänger-, Fischkontakt-, Touch- und Idle-Korrekturen auf bestehender Basis. -->
-<!-- ACZO56 V1.6: Drill, Unterwasser-KI, mobile Wasserreflexe, Fischgrößen/Gewichte und Cloud-Bestenliste erweitert. -->
+<!-- ACZO56 V1.7: Öffentliche Version mit überarbeitetem Angelspiel, Fangkarte, Teilen und komprimierter Update-History. -->
+<!-- Stand 29.09.2026: Vereins-Fangkarte, Vorschau-Share und spoilerfreie öffentliche Hilfe. -->
 <!-- V7.83: Kritische Viewer-Ressourcen früh anfordern. -->
 <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
 <link rel="preconnect" href="https://geo4.service24.rlp.de" crossorigin>
@@ -4519,8 +4520,81 @@ html,body{
 #aczoCatchRewards #anglingEpPopup small{font-size:10px;line-height:1.3;max-width:100%;margin:3px 0 0}
 @keyframes aczo-reward-in{from{opacity:0}to{opacity:1}}
 #anglingCatchCard #anglingAgainBtn{min-height:40px;white-space:normal}
+/* P84: Fangkarte lokal als PNG erzeugen und über die native Teilen-Funktion weitergeben. */
+#anglingCatchCard .aczo-catch-actions{display:flex;gap:8px;justify-content:center;align-items:center;flex-wrap:nowrap}
+#anglingCatchCard #anglingAgainBtn{flex:1 1 auto;min-width:0}
+/* P85: Teilen bleibt verfügbar, drängt sich aber nicht mehr vor den eigentlichen Fang. */
+#anglingCatchCard #anglingShareBtn{flex:0 0 42px!important;width:42px!important;min-width:42px!important;max-width:42px!important;height:42px!important;min-height:42px!important;padding:0!important;border-radius:50%!important;background:linear-gradient(180deg,rgba(26,111,86,.88),rgba(12,77,61,.90));color:#fff;border-color:rgba(220,255,236,.68);display:inline-flex;align-items:center;justify-content:center;box-shadow:none!important}
+#anglingCatchCard #anglingShareBtn:hover{background:linear-gradient(180deg,rgba(31,137,103,.96),rgba(14,91,71,.96))}
+#anglingCatchCard #anglingShareBtn:disabled{opacity:.42;cursor:wait}
+#anglingCatchCard #anglingShareBtn svg{width:19px;height:19px;flex:0 0 19px;overflow:visible}
+#anglingCatchCard #anglingShareBtn .aczo-share-label{position:absolute!important;width:1px!important;height:1px!important;padding:0!important;margin:-1px!important;overflow:hidden!important;clip:rect(0,0,0,0)!important;white-space:nowrap!important;border:0!important}
+@media(max-width:480px){#anglingCatchCard .aczo-catch-actions{gap:7px}#anglingCatchCard #anglingShareBtn{flex-basis:40px!important;width:40px!important;min-width:40px!important;max-width:40px!important;height:40px!important;min-height:40px!important}}
 @media(max-width:680px){#anglingCatchCard .aczo-catch-photo{height:82px}#anglingCatchCard{padding:10px}#anglingCatchCard #anglingCatchTitle{font-size:15px}#aczoCatchRewards{height:70px;min-height:70px}}
+/* P86: Mobile Fangkarte bekommt mehr Luft und eine klarere Aktionshierarchie. */
+#anglingCatchCard .aczo-catch-actions{margin-top:10px}
+@media(max-width:680px){
+  #anglingCatchCard{
+    width:min(365px,calc(100% - 18px));
+    max-width:calc(100% - 18px);
+    padding:14px 14px 13px;
+    border-radius:20px;
+  }
+  #anglingCatchCard .aczo-catch-photo{
+    width:min(232px,84%);
+    height:92px;
+    margin-bottom:8px;
+  }
+  #anglingCatchCard #anglingCatchTitle{font-size:17px;line-height:1.15;margin-bottom:4px}
+  #anglingCatchCard #anglingCatchText{font-size:11px;line-height:1.35;margin-bottom:12px}
+  #aczoCatchRewards{height:78px;min-height:78px;margin-bottom:2px}
+  #aczoCatchRewards #anglingEpPopup{padding:9px 10px;border-radius:12px}
+  #aczoCatchRewards #anglingEpPopup .aczo-reward-number{font-size:24px}
+  #aczoCatchRewards #anglingEpPopup small{font-size:10.5px;line-height:1.35;margin-top:4px}
+  #anglingCatchCard .aczo-catch-actions{gap:10px;margin-top:10px}
+  #anglingCatchCard #anglingShareBtn{
+    flex-basis:36px!important;width:36px!important;min-width:36px!important;max-width:36px!important;
+    height:36px!important;min-height:36px!important;
+  }
+  #anglingCatchCard #anglingShareBtn svg{width:17px;height:17px;flex-basis:17px}
+  #anglingCatchCard #anglingAgainBtn{min-height:42px!important;font-size:10px!important;padding-left:14px!important;padding-right:14px!important}
+}
 @media(max-height:480px){#anglingCatchCard .aczo-catch-photo{height:54px}#anglingCatchCard{padding:8px}#aczoCatchRecord{padding:5px 7px;margin-bottom:5px}}
+
+/* P87: Dezente Fangkarten-Vorschau mit Kamera-Button und nativer Weitergabe. */
+body.aczo-share-preview-open{overflow:hidden!important}
+#aczoSharePreview{position:fixed;inset:0;z-index:350;display:none;align-items:center;justify-content:center;padding:18px;background:rgba(2,17,22,.62);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px)}
+#aczoSharePreview.show{display:flex;animation:aczo-share-preview-fade .22s ease-out both}
+@keyframes aczo-share-preview-fade{from{opacity:0}to{opacity:1}}
+@keyframes aczo-share-card-in{0%{opacity:0;transform:translateY(24px) scale(.93) rotateX(3deg)}65%{opacity:1;transform:translateY(-2px) scale(1.012) rotateX(0)}100%{opacity:1;transform:translateY(0) scale(1) rotateX(0)}}
+#aczoSharePreview .aczo-share-preview-flash{position:absolute;inset:0;pointer-events:none;background:radial-gradient(circle at 50% 44%,rgba(255,255,255,.98) 0%,rgba(255,255,255,.84) 11%,rgba(255,255,255,.28) 24%,rgba(255,255,255,0) 46%);opacity:0}
+#aczoSharePreview.flash .aczo-share-preview-flash{animation:aczo-share-camera-flash .58s ease-out}
+@keyframes aczo-share-camera-flash{0%{opacity:0}10%{opacity:1}28%{opacity:.24}100%{opacity:0}}
+#aczoSharePreview .aczo-share-preview-card{position:relative;width:min(468px,100%);max-height:min(92vh,880px);overflow:auto;padding:17px 17px 15px;border-radius:26px;border:1px solid rgba(219,247,235,.34);background:linear-gradient(155deg,rgba(9,83,67,.985),rgba(4,43,36,.995) 52%,rgba(3,31,28,.998));box-shadow:0 30px 75px rgba(0,0,0,.46),inset 0 1px 0 rgba(255,255,255,.09);transform-origin:50% 62%;animation:aczo-share-card-in .46s cubic-bezier(.16,.86,.28,1.08) both}
+#aczoSharePreview .aczo-share-preview-head{position:relative;text-align:center;margin:0 0 13px;padding-top:2px}
+#aczoSharePreview .aczo-share-preview-kicker{display:inline-block;margin-bottom:6px;padding:4px 10px;border-radius:999px;background:rgba(214,255,235,.12);border:1px solid rgba(214,255,235,.18);font-size:11px;line-height:1;letter-spacing:.14em;color:#d8fbe9;font-weight:900}
+#aczoSharePreview .aczo-share-preview-head strong{display:block;font-size:24px;line-height:1.1;color:#fff}
+#aczoSharePreview .aczo-share-preview-head span{display:block;margin-top:6px;font-size:13px;line-height:1.4;color:rgba(232,255,246,.82)}
+#aczoSharePreview .aczo-share-preview-frame{position:relative;margin:0 auto 15px;padding:10px;border-radius:23px;background:linear-gradient(180deg,rgba(255,255,255,.10),rgba(255,255,255,.035));border:1px solid rgba(222,248,238,.18);box-shadow:inset 0 0 0 1px rgba(255,255,255,.035),0 16px 34px rgba(0,0,0,.16);overflow:hidden}
+#aczoSharePreview .aczo-share-preview-frame img{display:block;width:100%;height:auto;max-height:min(60vh,620px);object-fit:contain;border-radius:17px;background:#0c3f51;box-shadow:0 12px 30px rgba(0,0,0,.22);animation:aczo-share-photo-in .52s .08s cubic-bezier(.2,.8,.2,1) both}
+#aczoSharePreview .aczo-share-preview-frame::after{content:"";position:absolute;inset:-35% -75%;pointer-events:none;background:linear-gradient(105deg,transparent 43%,rgba(255,255,255,.24) 49%,transparent 55%);transform:translateX(-48%);animation:aczo-share-preview-sheen 1.05s .32s ease-out both}
+@keyframes aczo-share-photo-in{from{opacity:.32;transform:scale(.965)}to{opacity:1;transform:scale(1)}}
+@keyframes aczo-share-preview-sheen{0%{transform:translateX(-48%);opacity:0}18%{opacity:1}100%{transform:translateX(48%);opacity:0}}
+#aczoSharePreview .aczo-share-preview-actions{display:flex;gap:10px;align-items:stretch;justify-content:center}
+#aczoSharePreview .aczo-share-preview-actions button{display:inline-flex;align-items:center;justify-content:center;gap:9px;min-height:48px;border-radius:16px;font-weight:900;padding:0 16px}
+#aczoSharePreview #aczoSharePreviewSend{flex:1 1 58%;background:linear-gradient(180deg,#24c269,#169c4e);border:1px solid rgba(220,255,236,.46);color:#fff;box-shadow:0 10px 26px rgba(12,98,50,.24)}
+#aczoSharePreview #aczoSharePreviewClose{flex:1 1 42%;background:rgba(236,247,243,.08);border:1px solid rgba(220,255,236,.22);color:#edfef6}
+#aczoSharePreview #aczoSharePreviewSend:disabled,#aczoSharePreview #aczoSharePreviewClose:disabled{opacity:.55;cursor:wait}
+#aczoSharePreview .aczo-share-preview-actions svg{width:20px;height:20px;flex:0 0 20px}
+@media(max-width:680px){
+  #aczoSharePreview{padding:12px}
+  #aczoSharePreview .aczo-share-preview-card{width:min(395px,100%);padding:14px 13px 12px;border-radius:22px}
+  #aczoSharePreview .aczo-share-preview-head strong{font-size:21px}
+  #aczoSharePreview .aczo-share-preview-head span{font-size:12px}
+  #aczoSharePreview .aczo-share-preview-frame{padding:8px;border-radius:18px;margin-bottom:12px}
+  #aczoSharePreview .aczo-share-preview-actions{flex-direction:column}
+  #aczoSharePreview .aczo-share-preview-actions button{width:100%;min-height:46px;font-size:14px}
+}
 
 /* Abtropfen bekommt kurz freie Sicht; die Zielsteuerung bleibt unverändert. */
 #anglingUi.aczo-dripping #anglingAimReticle{visibility:hidden!important;opacity:0!important}
@@ -4927,13 +5001,14 @@ html,body{
          <section><h3>⚡ Biss, Anhieb & Hänger</h3><p>Beim Posenangeln zeigt der Schwimmer zuerst den Biss. Danach läuft das Reaktions-QTE zweimal vollständig. Ein exakt mittiger Treffer gilt als perfekter Anhieb und bringt beim Fang +8 EP. Triff den grünen beziehungsweise besonders guten Bereich. Ein früher Fehlversuch beendet nicht sofort den gesamten Versuch. Kurze Randimpulse unterstützen Biss und Hänger visuell; der Hänger bleibt anschließend ein echter Zustand und muss gelöst werden, statt durch Schnelleinholen oder „Zum Ufer“ übersprungen zu werden.</p></section>
          <section><h3>🎣 Drill & Bremse</h3><p>Beobachte Schnurspannung, Fisch-Ausdauer und Entfernung. Halte „Kurbeln“ gedrückt und führe die Rute auf die Gegenseite des Fisches: Fisch links bedeutet Rute rechts, Fisch rechts bedeutet Rute links. Die Rutenhaltung ist Teil der Drillphysik: Zeigt die Rute fast direkt zum Fisch, richtet sich der Blank auf und die Schnur übernimmt mehr Last; mit größerem Winkel biegt die Rute stärker und puffert Fluchtspitzen. Eine lockere Bremse lässt mehr Schnur frei und schützt besonders bei starken Fischen, eine feste Bremse holt direkter ein, erhöht aber das Risiko. Auf dem Desktop stellst du die Bremse zusätzlich mit dem Mausrad ein: ↑ fester, ↓ lockerer. Die sichtbare Drillschnur wechselt mit der Belastung von Weiß über Gelb und Orange zu Rot. Bei echter Flucht und Schnurabzug reagieren Randpuls, Belastungsbalken und Rutenfederung sichtbar stärker. Große Fische mit viel Rest-Ausdauer können kurz vor dem Ufer erneut nach draußen flüchten. Bei zu hoher Spannung musst du Last herausnehmen, sonst droht Schnurbruch; ein montierter Kunstköder geht dabei verloren.</p></section>
          <section><h3>🥅 Keschern</h3><p>Bewege den Kescher mit Maus oder Finger nach links/rechts unter den Fisch und keschere im passenden Moment. Der Standardkescher gehört zur Startausrüstung. Der größere Pro Kescher kann im Shop gekauft werden und vergrößert die reale Fangzone um rund 18 %. Der erste knappe Fehlversuch wird weiterhin verziehen.</p></section>
+         <section><h3>📤 Fang teilen</h3><p>Nach einem gelandeten Fisch steht auf der Fangkarte ein kleiner Kamera-Button bereit. Er öffnet zunächst eine animierte Vorschau der lokal erzeugten PNG-Fangkarte. Erst dort kann über „Per WhatsApp teilen“ der native Teilen-Dialog geöffnet werden. Fischart, Länge und Gewicht stehen direkt im Bild; je nach Fang wird zusätzlich „Persönlicher Rekord“, „Neue Art“, „Kapitaler Fang“, „Perfekter Anhieb“ oder „Sicher gelandet“ eingeblendet. Der Begleittext bleibt bewusst kurz. Wird Datei-Sharing vom Browser nicht unterstützt, wird die PNG-Fangkarte stattdessen als Bild bereitgestellt.</p></section>
          <section><h3>⏱️ Zeitwechsel</h3><p>Der Zeitwechsel steht ausschließlich in der Ufer-Angelperspektive bereit, solange die Angel noch nicht ausgeworfen wurde und du den Auswurfpunkt wählen kannst. In Stellenauswahl, Unterwasseransicht, nach dem Auswurf, bei Biss, Drill und Keschern ist die Funktion ausgeblendet. Du kannst die Spielzeit in 1-Stunden-Schritten bis maximal 24 Stunden vor- oder zurückspulen. Jede Stunde kostet 1 EP und läuft in 0,5 Sekunden ab. Einsteiger besitzen pro Sitzung einen Vorwärts- und einen Rückwärtswechsel; höhere Anglerstufen erhalten zusätzliche Wechsel.</p></section>
          <section><h3>🌗 Aktivitätszeiten</h3><p>Die Fischaktivität verändert sich mit der Tageszeit. Hecht und Barsch profitieren vor allem von Morgen- und Abendphasen. Zander wird besonders in Dämmerung, Nacht und bei Bewölkung aktiv; Aal und Wels bevorzugen überwiegend Abend und Nacht. Zwischen ungefähr 13 und 15 Uhr tritt eine allgemeine, leicht schwankende Mittags-Beißflaute auf. Sie reduziert die Bisschance deutlich, aber niemals auf null.</p></section>
-         <section><h3>📏 Fischgrößen &amp; Gewichte</h3><p>Version 1.6 erweitert die möglichen Kapitalfische und kalibriert die Gewichte artspezifisch neu. Unter anderem sind jetzt Hechte bis 140 cm, Welse bis 260 cm, Zander bis 105 cm, Störe bis 160 cm, Graskarpfen bis 150 cm und Aale bis 130 cm möglich. Das Gewicht wird aus Fischart und Länge berechnet und im Fangbuch, Highscore und in der Online-Bestenliste nach derselben V1.6-Gewichtskurve bewertet. Die früheren Maximalgrößen bleiben zugleich Referenz für die bekannte Kampfstärke: bisherige Großfische werden durch die höheren Limits nicht schwächer; nur Fische oberhalb der alten Maximalgröße erhalten progressiv zusätzliche Kraft, Ausdauer, Explosivität und Fluchtraum. Der einmalige gelbe Koi bleibt unverändert exakt 70 cm groß.</p></section>
-         <section><h3>⭐ EP & Shop</h3><p>Gefangene Fische bringen EP. Große und seltene Fische sind deutlich wertvoller; der einzigartige Koi bringt 1.000 EP. Gute Aktionen bringen Zusatz-EP, zum Beispiel ein perfekter Anhieb, eine präzise Pose im Futterplatz, sauberes Keschern, ein Fang am aktiven Futterplatz oder aktive Kunstköderführung. Ein gerissener Fisch zählt nur zu 50 % und erhält keine Fangboni. EP sind die ausgebbare Währung. Zusätzlich sammeln sich Gesamt-EP für deine dauerhafte Anglerstufe; Einkäufe senken diese Gesamt-EP nicht.</p></section>
+         <section><h3>📏 Fischgrößen &amp; Gewichte</h3><p>Fischgrößen und Gewichte werden artspezifisch berechnet. Besonders große Exemplare bleiben selten und können sich im Drill deutlich von durchschnittlichen Fischen unterscheiden. Persönliche Rekorde, Highscore und Online-Bestenliste verwenden dieselbe Bewertung.</p></section>
+         <section><h3>⭐ EP &amp; Shop</h3><p>Gefangene Fische bringen EP; größere, seltenere und besonders sauber gelandete Fänge können zusätzliche Belohnungen erhalten. EP sind die ausgebbare Währung im Tackle-Shop. Gesamt-EP bestimmen dauerhaft deine Anglerstufe und werden durch Einkäufe nicht reduziert.</p></section>
          <section><h3>🎯 Tagesaufgaben</h3><p>Jeden Spieltag warten drei Aufgaben mit unterschiedlicher Schwierigkeit. Jede erledigte Aufgabe bringt EP; wer alle drei schafft, erhält den zusätzlichen Tagesbonus. Nach der kurzen Einblendung bleiben die Aufgaben jederzeit im Hauptmenü abrufbar.</p></section>
          <section><h3>☁️ Cloud-Spielstand</h3><p>EP, Gesamt-EP, Fortschritt, persönliche Bestwerte, Köderfische, gekaufte Köder und Futterbestände sowie die in der 3D-Unterwasseransicht entdeckten Fischarten werden automatisch online gespeichert. Das Fangbuch mit den einzelnen Fangereignissen bleibt ausschließlich lokal.</p></section><section><h3>🔑 Gerätewechsel</h3><p>Unter „Spielstand“ findest du einen privaten Wiederherstellungscode. Mit ihm kannst du deinen Cloud-Spielstand auf einem anderen Gerät übernehmen. Der übernommene Datensatz wird dem neuen Gerät zugeordnet; ein neu erzeugter Code macht den bisherigen Code ungültig.</p></section>
-         <section><h3>🏆 Highscore & Bestenliste</h3><p>Deine persönlichen Bestfänge stehen im Highscore. Wenn du einen Anzeigenamen festlegst und die Veröffentlichung aktivierst, werden deine freigegebenen Artenrekorde automatisch mit der öffentlichen Bestenliste abgeglichen. Länge und Fangdatum bleiben der eigentliche Rekord; das Gewicht wird passend zur Fischart und Länge nach der aktuellen V1.6-Kurve berechnet. Bereits vorhandene öffentliche Rekorde bleiben erhalten und ihre gespeicherten Gewichte werden einmalig auf die neue Berechnung umgestellt. Die Liste lädt beim Öffnen selbstständig; ein Aktualisieren-Knopf ist nicht nötig.</p></section><section><h3>✨ Hall of Fame</h3><p>Die Hall of Fame besitzt im Hauptmenü einen eigenen Knopf und präsentiert öffentliche Rekorde über dem Weiher. Öffentlich eingetragene Fänger des einzigen gelben Koi erhalten dort zusätzlich eine eigene Ehrenfolie. Das Spiel pausiert während der Präsentation vollständig. „Zurück“ fliegt exakt in die zuvor gespeicherte Ansicht zurück. Während Biss, Drill, Kameraflug oder Kunstköder-Unterwasseransicht bleibt die Funktion gesperrt.</p></section>
+         <section><h3>🏆 Highscore &amp; Bestenliste</h3><p>Deine persönlichen Bestfänge stehen im Highscore. Mit Anzeigename und aktivierter Veröffentlichung können deine freigegebenen Artenrekorde automatisch mit der öffentlichen Bestenliste abgeglichen werden. Die Liste lädt beim Öffnen selbstständig.</p></section><section><h3>✨ Hall of Fame</h3><p>Die Hall of Fame präsentiert öffentliche Rekorde und besondere Ehrenfänge über dem Weiher. Während der Präsentation pausiert das Spiel; „Zurück“ führt wieder in die zuvor gespeicherte Ansicht.</p></section>
          <section><h3>🟢 Angler online</h3><p>Ist die Namenssichtbarkeit aktiviert, meldet eine kurze Einblendung andere gerade aktive Angler. Die Meldung verschwindet selbstständig und zeigt keine private Spieler-ID oder Wiederherstellungscodes.</p></section>
        </div>
      </div>
@@ -5096,7 +5171,28 @@ html,body{
        <strong id="anglingCatchTitle">Fisch gefangen</strong>
        <span id="anglingCatchText"></span>
        <div id="aczoCatchRewards"></div>
-       <button id="anglingAgainBtn" class="primary">Noch einmal</button>
+       <div class="aczo-catch-actions">
+         <button id="anglingShareBtn" type="button" aria-label="Fangkarten-Vorschau öffnen" disabled>
+           <svg viewBox="0 0 32 32" aria-hidden="true"><rect x="4.5" y="8" width="23" height="16.5" rx="4.2" fill="none" stroke="currentColor" stroke-width="2.2"/><path d="M11 8.4l1.4-2.6h7.2l1.4 2.6" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"/><circle cx="16" cy="16.2" r="4.2" fill="none" stroke="currentColor" stroke-width="2.1"/><circle cx="23.5" cy="12.3" r="1.3" fill="currentColor"/></svg>
+           <span class="aczo-share-label">Fangkarten-Vorschau öffnen</span>
+         </button>
+         <button id="anglingAgainBtn" class="primary">Weiter angeln</button>
+       </div>
+     </div>
+     <div id="aczoSharePreview" class="aczo-share-preview" role="dialog" aria-modal="true" aria-hidden="true" aria-label="Fangkarte teilen">
+       <div class="aczo-share-preview-flash" aria-hidden="true"></div>
+       <div class="aczo-share-preview-card">
+         <div class="aczo-share-preview-head">
+           <div class="aczo-share-preview-kicker">KAMERA-VORSCHAU</div>
+           <strong>Deine Fangkarte ist fertig</strong>
+           <span>So sieht das Bild vor dem Teilen aus. Per WhatsApp oder über den nativen Teilen-Dialog weiterleiten.</span>
+         </div>
+         <div class="aczo-share-preview-frame"><img id="aczoSharePreviewImage" alt="Vorschau der Fangkarte"></div>
+         <div class="aczo-share-preview-actions">
+           <button id="aczoSharePreviewSend" type="button" class="primary"><svg viewBox="0 0 32 32" aria-hidden="true"><circle cx="16" cy="16" r="13" fill="none" stroke="currentColor" stroke-width="2.4"/><path d="M10.3 24.7l1.2-4.3a10 10 0 1 1 3.8 3.4l-5 0.9z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/><path d="M12.8 10.9c.4-.5.9-.5 1.2-.1l1.3 2.1c.2.4.2.7 0 1l-.9 1.1c.8 1.8 2.1 3.1 3.9 3.9l1.1-.9c.3-.2.7-.2 1 0l2.1 1.3c.4.3.4.8-.1 1.2-.8.8-1.8 1.2-2.9 1.1-4.6-.5-8.3-4.2-8.8-8.8-.1-1.1.3-2.1 1.1-2.9z" fill="currentColor"/></svg><span>Per WhatsApp teilen</span></button>
+           <button id="aczoSharePreviewClose" type="button" class="secondary">Zurück zur Fangkarte</button>
+         </div>
+       </div>
      </div>
      <div id="anglingLogPanel" class="angling-log-panel" role="dialog" aria-modal="true" aria-label="Fangbuch">
        <div class="angling-log-head"><div class="angling-log-title">📒 Mein Fangbuch</div><button id="anglingLogTopCloseBtn" class="angling-log-top-close" aria-label="Fangbuch schließen">×</button></div>
@@ -5182,109 +5278,49 @@ Bitte gefundene Darstellungs-, Steuerungs- oder Spielfehler mit Gerät, Browser 
        <details class="help-note" style="cursor:pointer">
          <summary style="font-weight:800">Update-History</summary>
          <div style="margin-top:8px;cursor:default;overflow-wrap:anywhere">
+           <strong>Version 1.7 · 29.09.2026</strong>
+           <ul style="padding-left:20px">
+             <li>Neue Fangkarte mit Vereinsdesign, Kamera-Vorschau und komfortabler Teilen-Funktion.</li>
+             <li>Fischgrößen, Gewichte und das Verhalten besonders großer Fische weiter abgestimmt.</li>
+             <li>Drill, Unterwasserverhalten und Bedienung auf Mobilgeräten und Desktop weiter verfeinert.</li>
+             <li>Weitere Stabilitäts-, Darstellungs- und Performance-Verbesserungen.</li>
+           </ul>
+         </div>
+         <div style="margin-top:8px;cursor:default;overflow-wrap:anywhere">
            <strong>Version 1.6 · 28.09.2026</strong>
-           <p><strong>Drill, Rute &amp; Bremse</strong></p>
            <ul style="padding-left:20px">
-             <li>Rutenwinkel physikalisch stärker eingebunden: direkt zum Fisch gehaltene Rute richtet sich auf und überträgt mehr Last, größere Winkel lassen den Blank stärker puffern.</li>
-             <li>Bremse für Großfische neu ausbalanciert; „Locker“ arbeitet wieder klar als Sicherheitsventil, ohne den Einfluss der Rutenhaltung aufzuheben.</li>
-             <li>Desktop: Rollenbremse im Drill zusätzlich per Mausrad steuerbar (hoch = fester, runter = lockerer).</li>
-             <li>Drillschnur zeigt die Belastung sichtbar von Weiß über Gelb und Orange bis Rot; Fluchten, kritische Spannung und Rutenfederung erhalten stärkeres visuelles Feedback.</li>
-             <li>Kräftige Großfische mit Rest-Ausdauer können direkt vor dem Ufer erneut nach außen ausbrechen, statt nur seitlich zu pendeln.</li>
-             <li>Posen-Deckkraft nach Fang und Drill wird vollständig restauriert; kein halbtransparenter Schwimmer mehr vor dem nächsten Auswurf.</li>
-           </ul>
-           <p><strong>Kunstköder &amp; Unterwasser-KI</strong></p>
-           <ul style="padding-left:20px">
-             <li>Schnelles Einholen von Kunstködern bleibt unter Wasser in einer ruhigen Nachlaufkamera und geht erst kurz vor dem Ufer weich in die Uferansicht über.</li>
-             <li>Hängerkollisionen bleiben auch beim Schnellrückweg und „Zum Ufer“ aktiv; Fische können während des reinen Schnellrückwegs nicht gerissen werden.</li>
-             <li>Wurmbündel bleibt nach Auswurf und verzögertem Cloud-Abgleich zuverlässig montiert, bis es tatsächlich verbraucht oder bewusst gewechselt wird.</li>
-             <li>Unterwasserschnur löst bei berührten, unbeteiligten Fischen eine schnelle Flucht aus; bereits interessierte, folgende oder angreifende Räuber werden nicht verscheucht.</li>
-             <li>Raubfisch-Nachläufer beschleunigen kräftiger, erfassen den bewegten Köder häufiger neu und erreichen das reale Attackenfenster zuverlässiger, ohne künstlich am Köder festzukleben.</li>
-           </ul>
-           <p><strong>Performance &amp; Darstellung</strong></p>
-           <ul style="padding-left:20px">
-             <li>Unterwasser-Vorwärmung zusammengeführt und erweitert: Fischtexturen, freie Tauchansicht, Kunstköder-Unterwasseransicht, echte Bildschirm-Shadervarianten und relevante Kamerapfade werden bereits beim Start vorbereitet.</li>
-             <li>Desktop-Pixelratio bleibt beim ersten Abtauchen stabil; redundante Warmups und unnötige Partikel wurden reduziert, ohne das Live-Rutenfenster zu beschneiden.</li>
-             <li>Mobil: leichte Sonne- und Mondreflexion auf Weiher und Mosel ergänzt. Die aufwendigen Desktop-Strahlen und Spiegelbahnen bleiben dort bewusst deaktiviert.</li>
-           </ul>
-           <p><strong>Fischgrößen, Gewichte &amp; Cloud</strong></p>
-           <ul style="padding-left:20px">
-             <li>Maximalgrößen mehrerer Arten erweitert, darunter Hecht 140 cm, Wels 260 cm, Spiegelkarpfen 120 cm, Graskarpfen 150 cm, Stör 160 cm, Zander 105 cm, Aal 130 cm und Schleie 80 cm.</li>
-             <li>Artspezifische Gewichtskurven neu kalibriert; Kapitalfische erhalten realistischere Maximalgewichte, z. B. bis ca. 120 kg beim 260-cm-Wels.</li>
-             <li>Kampfstärke an die erweiterten Größen angepasst: Fische bis zur früheren Maximalgröße behalten exakt ihre bisherige Größen-Skalierung; darüber steigt die Kampfkraft progressiv mit zusätzlicher Länge und Gewicht, inklusive mehr Ausdauer, Burst und Fluchtraum.</li>
-             <li>Bestehende öffentliche Rekorde bleiben vollständig erhalten. Nur ihre gespeicherten Gewichte werden einmalig aus Fischart und Länge nach V1.6 neu berechnet.</li>
-             <li>Neue Bestenlisten-Einträge erhalten ihr Gewicht serverseitig aus Art und Länge, damit Frontend, Highscore und Cloud nicht mehr auseinanderlaufen können.</li>
-             <li>Der einmalige gelbe Koi bleibt als Sonderfall unverändert exakt 70 cm.</li>
+             <li>Drillgefühl, Rutenverhalten und Rollenbremse deutlich überarbeitet.</li>
+             <li>Kunstköderführung, Fischreaktionen und Unterwasserabläufe verbessert.</li>
+             <li>Mobile Darstellung sowie Start- und Unterwasser-Performance optimiert.</li>
+             <li>Highscore, Cloud-Funktionen und Fangdarstellung weiterentwickelt.</li>
            </ul>
          </div>
          <div style="margin-top:8px;cursor:default;overflow-wrap:anywhere">
            <strong>Version 1.5 · 23.09.2026</strong>
-           <p><strong>Angelspiel &amp; Technik erweitert</strong></p>
            <ul style="padding-left:20px">
-             <li>Realistischere Raubfisch-KI und Nachläufer bei Gummifisch und Blinker.</li>
-             <li>Überarbeitetes Biss- und Angriffsverhalten sowie verbesserte Kunstköderführung und Jigging.</li>
-             <li>Neue Predatorpit Lockpaste für Gummifisch und Blinker sowie Wurmbündel als spezieller Welsköder.</li>
-             <li>Hänger-, Baumkollisions- und Schnell-Einhol-System weiter verbessert.</li>
-             <li>Tacklebox, Tackle-Shop, Inventar und Cloud-Speicherung erweitert.</li>
-             <li>Zahlreiche Fehlerbehebungen, Detail- und Performance-Optimierungen.</li>
+             <li>Raubfischverhalten und Kunstköder-Angeln erweitert.</li>
+             <li>Neue Köder-, Futter- und Ausrüstungsfunktionen ergänzt.</li>
+             <li>Tacklebox, Shop und Cloud-Spielstand ausgebaut.</li>
+             <li>Zahlreiche Fehlerbehebungen und Performance-Optimierungen.</li>
            </ul>
          </div>
          <div style="margin-top:8px;cursor:default;overflow-wrap:anywhere">
            <strong>Version 1.4 · 22.09.2026</strong>
-           <p><strong>Köderbox &amp; Shop</strong></p>
            <ul style="padding-left:20px">
-             <li>Feste Kategorien für Köder, Lockfutter, Ruten, Kescher und Echolote; das Deeper-Echolot ist getrennt von den Ruten eingeordnet.</li>
-             <li>Filter „Alle“ und „Im Besitz“ sowie übersichtlichere Bestands-, Auswahl- und Ausrüstungsanzeigen.</li>
-             <li>Produktdetails und Kauf-Rückmeldungen überarbeitet; auch nicht vorhandene Artikel bleiben mit Informationen und Kaufmöglichkeit erkennbar.</li>
-             <li>Kompaktere Artikelkarten und angepasste Textumbrüche für schmale Handydisplays.</li>
-           </ul>
-           <p><strong>Kunstköder &amp; Köderführung</strong></p>
-           <ul style="padding-left:20px">
-             <li>Blinker und Gummifische optisch stärker unterschieden: eigene Formen, Farben und Größen für die verschiedenen Modelle und Zielfische.</li>
-             <li>Neue Ködergrafiken in Shop und Köderbox sowie überarbeitete 3D-Modelle in der Unterwasser-Angelansicht.</li>
-             <li>Etwas größere Köderdarstellung, metallischer Blinkerglanz und überarbeitete Haken.</li>
-             <li>Gummifische sinken schneller und mit gesenktem Kopf; beim Ankurbeln steigen sie zunächst schräg auf und gehen bei kontinuierlichem Einholen in einen geraderen Lauf über.</li>
-           </ul>
-           <p><strong>Ruten &amp; Stationärrollen</strong></p>
-           <ul style="padding-left:20px">
-             <li>Alle drei Rutenmodelle neu gestaltet: gerade unbelastete Blanks, durchgängige Griffübergänge und unterhalb montierte Rollenfüße.</li>
-             <li>Standardrute mit durchgehendem, strukturiertem Korkgriff; weitere Modelle mit EVA-Griffen. Black Carbon mit sichtbarem Carbongewebe, Blanks mit Lackreflexen.</li>
-             <li>Moderne Stationärrollen in Silber, Gold und Gunmetal mit metallischen Oberflächen, linker Kurbel, Rotor und bewegter Spule.</li>
-             <li>Kurbelrichtung korrigiert und Rollenbewegungen zwischen Hauptansicht und Livefenster synchronisiert.</li>
-             <li>Rutenaktion nach Fischkraft, Schnurspannung, Flucht und Rutenhaltung: empfindliche Spitze bei kleinen Belastungen, tiefere Biegung bei kräftigem Zug.</li>
-             <li>Seitliche Biegung folgt dem Schnurzug; Kurbelpausen entlasten die Rute weich, während sie bei weiterem Fischzug gebogen bleibt.</li>
-             <li>Ringanordnung, Schnurführung und gegenseitige Verdeckung der Bauteile überarbeitet; durchscheinende Griffe und Rollenfüße korrigiert.</li>
-           </ul>
-           <p><strong>Fänge, Effekte &amp; Rückmeldungen</strong></p>
-           <ul style="padding-left:20px">
-             <li>Kurzer Tropfeneffekt am eingeholten Köder; Darstellung gegenüber dem Zielkreuz angepasst.</li>
-             <li>Dezenter Nassglanz auf gefangenen Fischen.</li>
-             <li>Persönliche Rekorde hervorgehoben, einschließlich Vergleich zum bisherigen Bestwert.</li>
-             <li>Animierte Fangbelohnung mit hochzählenden EP und Bewegung zur EP-Anzeige.</li>
-             <li>Sichtbare Bestätigung beim Köderwechsel und rechtzeitiger Hinweis bei knappem Köderbestand.</li>
-             <li>Fang-, Rekord- und Statusmeldungen zeitlich und räumlich aufeinander abgestimmt; Rücksicht auf HUD, Menüs und reduzierte Animationen.</li>
-           </ul>
-           <p><strong>Menüs &amp; Livefenster</strong></p>
-           <ul style="padding-left:20px">
-             <li>Hauptmenü in Übersicht, Profil, Community und Einstellungen gegliedert; wichtige Funktionen schneller erreichbar.</li>
-             <li>„Spielstand wiederherstellen“ als deutlich sichtbarer Zugang für den Gerätewechsel.</li>
-             <li>Ruten-/Rollen-Livefenster mobil moderat vergrößert und Kamera näher an die Ausrüstung gesetzt.</li>
-             <li>Wasserberechnung an die jeweilige Kamera und Fenstergröße angepasst.</li>
-             <li>Mobile Wasserseiten im Livefenster unabhängig von der Unterwasserkamera behandelt. Die nach dem Eintauchen weiß erscheinende Wasserfläche wurde korrigiert.</li>
+             <li>Tacklebox und Shop übersichtlicher und umfangreicher gestaltet.</li>
+             <li>Kunstköder, Ruten und Rollen optisch und spielerisch überarbeitet.</li>
+             <li>Fang-, Belohnungs- und Menüeffekte verbessert.</li>
+             <li>Mobile Darstellung und Bedienung weiter optimiert.</li>
            </ul>
          </div>
-         <div style="margin-top:8px;cursor:default">
-           <strong>Version 1.3</strong><br>
-           • 2D-/3D-Karte, Tiefendarstellung und Übergänge weiter optimiert<br>
-           • Darstellung, Performance und mobile Steuerung weiter verbessert<br>
-           • Astronomisches Licht, Zeitraffer und Schattenbewegungen verfeinert<br>
-           • Unterwasserwelt mit natürlicherem Fischverhalten und ruhigeren Bewegungen erweitert<br>
-           • Gründelverhalten mit unterschiedlichen Fresswinkeln, Sedimentwolken und Luftblasen verbessert<br>
-           • Futterplatz und Unterwasser-Effekte realistischer abgestimmt<br>
-           • Angelspiel, Fischkontakt, Hänger- und Kollisionsverhalten weiter verfeinert<br>
-           • Besucher, Fahrzeuge und Bewegungsabläufe in der Umgebung überarbeitet<br>
-           • EP-System, Tagesaufgaben sowie Lockfutter- und Köderpreise neu ausbalanciert<br>
-           • Neue Animationen und versteckte Easter Eggs ergänzt<br>           • Hall of Fame mit Top-3-Vereinswertungen und kompakter persönlicher Übersicht überarbeitet<br>
-           • Zahlreiche Detailkorrekturen an Darstellung, Bedienung und Spielablauf
+         <div style="margin-top:8px;cursor:default;overflow-wrap:anywhere">
+           <strong>Version 1.3</strong>
+           <ul style="padding-left:20px">
+             <li>Karte, Unterwasserwelt und Umgebungsdarstellung weiter ausgebaut.</li>
+             <li>Fischverhalten, Futterplätze und Angelabläufe realistischer abgestimmt.</li>
+             <li>EP-System, Aufgaben und Spielbalance überarbeitet.</li>
+             <li>Viele Detail-, Bedienungs- und Performance-Verbesserungen.</li>
+           </ul>
          </div>
        </details>
        <div class="help-note"><strong>Datenquellen & Hinweise</strong><br>
@@ -5316,8 +5352,8 @@ Wetterdaten: Open-Meteo · Astronomische Berechnungen: SunCalc<br>
 <script>
 // V7.75: Der Startlayer ist bereits durch HTML/CSS sichtbar, bevor dieser schwere
 // Three.js-Block ausgeführt wird. Er wird erst nach einem echten Renderbild freigegeben.
-// Öffentliche Version 1.6: aktualisierter Stand vom 28.09.2026.
-const VIEWER_VERSION='ACZO56-Interaktiv-V1.6';
+// Öffentliche Version 1.7: Stand vom 29.09.2026.
+const VIEWER_VERSION='ACZO56-Interaktiv-V1.7';
 const ACZO_INTERNAL_BUILD='1.38';
 const helpVersion=document.getElementById('helpVersion');
 if(helpVersion) helpVersion.textContent=VIEWER_VERSION;
@@ -5935,6 +5971,16 @@ const anglingCatchSequence=document.getElementById('anglingCatchSequence');
 const anglingCatchImage=document.getElementById('anglingCatchImage');
 const anglingCatchTitle=document.getElementById('anglingCatchTitle');
 const anglingCatchText=document.getElementById('anglingCatchText');
+const anglingShareBtn=document.getElementById('anglingShareBtn');
+const anglingShareLabel=anglingShareBtn?.querySelector('.aczo-share-label');
+const aczoSharePreview=document.getElementById('aczoSharePreview');
+const aczoSharePreviewImage=document.getElementById('aczoSharePreviewImage');
+const aczoSharePreviewSend=document.getElementById('aczoSharePreviewSend');
+const aczoSharePreviewClose=document.getElementById('aczoSharePreviewClose');
+// P90: Die modale Vorschau darf nicht innerhalb .angling-ui bleiben, weil diese
+// absichtlich pointer-events:none besitzt. Als direktes Body-Kind ist sie vollständig
+// interaktiv, ohne globale Pointer-/Touch-Regeln oder die 2D/3D-Karte anzufassen.
+if(aczoSharePreview&&aczoSharePreview.parentElement!==document.body)document.body.appendChild(aczoSharePreview);
 const anglingAgainBtn=document.getElementById('anglingAgainBtn');
 const anglingLogBtn=document.getElementById('anglingLogBtn');
 const anglingLogPanel=document.getElementById('anglingLogPanel');
@@ -29465,6 +29511,11 @@ function aczoPresentCatch(data){
  document.getElementById('aczoCatchRewards').appendChild(anglingEpPopup);
 }
 function aczoResetPresentation(){
+ aczoCloseCatchSharePreview({force:true});
+ anglingCatchShareGeneration++;anglingCatchShareBlob=null;anglingCatchShareFile=null;
+ if(anglingCatchShareObjectUrl){URL.revokeObjectURL(anglingCatchShareObjectUrl);anglingCatchShareObjectUrl='';}
+ if(aczoSharePreviewImage)aczoSharePreviewImage.removeAttribute('src');
+ if(anglingShareBtn){anglingShareBtn.disabled=true;if(anglingShareLabel)anglingShareLabel.textContent='Fangkarten-Vorschau öffnen';}
  aczoClearReward();
  anglingEpPopup.removeAttribute('aria-label');
  aczoClearEquipFeedback();aczoStopDrops();
@@ -36369,7 +36420,7 @@ function finishAnglingCatch(){
   if(isPersonalBest&&!isLegendaryKoi)labels.push('🏆 Persönlicher Rekord');
   const landingPresentation=perfectLanding?'🥅 Perfekt gekeschert · +5 EP':'🥅 Sicher im Kescher';
   anglingCatchSequence.textContent=(labels.length?labels.join(' · ')+' · ':'')+landingPresentation;
-  anglingCatchRevealData={caught,newlyFound,isPersonalBest,isLegendaryKoi,baitBonus,xpGain,previousRecord};
+  anglingCatchRevealData={caught,newlyFound,isPersonalBest,isLegendaryKoi,baitBonus,xpGain,previousRecord,strikeQuality:anglingStrikeQuality};
   const dir=anglingCurrentDirection(anglingTmpA);
   const side=anglingTmpB.copy(dir).applyAxisAngle(anglingUp,Math.PI/2);
   const target=anglingNetGroup.position.clone();target.z+=.02;
@@ -36404,9 +36455,194 @@ function showAnglingCatchCard(){
   }
   aczoPresentCatch(anglingCatchRevealData);
   anglingCatchCard.classList.add('show');
+  aczoPrepareCatchShareFile();
   if(isPersonalBest&&!anglingPlayerProfile.shareRecords){
     deferAnglingOnlineRecordPrompt(caught);
   }
+}
+
+// P84: Hochauflösende Fangkarte lokal erzeugen und nativ teilen.
+let anglingCatchShareBlob=null;
+let anglingCatchShareFile=null;
+let anglingCatchShareObjectUrl='';
+let anglingCatchShareGeneration=0;
+let aczoCatchShareClubLogoPromise=null;
+function aczoCatchShareClubLogoImage(){
+ if(aczoCatchShareClubLogoPromise)return aczoCatchShareClubLogoPromise;
+ aczoCatchShareClubLogoPromise=new Promise(resolve=>{
+   try{
+     const img=new Image();
+     img.onload=()=>resolve(img);
+     img.onerror=()=>resolve(null);
+     img.src=FLAGPOLE_LOGO_DATA;
+     if(img.complete&&img.naturalWidth)resolve(img);
+   }catch(_){resolve(null);}
+ });
+ return aczoCatchShareClubLogoPromise;
+}
+function aczoCatchShareDrawClubLogo(ctx,img,x,y,w,h){
+ if(!img||!img.naturalWidth||!img.naturalHeight)return;
+ ctx.save();
+ ctx.shadowColor='rgba(0,0,0,.24)';ctx.shadowBlur=12;
+ ctx.fillStyle='rgba(248,249,246,.96)';
+ ctx.beginPath();ctx.ellipse(x+w*.5,y+h*.5,w*.5,h*.5,0,0,Math.PI*2);ctx.fill();
+ ctx.shadowBlur=0;
+ ctx.beginPath();ctx.ellipse(x+w*.5,y+h*.5,w*.47,h*.47,0,0,Math.PI*2);ctx.clip();
+ const scale=Math.min((w*.90)/img.naturalWidth,(h*.90)/img.naturalHeight);
+ const dw=img.naturalWidth*scale,dh=img.naturalHeight*scale;
+ ctx.drawImage(img,x+(w-dw)*.5,y+(h-dh)*.5,dw,dh);
+ ctx.restore();
+}
+let aczoSharePreviewFlashTimer=0;
+let aczoSharePreviewHistoryPushed=false;
+let aczoSharePreviewHistoryClosing=false;
+function aczoCatchShareSafeName(value){
+ return String(value||'Fang').replace(/[\\/:*?"<>|]+/g,'-').replace(/\s+/g,'_').slice(0,50);
+}
+function aczoCatchShareFitText(ctx,text,maxWidth,startSize,minSize=28,weight=900){
+ let size=startSize;
+ while(size>minSize){ctx.font=weight+' '+size+'px Arial,Helvetica,sans-serif';if(ctx.measureText(text).width<=maxWidth)break;size-=2;}
+ return size;
+}
+function aczoCatchShareRoundRect(ctx,x,y,w,h,r){
+ const rr=Math.min(r,w/2,h/2);ctx.beginPath();ctx.moveTo(x+rr,y);ctx.arcTo(x+w,y,x+w,y+h,rr);ctx.arcTo(x+w,y+h,x,y+h,rr);ctx.arcTo(x,y+h,x,y,rr);ctx.arcTo(x,y,x+w,y,rr);ctx.closePath();
+}
+function aczoCatchShareDrawWater(ctx,w,h){
+ const g=ctx.createLinearGradient(0,0,0,h);g.addColorStop(0,'#0d3d58');g.addColorStop(.42,'#0d5a68');g.addColorStop(1,'#082f2d');ctx.fillStyle=g;ctx.fillRect(0,0,w,h);
+ ctx.save();ctx.globalAlpha=.16;ctx.strokeStyle='#d9fbff';ctx.lineWidth=3;
+ for(let y=180;y<h-120;y+=56){ctx.beginPath();for(let x=-30;x<=w+30;x+=24){const yy=y+Math.sin((x+y)*.021)*7;if(x<0)ctx.moveTo(x,yy);else ctx.lineTo(x,yy);}ctx.stroke();}
+ ctx.restore();
+ const glow=ctx.createRadialGradient(w*.5,h*.32,20,w*.5,h*.32,w*.62);glow.addColorStop(0,'rgba(126,226,220,.22)');glow.addColorStop(1,'rgba(0,0,0,0)');ctx.fillStyle=glow;ctx.fillRect(0,0,w,h);
+}
+async function aczoPrepareCatchShareFile(){
+ const generation=++anglingCatchShareGeneration;
+ anglingCatchShareBlob=null;anglingCatchShareFile=null;
+ if(anglingCatchShareObjectUrl){URL.revokeObjectURL(anglingCatchShareObjectUrl);anglingCatchShareObjectUrl='';}
+ if(aczoSharePreviewImage)aczoSharePreviewImage.removeAttribute('src');
+ if(anglingShareBtn){anglingShareBtn.disabled=true;if(anglingShareLabel)anglingShareLabel.textContent='Bild wird erstellt …';}
+ const data=anglingCatchRevealData;if(!data?.caught)return;
+ const {caught,isPersonalBest,isLegendaryKoi,newlyFound,strikeQuality}=data;
+ try{
+   if(!anglingCatchImage.complete||!anglingCatchImage.naturalWidth){try{await anglingCatchImage.decode();}catch(_){}}
+   const clubLogo=await aczoCatchShareClubLogoImage();
+   if(generation!==anglingCatchShareGeneration)return;
+   const canvas=document.createElement('canvas');canvas.width=1080;canvas.height=1350;
+   const ctx=canvas.getContext('2d',{alpha:false});if(!ctx)throw new Error('Canvas nicht verfügbar');
+   aczoCatchShareDrawWater(ctx,canvas.width,canvas.height);
+   // P91: Luftigere Share-Fangkarte mit eingebettetem Vereinslogo.
+   ctx.textAlign='center';
+   aczoCatchShareDrawClubLogo(ctx,clubLogo,72,35,104,138);
+   ctx.fillStyle='rgba(255,255,255,.88)';ctx.font='800 31px Arial,Helvetica,sans-serif';ctx.fillText('AC 1956 ZEWEN-OBERKIRCH',605,82);
+   ctx.fillStyle='#ffffff';ctx.font='950 60px Arial,Helvetica,sans-serif';ctx.fillText('MEIN FANG',605,148);
+
+   // Fischfläche
+   ctx.fillStyle='rgba(4,28,30,.46)';aczoCatchShareRoundRect(ctx,85,205,910,500,38);ctx.fill();
+   if(anglingCatchImage.naturalWidth&&anglingCatchImage.naturalHeight){
+     const iw=anglingCatchImage.naturalWidth,ih=anglingCatchImage.naturalHeight;
+     const maxW=820,maxH=390,scale=Math.min(maxW/iw,maxH/ih);const dw=iw*scale,dh=ih*scale;
+     ctx.save();ctx.shadowColor='rgba(0,0,0,.42)';ctx.shadowBlur=30;ctx.drawImage(anglingCatchImage,540-dw/2,255+(390-dh)/2,dw,dh);ctx.restore();
+   }
+   const species=fishDisplayNames[caught.species]||'Fisch';
+   const title=isLegendaryKoi?'DER GELBE KOI':species.toUpperCase();
+   const titleSize=aczoCatchShareFitText(ctx,title,900,58,38,950);ctx.font='950 '+titleSize+'px Arial,Helvetica,sans-serif';ctx.fillStyle=isLegendaryKoi?'#ffe275':'#ffffff';ctx.fillText(title,540,812);
+   const length=formatAnglingLength(caught.cm);const weight=formatAnglingWeight(anglingEstimatedKg(caught.species,caught.cm));
+   const measures=length+'  ·  '+weight;
+   const measureSize=aczoCatchShareFitText(ctx,measures,900,62,43,950);ctx.font='950 '+measureSize+'px Arial,Helvetica,sans-serif';ctx.fillStyle='#dcfff2';ctx.fillText(measures,540,892);
+   const shareSizeData=anglingCatchSizes[caught.species]||[10,30];
+   const shareMin=Number(shareSizeData[0])||0,shareMax=Number(shareSizeData[shareSizeData.length-1])||Math.max(shareMin+1,30);
+   const shareSizeT=shareMax>shareMin?THREE.MathUtils.clamp((Number(caught.cm)-shareMin)/(shareMax-shareMin),0,1):0;
+   const isCapitalShare=!isLegendaryKoi&&shareSizeT>=.88;
+   let badge='Sicher gelandet';
+   if(isLegendaryKoi)badge='✨ Legendärer Fang';
+   else if(isPersonalBest)badge='🏆 Persönlicher Rekord';
+   else if(newlyFound)badge='⭐ Neue Art';
+   else if(isCapitalShare)badge='🐟 Kapitaler Fang';
+   else if(strikeQuality==='perfect')badge='🎯 Perfekter Anhieb';
+   ctx.fillStyle=isPersonalBest||isLegendaryKoi?'rgba(116,85,18,.72)':'rgba(11,76,55,.72)';aczoCatchShareRoundRect(ctx,260,945,560,82,41);ctx.fill();
+   ctx.font='900 31px Arial,Helvetica,sans-serif';ctx.fillStyle=isPersonalBest||isLegendaryKoi?'#ffe493':'#effff7';ctx.fillText(badge,540,998);
+
+   const now=new Date();const dateText=now.toLocaleDateString('de-DE',{day:'2-digit',month:'2-digit',year:'numeric'});
+   ctx.font='700 26px Arial,Helvetica,sans-serif';ctx.fillStyle='rgba(235,255,249,.82)';ctx.fillText(dateText+' · Vereinsweiher AC 1956 Zewen-Oberkirch',540,1091);
+
+   const anglerName=(anglingPlayerProfile?.name||'Angler').trim()||'Angler';
+   const anglerLevel=anglingLevelForXp(anglingProgress.lifetimeXp);
+   const anglerLine='Angler: '+anglerName+'  ·  Erfahrungsstufe '+anglerLevel;
+   const anglerSize=aczoCatchShareFitText(ctx,anglerLine,900,28,21,800);ctx.font='800 '+anglerSize+'px Arial,Helvetica,sans-serif';ctx.fillStyle='rgba(231,255,247,.78)';ctx.fillText(anglerLine,540,1162);
+
+   ctx.fillStyle='rgba(255,255,255,.16)';ctx.fillRect(120,1214,840,2);
+   ctx.font='900 34px Arial,Helvetica,sans-serif';ctx.fillStyle='rgba(244,255,251,.92)';ctx.fillText('Petri Heil!',540,1286);
+   const blob=await new Promise(resolve=>canvas.toBlob(resolve,'image/png'));
+   if(!blob||generation!==anglingCatchShareGeneration)return;
+   anglingCatchShareBlob=blob;
+   const fileName='ACZO56_'+aczoCatchShareSafeName(species)+'_'+String(Number(caught.cm).toFixed(1)).replace('.',',')+'cm.png';
+   if(typeof File==='function')anglingCatchShareFile=new File([blob],fileName,{type:'image/png',lastModified:Date.now()});
+   if(anglingShareBtn){anglingShareBtn.disabled=false;if(anglingShareLabel)anglingShareLabel.textContent='Fangkarten-Vorschau öffnen';}
+ }catch(err){console.warn('Fangkarte konnte nicht vorbereitet werden:',err);if(anglingShareBtn){anglingShareBtn.disabled=false;if(anglingShareLabel)anglingShareLabel.textContent='Fangbild öffnen';}}
+}
+function aczoGetCatchShareObjectUrl(){
+ if(!anglingCatchShareBlob)return '';
+ if(!anglingCatchShareObjectUrl)anglingCatchShareObjectUrl=URL.createObjectURL(anglingCatchShareBlob);
+ return anglingCatchShareObjectUrl;
+}
+function aczoHideCatchSharePreview(){
+ if(aczoSharePreviewFlashTimer){window.clearTimeout(aczoSharePreviewFlashTimer);aczoSharePreviewFlashTimer=0;}
+ if(aczoSharePreview){aczoSharePreview.classList.remove('show','flash');aczoSharePreview.setAttribute('aria-hidden','true');}
+ document.body?.classList.remove('aczo-share-preview-open');
+}
+function aczoCloseCatchSharePreview(options={}){
+ const fromHistory=!!options.fromHistory,force=!!options.force;
+ if(!aczoSharePreview?.classList.contains('show')){if(force)aczoSharePreviewHistoryPushed=false;return;}
+ if(!fromHistory&&!force&&aczoSharePreviewHistoryPushed&&history.state?.aczoCatchSharePreview){
+   aczoSharePreviewHistoryClosing=true;
+   history.back();
+   return;
+ }
+ aczoSharePreviewHistoryPushed=false;
+ aczoSharePreviewHistoryClosing=false;
+ aczoHideCatchSharePreview();
+}
+async function aczoOpenCatchSharePreview(){
+ const data=anglingCatchRevealData;if(!data?.caught)return;
+ if(!anglingCatchShareBlob){if(anglingShareLabel)anglingShareLabel.textContent='Bild wird erstellt …';await aczoPrepareCatchShareFile();}
+ if(!anglingCatchShareBlob)return;
+ const url=aczoGetCatchShareObjectUrl();
+ if(aczoSharePreviewImage){aczoSharePreviewImage.src=url;aczoSharePreviewImage.alt='Vorschau der Fangkarte';}
+ if(aczoSharePreview){
+   if(!aczoSharePreviewHistoryPushed){
+     try{history.pushState(Object.assign({},history.state||{},{aczoCatchSharePreview:true}),'',location.href);aczoSharePreviewHistoryPushed=true;}catch(_){aczoSharePreviewHistoryPushed=false;}
+   }
+   aczoSharePreview.setAttribute('aria-hidden','false');
+   aczoSharePreview.classList.add('show');
+   document.body?.classList.add('aczo-share-preview-open');
+   aczoSharePreview.classList.remove('flash');void aczoSharePreview.offsetWidth;aczoSharePreview.classList.add('flash');
+   if(aczoSharePreviewFlashTimer)window.clearTimeout(aczoSharePreviewFlashTimer);
+   aczoSharePreviewFlashTimer=window.setTimeout(()=>{aczoSharePreview?.classList.remove('flash');aczoSharePreviewFlashTimer=0;},620);
+ }
+ if(aczoSharePreviewSend){aczoSharePreviewSend.disabled=false;window.setTimeout(()=>aczoSharePreviewSend.focus?.({preventScroll:true}),30);}
+}
+function aczoFallbackCatchShare(){
+ if(!anglingCatchShareBlob)return false;
+ const url=aczoGetCatchShareObjectUrl();
+ const a=document.createElement('a');a.href=url;a.download=anglingCatchShareFile?.name||'ACZO56_Fangkarte.png';a.rel='noopener';document.body.appendChild(a);a.click();a.remove();
+ return true;
+}
+async function aczoShareCurrentCatch(){
+ const data=anglingCatchRevealData;if(!data?.caught)return;
+ if(!anglingCatchShareBlob){if(anglingShareLabel)anglingShareLabel.textContent='Bild wird erstellt …';await aczoPrepareCatchShareFile();}
+ if(!anglingCatchShareBlob)return 'unavailable';
+ const text='Petri Heil 🎣 ACZO56';
+ try{
+   const files=anglingCatchShareFile?[anglingCatchShareFile]:[];
+   const canFileShare=!!(navigator.share&&files.length&&(!navigator.canShare||navigator.canShare({files})));
+   if(canFileShare){await navigator.share({title:'ACZO56 Fangkarte',text,files});return 'shared';}
+   if(navigator.share){await navigator.share({title:'ACZO56 Fang',text});aczoFallbackCatchShare();return 'shared-fallback';}
+   aczoFallbackCatchShare();
+   return 'fallback';
+ }catch(err){
+   if(err&&err.name==='AbortError')return 'abort';
+   console.warn('Teilen nicht möglich, Fangbild wird bereitgestellt:',err);aczoFallbackCatchShare();
+   return 'fallback';
+ }
 }
 
 function loseCurrentArtificialLure(){
@@ -39362,7 +39598,18 @@ function stopAnglingActionHold(){
   anglingTouchRetrieveHoldPointer=null;
 }
 anglingActionBtn.addEventListener('click',e=>{if(anglingState==='ready')startAnglingCast();});
-anglingAgainBtn.addEventListener('click',resetAnglingCast);
+anglingAgainBtn.addEventListener('click',()=>{aczoCloseCatchSharePreview();resetAnglingCast();});
+anglingShareBtn?.addEventListener('click',e=>{e.stopPropagation();aczoOpenCatchSharePreview();});
+aczoSharePreview?.addEventListener('pointerdown',e=>{if(e.target===aczoSharePreview)aczoCloseCatchSharePreview();});
+aczoSharePreviewClose?.addEventListener('click',e=>{e.stopPropagation();aczoCloseCatchSharePreview();});
+aczoSharePreviewSend?.addEventListener('click',async e=>{e.stopPropagation();aczoSharePreviewSend.disabled=true;const result=await aczoShareCurrentCatch();aczoSharePreviewSend.disabled=false;if(result!=='abort')aczoCloseCatchSharePreview();});
+window.addEventListener('popstate',()=>{
+  if(aczoSharePreview?.classList.contains('show')){
+    aczoSharePreviewHistoryPushed=false;
+    aczoSharePreviewHistoryClosing=false;
+    aczoCloseCatchSharePreview({fromHistory:true});
+  }
+});
 anglingLogBtn?.addEventListener('click',openAnglingLog);
 anglingLogCloseBtn.addEventListener('click',closeAnglingLogAndMaybeReturn);
 anglingLogTopCloseBtn.addEventListener('click',closeAnglingLogAndMaybeReturn);
