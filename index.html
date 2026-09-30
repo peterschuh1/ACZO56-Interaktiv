@@ -5990,13 +5990,22 @@ function aczoPredatorAlarmListenerGain(){
     &&typeof anglingSelection!=='undefined'&&anglingSelection?.shore)listener=anglingSelection.shore;
   if(!listener)return 0;
   const d=Math.hypot(listener.x-personalFishingSpot.x,listener.y-personalFishingSpot.y);
-  // Reichweite bewusst weich: Hütte (~41 Einheiten) nur noch unterschwellig,
-  // westliche/entferntere Uferbereiche ab ~58 Einheiten komplett stumm.
-  if(d>=58)return 0;
-  if(d<=15)return .72;
-  if(d<=30)return THREE.MathUtils.lerp(.72,.30,(d-15)/15);
-  if(d<=45)return THREE.MathUtils.lerp(.30,.085,(d-30)/15);
-  return THREE.MathUtils.lerp(.085,0,(d-45)/13);
+
+  // Deutlich steilere reale Entfernungskurve. Der kurze Sounder-Piep setzt sich
+  // psychoakustisch stark durch; deshalb ist die alte lineare Kurve trotz
+  // rechnerischer Absenkung noch zu präsent gewesen.
+  let gain=0;
+  if(d>=65)gain=0;
+  else if(d<=15)gain=.22;
+  else if(d<=30)gain=THREE.MathUtils.lerp(.22,.085,(d-15)/15);
+  else if(d<=42)gain=THREE.MathUtils.lerp(.085,.018,(d-30)/12);
+  else if(d<=52)gain=THREE.MathUtils.lerp(.018,.004,(d-42)/10);
+  else gain=THREE.MathUtils.lerp(.004,0,(d-52)/13);
+
+  // Im Predatorpit-Easter-Egg liegt gleichzeitig Musik an. Dort soll das Piepen
+  // nur als kleines Umgebungsdetail darüberliegen und niemals dominant werden.
+  if(inCreator)gain=Math.min(.12,gain*.55);
+  return gain;
 }
 function aczoPlayPredatorAlarmBeep(){
   const spatialGain=aczoPredatorAlarmListenerGain();
