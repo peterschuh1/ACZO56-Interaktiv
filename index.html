@@ -4671,6 +4671,54 @@ body.aczo-share-preview-open{overflow:hidden!important}
 .aczo-graphics-segments button[hidden]{display:none!important}
 .aczo-graphics-segments.has-ultra{grid-template-columns:repeat(4,minmax(0,1fr))}
 .angling-reel-zoom .angling-float-caption{font-family:Arial,Helvetica,sans-serif!important;font-variant-emoji:text}
+
+/* Deeper-Zielauswahl: NUR das kleine Draufsichts-/Auswahlfenster vor dem Auswurf.
+   Das große Sonarfenster nach dem Auswurf (.deeper-active.line-active) bleibt unverändert. */
+#anglingUi:not(.line-active) #anglingFloatZoom.deeper-cam.target-assist{
+  border-radius:0!important;
+  padding:0!important;
+  box-sizing:border-box!important;
+  border:1px solid rgba(222,249,233,.9)!important;
+  box-shadow:0 3px 12px rgba(0,0,0,.35)!important;
+  left:9px!important;
+  right:auto!important;
+  bottom:9px!important;
+  top:auto!important;
+  margin:0!important;
+  transform:none!important;
+  background:transparent!important;
+  overflow:hidden!important;
+  width:198px!important;
+  height:148px!important;
+  min-width:198px!important;
+  max-width:198px!important;
+  min-height:148px!important;
+  max-height:148px!important;
+}
+@media(max-width:680px){
+  #anglingUi:not(.line-active) #anglingFloatZoom.deeper-cam.target-assist{
+    left:7px!important;
+    right:auto!important;
+    bottom:calc(72px + env(safe-area-inset-bottom,0px))!important;
+    width:112px!important;
+    height:128px!important;
+    min-width:112px!important;
+    max-width:112px!important;
+    min-height:128px!important;
+    max-height:128px!important;
+  }
+}
+.aczo-phone-layout #anglingUi:not(.line-active) #anglingFloatZoom.deeper-cam.target-assist{
+  left:7px!important;
+  right:auto!important;
+  bottom:calc(72px + env(safe-area-inset-bottom,0px))!important;
+  width:112px!important;
+  height:128px!important;
+  min-width:112px!important;
+  max-width:112px!important;
+  min-height:128px!important;
+  max-height:128px!important;
+}
 </style>
 
 
