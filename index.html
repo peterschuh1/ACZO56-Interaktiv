@@ -3,9 +3,9 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
-<title>ACZO56-Interaktiv-V.2.0</title>
+<title>ACZO56-Interaktiv-V.2.1</title>
 <!-- ACZO56 BETA 1.2: Hänger-, Fischkontakt-, Touch- und Idle-Korrekturen auf bestehender Basis. -->
-<!-- ACZO56 V.2.0: Mobiler Ultra-Modus, optimierte Darstellung und Abläufe, aktualisierte Hilfe und Zeitraffer-Musik. -->
+<!-- ACZO56 V.2.1: Neues Anmeldesystem mit Benutzername und Passwort. -->
 <!-- Stand 29.09.2026: Vereins-Fangkarte, Vorschau-Share und spoilerfreie öffentliche Hilfe. -->
 <!-- SOUND BUILD 29.09.2026: komprimiertes Soundset, sichtbares Biss-Timing, QTE/Kescher, Hinweise und Vogel-Ambiente. -->
 <!-- V7.83: Kritische Viewer-Ressourcen früh anfordern. -->
@@ -4760,7 +4760,12 @@ body.aczo-share-preview-open{overflow:hidden!important}
 .aczo-card-record strong{display:block;font-size:19px;margin:7px 75px 0 0}.aczo-card-length{position:absolute;right:16px;bottom:16px;font-size:20px;font-weight:700;color:#f5dfa0}
 .aczo-card-since{font-size:11px!important;margin:15px 0 4px!important;color:#adc8bd}.aczo-card-note{font-size:10px!important;line-height:1.5;margin:8px 0 0!important;color:#88aa9a}
 .aczo-card-loading{padding:40px 12px;font-size:15px;text-align:center;color:#cbe4d6}
-.aczo-color-icon{display:inline-block;width:1.15em;height:1.15em;vertical-align:-.16em;object-fit:contain;margin-right:.18em}
+.aczo-emoji{display:inline!important;white-space:nowrap;font:inherit!important;line-height:inherit!important;margin:0!important;padding:0!important}
+.aczo-emoji > img.aczo-color-icon{display:inline-block!important;width:1.15em!important;height:1.15em!important;max-width:none!important;min-width:0!important;vertical-align:-.16em;object-fit:contain;margin:0 .08em!important;pointer-events:none;filter:none!important;box-shadow:none!important;border:0!important;background:none!important;animation:none!important;transform:none!important}
+.aczo-icon-label{position:absolute!important;width:1px!important;height:1px!important;padding:0!important;margin:-1px!important;overflow:hidden!important;clip:rect(0,0,0,0)!important;clip-path:inset(50%)!important;white-space:nowrap!important;border:0!important}
+.angling-daily-quest-icon .aczo-quest-badge{display:block;width:32px;height:32px;margin:auto;filter:none}
+@media(max-width:600px){.angling-daily-quest-icon .aczo-quest-badge{width:27px;height:27px}}
+
 .aczo-rank-medal{width:26px;height:31px;display:block;margin:auto;object-fit:contain}
 .angling-hof-dots[hidden]{display:none!important}
 @media(max-width:450px){.aczo-angler-card{padding:20px;border-radius:18px}.aczo-card-avatar{flex-basis:56px;height:56px;font-size:27px}.aczo-card-heading h3{font-size:22px!important}.aczo-card-stat strong{font-size:22px}.aczo-card-stat{padding:12px}.aczo-card-length{font-size:18px}.aczo-rank-medal{width:22px;height:27px}}
@@ -4811,6 +4816,157 @@ body.aczo-share-preview-open{overflow:hidden!important}
     <div class="map-loader-track"><span id="mapStartupBar"></span></div>
   </div>
 </div>
+<script>
+// V2.1: embedded color art works before the 3D libraries load, on every device.
+const ACZO_COLOR_ICON_SHAPES=Object.fromEntries(Object.entries({
+    '🏆':'<path fill="#ffcb45" d="M8 3h16v11c0 7-16 7-16 0z"/><path fill="none" stroke="#e99f23" stroke-width="3" d="M8 6H3v4c0 5 5 7 9 7m12-11h5v4c0 5-5 7-9 7"/><path fill="#ffd45c" d="M14 19h4v7h-4zM9 26h14v4H9z"/>',
+    '🎣':'<path stroke="#e0ba78" stroke-width="2.5" fill="none" d="M3 28L19 4Q31 5 27 22"/><path fill="#69d8f5" d="M10 23c5-6 11-4 14 0l5-4v8l-5-3c-6 5-11 4-14-1"/><circle cx="16" cy="22" r="1.2" fill="#102d36"/>',
+    '👤':'<circle cx="16" cy="9" r="6" fill="#ffc897"/><path d="M5 29v-6c0-9 22-9 22 0v6" fill="#62b6f7"/>',
+    '👥':'<circle cx="11" cy="10" r="5" fill="#ffc897"/><circle cx="23" cy="11" r="4.5" fill="#f0b37e"/><path d="M1 29v-6c0-9 20-9 20 0v6" fill="#6ab8fb"/><path d="M22 18c7-1 9 3 9 7v4h-8z" fill="#91dbbd"/>',
+    '✨':'<path fill="#ffe06c" d="M16 1l4 11 11 4-11 4-4 11-4-11-11-4 11-4z"/><path fill="#fff4ba" d="M4 2l2 4 4 2-4 2-2 4-2-4-4-2 4-2z"/>',
+    '📖':'<path fill="#73bdf5" stroke="#c6eaff" d="M2 6q7-3 14 1v23q-7-4-14-1zM16 7q7-4 14-1v23q-7-3-14 1z"/><path stroke="#fff1c2" stroke-width="2" d="M5 12h7m-7 5h7m-7 5h7m8-10h7m-7 5h7m-7 5h7"/>',
+    '📊':'<path fill="#ffca56" d="M2 17h7v13H2z"/><path fill="#7bcff5" d="M12 9h7v21h-7z"/><path fill="#7de1ad" d="M22 2h7v28h-7z"/>',
+    '❓':'<circle cx="16" cy="16" r="14" fill="#79b8ee"/><path d="M12 10c0-5 10-5 10 0 0 4-6 4-6 8" fill="none" stroke="#fff" stroke-width="3"/><circle cx="16" cy="24" r="1.8" fill="#fff"/>',
+    '🎯':'<circle cx="16" cy="16" r="14" fill="#f27073"/><circle cx="16" cy="16" r="10" fill="#fff1d8"/><circle cx="16" cy="16" r="6" fill="#f27073"/><circle cx="16" cy="16" r="2" fill="#fff1d8"/><path stroke="#64c7e5" stroke-width="3" d="M16 16L29 3"/>',
+    '☁️':'<path fill="#a6dfff" stroke="#71b8dc" d="M7 27c-10 0-8-14 0-14 0-13 20-13 20 0 9-1 9 14-1 14z"/>',
+    '🔐':'<path d="M8 14V9a8 8 0 0 1 16 0v5" fill="none" stroke="#c4d7e4" stroke-width="4"/><rect x="4" y="13" width="24" height="17" rx="4" fill="#ffcb51"/><circle cx="16" cy="21" r="3" fill="#705124"/>',
+    '🔑':'<circle cx="9" cy="10" r="7" fill="none" stroke="#ffce55" stroke-width="4"/><path d="M14 15l14 14m-4-4l4-4m-8 0l4-4" stroke="#ffce55" stroke-width="4"/>',
+    '⚙️':'<path fill="#9cb5c8" d="M12 1h8l1 5 5 3 5-1 3 7-4 4v6l-5 4-5-1-4 3-6-3-5 1-4-6 2-5-2-5 4-5h5z"/><circle cx="16" cy="16" r="6" fill="#173d39"/>',
+    '🆕':'<rect x="2" y="3" width="28" height="26" rx="5" fill="#83d7c0"/><path stroke="#123c35" stroke-width="3" d="M7 10h18M7 16h18M7 22h10"/>',
+    '🔎':'<circle cx="13" cy="13" r="9" fill="#a4e6f7" fill-opacity=".6" stroke="#72c3e9" stroke-width="3"/><path stroke="#eac482" stroke-width="5" d="M20 20l10 10"/>',
+    '🟢':'<circle cx="16" cy="16" r="11" fill="#63e5a0"/><circle cx="12" cy="12" r="4" fill="#b7ffda" opacity=".6"/>',
+    '🌐':'<circle cx="16" cy="16" r="13" fill="#68bce9" stroke="#bceeff" stroke-width="1.5"/><ellipse cx="16" cy="16" rx="6" ry="13" fill="none" stroke="#d0f5ff" stroke-width="1.5"/><path d="M3 16h26M6 9h20M6 23h20" stroke="#d0f5ff" stroke-width="1.5"/>',
+    '📷':'<rect x="2" y="8" width="28" height="21" rx="4" fill="#94aabc"/><path fill="#c9d6e1" d="M8 8l3-5h10l3 5z"/><circle cx="16" cy="18" r="8" fill="#183d51"/><circle cx="16" cy="18" r="5" fill="#70c7ed"/>',
+    '💾':'<path fill="#69a7d9" d="M3 2h23l4 5v23H3z"/><path fill="#dbeaf2" d="M8 2h14v10H8zM8 18h17v12H8z"/><path fill="#32658a" d="M18 3h3v7h-3z"/>',
+    '📱':'<rect x="7" y="1" width="18" height="30" rx="4" fill="#a7bdca"/><rect x="9" y="5" width="14" height="20" rx="1" fill="#6ccbdd"/><circle cx="16" cy="28" r="1.3" fill="#274e62"/>',
+
+    '💧':'<path fill="#68ccf4" stroke="#2695c4" d="M16 2C13 9 5 15 5 21a11 11 0 0 0 22 0C27 15 19 9 16 2Z"/><path stroke="#daf9ff" stroke-width="3" stroke-linecap="round" d="M10 18q-4 7 3 10"/>',
+    '🌿':'<path stroke="#d2c586" stroke-width="2" d="M8 30L23 4"/><path fill="#79d89b" d="M13 24C1 25 1 14 10 14q9 1 3 10ZM18 15C9 12 12 3 19 6q6 5-1 9Z"/><path fill="#b8eb8d" d="M14 22C26 25 29 16 22 14q-9 0-8 8ZM20 11C30 14 32 4 26 2q-8-1-6 9Z"/>',
+    '🎒':'<path stroke="#e3b575" stroke-width="3" fill="none" d="M11 8V4q5-5 10 0v4M5 14L1 28m26-14l4 14"/><rect x="5" y="6" width="22" height="25" rx="6" fill="#e9a45d"/><path fill="#bd713b" d="M5 13h22v4H5z"/><rect x="9" y="20" width="14" height="9" rx="3" fill="#f2ce82"/><path stroke="#faf1c9" stroke-width="2" d="M11 10h10M11 23h10"/>',
+    '🛒':'<path fill="#a2e5ed" d="M5 8h25l-4 14H9z"/><path fill="none" stroke="#e5c17a" stroke-width="2.5" stroke-linecap="round" d="M1 3h4l5 23h16M13 10v9m7-9v9M7 14h20"/><circle cx="11" cy="30" r="2" fill="#e5c17a"/><circle cx="25" cy="30" r="2" fill="#e5c17a"/>',
+    '⏱️':'<circle cx="16" cy="19" r="11" fill="#b9e3e9" stroke="#568f9c" stroke-width="2"/><path stroke="#ffd26c" stroke-width="3" d="M12 2h8m-4 0v5m8 0l3-3"/><path stroke="#264e60" stroke-width="2" stroke-linecap="round" d="M16 10v9l5 3"/><circle cx="16" cy="19" r="2" fill="#ed9966"/>',
+    '🖨️':'<path fill="#8dacc3" d="M3 10h26v16H3z"/><path fill="#edf7fc" d="M8 1h16v12H8zM8 20h16v11H8z"/><path fill="#394e61" d="M6 17h20v6H6z"/><circle cx="25" cy="14" r="1.5" fill="#86ed9f"/><path stroke="#62b4d5" d="M11 24h10m-10 3h8"/>',
+    '📏':'<path fill="#ffd271" stroke="#b87b28" d="M1 22L23 0l9 9-22 22Z"/><path stroke="#89642d" stroke-width="1.5" d="M7 17l4 4m0-8l3 3m0-7l4 4m0-8l3 3m0-7l4 4"/>',
+    '📍':'<path fill="#f57c75" stroke="#b74250" d="M16 1C2 1 2 15 8 21l8 10 8-10C30 15 30 1 16 1Z"/><circle cx="16" cy="11" r="5" fill="#fff0c9"/>',
+    '👁️':'<path fill="#d4f3f1" stroke="#69b9c7" d="M1 16q15-22 30 0-15 22-30 0Z"/><circle cx="16" cy="16" r="7" fill="#67c5e9"/><circle cx="16" cy="16" r="3.5" fill="#233f58"/><circle cx="18" cy="14" r="1.8" fill="#fff"/>',
+    '🙈':'<path fill="#d4f3f1" stroke="#69b9c7" d="M1 16q15-22 30 0-15 22-30 0Z"/><circle cx="16" cy="16" r="6" fill="#67c5e9"/><path stroke="#ee9e75" stroke-width="3" d="M3 3l26 26"/>',
+    '〰️':'<path stroke="#73c9eb" stroke-width="2.5" fill="none" stroke-linecap="round" d="M2 8q7-8 15 0t13 0M2 16q7-8 15 0t13 0M2 24q7-8 15 0t13 0"/>',
+    '☰':'<rect x="2" y="4" width="28" height="5" rx="2" fill="#73c9eb"/><rect x="2" y="14" width="28" height="5" rx="2" fill="#ffe090"/><rect x="2" y="24" width="28" height="5" rx="2" fill="#92deac"/>',
+    '↻':'<path stroke="#70ceb4" stroke-width="4" fill="none" stroke-linecap="round" d="M27 15a11 11 0 1 1-5-9"/><path fill="#ffda80" d="M22 1l9 10-12 1Z"/>',
+    '🖱️':'<rect x="7" y="3" width="18" height="28" rx="9" fill="#a2c0d2" stroke="#467b94"/><path stroke="#eaf8ff" stroke-width="1.5" d="M16 4v11M7 15h18"/><rect x="14" y="7" width="4" height="7" rx="2" fill="#ffc76e"/>',
+    '🖥️':'<rect x="1" y="3" width="30" height="21" rx="3" fill="#9db1c4"/><rect x="4" y="6" width="24" height="15" fill="#64bbd9"/><path fill="#b4d8e5" d="M12 24h8v5h6v3H6v-3h6z"/><path fill="#c7f0da" d="M4 21l6-9 6 5 5-7 7 11z"/>',
+    '📡':'<path fill="#bbcfdc" stroke="#6592a9" d="M4 12l17 17Q0 31 4 12Z"/><path stroke="#ffbf60" stroke-width="2" d="M9 24L20 13"/><circle cx="21" cy="12" r="2.5" fill="#ffd583"/><path stroke="#72d2ed" stroke-width="2" fill="none" stroke-linecap="round" d="M21 4q8 0 8 8M21 0q12 0 12 12"/><path fill="#9cb8c7" d="M8 27h9v5H5z"/>',
+    '🌀':'<path fill="none" stroke="#79d8ef" stroke-width="3" stroke-linecap="round" d="M29 17C29-2 0-2 1 17s27 16 26 0S6 5 6 17s15 10 15 0-9-7-9 0q0 5 5 3"/>',
+    '⚡':'<path fill="#ffd956" stroke="#d59a2c" d="M18 0L4 19h10l-2 13L29 12H19l4-12Z"/>',
+    '🔊':'<path fill="#c1d8e8" d="M1 12h6l10-8v24L7 20H1z"/><path stroke="#76d8b4" stroke-width="2.4" fill="none" stroke-linecap="round" d="M21 10q7 6 0 12m4-17q13 11 0 22"/>',
+    '🥅':'<path fill="none" stroke="#f1c779" stroke-width="3" d="M18 23L6 31"/><ellipse cx="20" cy="11" rx="11" ry="9" fill="#81cfd7" fill-opacity=".4" stroke="#b6dae5" stroke-width="2"/><path stroke="#add9d1" stroke-width="1" d="M11 6l17 9M10 11l15 8M16 3l13 7M14 18l8-14M19 19l8-13M10 13l8-10"/>',
+    '🎨':'<path fill="#f0ce8c" d="M16 1C-2 1-3 29 13 31q7 1 7-5c0-5 12 1 12-8C32 7 26 1 16 1Z"/><circle cx="9" cy="9" r="3" fill="#ef7776"/><circle cx="18" cy="7" r="3" fill="#71bff2"/><circle cx="25" cy="14" r="3" fill="#7bc593"/><circle cx="8" cy="19" r="3" fill="#f8eb88"/><circle cx="17" cy="23" r="3" fill="#a972a5"/>',
+    '🟡':'<circle cx="16" cy="16" r="11" fill="#ffc85c"/><circle cx="12" cy="12" r="4" fill="#fff4a6" opacity=".7"/>',
+    '⚪':'<circle cx="16" cy="16" r="11" fill="#bdd3df"/><circle cx="12" cy="12" r="4" fill="#f2fbff" opacity=".7"/>',
+    '⚠️':'<path fill="#ffd579" stroke="#c28a31" d="M16 2L1 29h30Z"/><path stroke="#6b5026" stroke-width="3" stroke-linecap="round" d="M16 10v9"/><circle cx="16" cy="24" r="1.8" fill="#6b5026"/>',
+    '⛔':'<circle cx="16" cy="16" r="14" fill="#ed7777"/><path stroke="#ffe8db" stroke-width="4" stroke-linecap="round" d="M7 16h18"/>',
+    '☢':'<circle cx="16" cy="16" r="14" fill="#bfea70"/><g fill="#334b30"><path d="M13 14L6 3Q1 7 2 15h10ZM19 14h11Q31 7 26 3l-7 11ZM16 20l-6 10q6 3 12 0l-6-10Z"/><circle cx="16" cy="16" r="3"/></g>',
+    '☀️':'<circle cx="16" cy="16" r="8" fill="#ffcf58"/><path stroke="#f5b646" stroke-width="2.5" stroke-linecap="round" d="M16 1v4m0 22v4M1 16h4m22 0h4M5 5l3 3m16 16l3 3M5 27l3-3M24 8l3-3"/>',
+    '🌙':'<path fill="#ffe392" stroke="#deb95e" d="M25 3C6-2-6 21 11 29q12 6 20-8C15 28 10 7 25 3Z"/>',
+    '🌗':'<circle cx="16" cy="16" r="13" fill="#6882b6"/><path fill="#ffe392" d="M16 3a13 13 0 0 0 0 26Z"/>',
+    '🌧️':'<path fill="#a9c6e2" d="M8 21C-1 21-1 9 7 9 9-4 26-2 27 10c9 1 7 11-1 11Z"/><path stroke="#71c7ef" stroke-width="3" stroke-linecap="round" d="M8 25l-2 5m10-5l-2 5m10-5l-2 5"/>',
+    '🌨️':'<path fill="#bfd9eb" d="M8 20C-1 20-1 8 7 8 9-3 26-2 27 9c9 1 7 11-1 11Z"/><g fill="#89d6f5"><circle cx="6" cy="27" r="2"/><circle cx="16" cy="27" r="2"/><circle cx="26" cy="27" r="2"/></g>',
+    '🌦️':'<circle cx="23" cy="8" r="7" fill="#ffd16a"/><path fill="#b5d5ec" d="M7 23C-1 23-1 12 6 12 6 0 24 0 24 12c9 0 10 11 1 11Z"/><path stroke="#68c2ea" stroke-width="2.5" stroke-linecap="round" d="M9 27l-1 3m9-3l-1 3m9-3l-1 3"/>',
+    '🌤️':'<circle cx="21" cy="10" r="9" fill="#ffd16a"/><path fill="#c5e2f4" d="M6 28C-2 28-1 17 5 17 5 6 21 6 22 17c11-2 12 11 3 11Z"/>',
+    '🌫️':'<path stroke="#b5d2e1" stroke-width="3" stroke-linecap="round" d="M3 7h26M7 14h20M2 21h26M5 28h18"/>',
+    '⛈️':'<path fill="#97b8d6" d="M7 21C-1 21-1 10 6 10 6-3 24-3 25 10c9 0 10 11 1 11Z"/><path fill="#ffcd66" d="M18 18l-7 8h5l-2 6 10-10h-6l4-4Z"/>',
+    '💨':'<path fill="none" stroke="#91d8ec" stroke-width="2.5" stroke-linecap="round" d="M2 10h17q10 0 7-6c-2-4-8-3-8 1M2 17h23q9 0 5 8c-3 5-9 2-8-2M2 24h11q7 0 4 6"/>',
+    '🌊':'<path fill="#62bddd" d="M1 18q8-24 20-12c-14-4-7 18 10 12v13H1Z"/><path stroke="#c5f6f2" stroke-width="2" fill="none" d="M2 24q5-5 10 0t10 0t10 0"/>',
+    '🌌':'<rect x="1" y="1" width="30" height="30" rx="7" fill="#45598c"/><path stroke="#9981d9" stroke-width="7" opacity=".6" d="M4 27L28 3"/><path fill="#ffe6a2" d="M9 4l2 5 5 2-5 2-2 5-2-5-5-2 5-2zM24 19l2 4 4 2-4 2-2 4-2-4-4-2 4-2z"/>',
+    '🗺️':'<path fill="#b4e0a9" stroke="#4d8f91" stroke-width="1.5" d="M1 5l10-4 10 4 10-4v26l-10 4-10-4-10 4z"/><path stroke="#f7f0cd" stroke-width="2.5" fill="none" d="M2 18l7-5 9 8 12-8"/><path stroke="#67adbd" d="M11 1v26M21 5v26"/>',
+    '🌽':'<path fill="#ffe06b" stroke="#c4973d" d="M16 1C4 1 5 23 16 29 27 23 28 1 16 1Z"/><path stroke="#d6a04a" d="M11 7h10M9 12h14M9 17h14M11 22h10M13 2v22M19 2v22"/><path fill="#83b95e" d="M16 31C2 30 0 20 1 12c11 4 14 11 15 19ZM16 31C30 30 32 20 31 12c-11 4-14 11-15 19Z"/>',
+    '🐊':'<path fill="#8fca77" stroke="#49754b" d="M1 22l9-8 6 2 11-6 4 5-11 11H8z"/><path stroke="#edf2b6" stroke-width="2" d="M20 21l-2-3m6 0l-2-3m6 0l-2-3"/><circle cx="14" cy="16" r="2" fill="#ffe6a0"/><circle cx="14" cy="16" r="1" fill="#244c35"/>',
+    '📤':'<path fill="#80b8d5" d="M2 17h7v9h14v-9h7v14H2z"/><path fill="#ffc574" d="M16 1l10 11h-6v11h-8V12H6z"/>',
+    '🚶':'<circle cx="17" cy="4" r="4" fill="#f7c48b"/><path fill="none" stroke="#6ccad5" stroke-width="4" stroke-linecap="round" d="M16 11l-4 9m1-4l-7 1m10-6l5 7 6 1m-15 1l-6 10m6-10l7 4 1 6"/>',
+    '🚲':'<g fill="none" stroke="#b9dfe9" stroke-width="2"><circle cx="7" cy="24" r="6"/><circle cx="25" cy="24" r="6"/></g><path stroke="#f2b273" stroke-width="2" fill="none" d="M7 24l7-12 4 12H7l13-9 5 9m-6-14h7m-15 0h7"/>',
+    '🚗':'<path fill="#76bade" d="M2 13l5-9h18l5 9v14H2z"/><path fill="#d5f2f0" d="M8 7h16l3 7H5z"/><rect x="4" y="26" width="5" height="5" rx="2" fill="#495c6b"/><rect x="23" y="26" width="5" height="5" rx="2" fill="#495c6b"/><path stroke="#ffe699" stroke-width="3" d="M5 20h5m12 0h5"/>',
+    '☝️':'<path fill="#f5ca99" stroke="#ba865c" d="M7 19v-4q0-3 3-2V4q0-5 4-2v12q3-4 5 0 3-3 5 1 5-1 5 3l-2 12H12L5 23q-2-4 2-4Z"/>',
+    '✌️':'<path fill="#f5ca99" stroke="#ba865c" d="M6 20v-3q0-4 4-1L8 4q0-5 4-3l5 13 2-12q1-4 4-1l-1 15q4-3 5 1l-2 13H12L5 24q-3-4 1-4Z"/>',
+    '✓':'<circle cx="16" cy="16" r="14" fill="#70d99e"/><path fill="none" stroke="#164d36" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" d="M8 16l5 5L24 10"/>',
+    '★':'<path fill="#ffda73" stroke="#d29c39" d="M16 1l5 10 11 2-8 8 2 11-10-5-10 5 2-11-8-8 11-2Z"/>',
+    '✖':'<circle cx="16" cy="16" r="14" fill="#ed8c7c"/><path stroke="#733f3a" stroke-width="3" stroke-linecap="round" d="M10 10l12 12m0-12L10 22"/>',
+    '⏩':'<path fill="#ffcd73" d="M2 3l14 13L2 29ZM16 3l14 13-14 13Z"/>',
+    '⏪':'<path fill="#7acbdf" d="M30 3L16 16l14 13ZM16 3L2 16l14 13Z"/>',
+    '◀':'<path fill="#7acbdf" d="M27 3L4 16l23 13Z"/>',
+    '▶':'<path fill="#ffcd73" d="M5 3l23 13L5 29Z"/>',
+    '⬆':'<path fill="#ffcd73" d="M16 1L1 17h10v14h10V17h10Z"/>'
+  }).map(([symbol,shape])=>[symbol.replace(/[\uFE0E\uFE0F]/g,''),shape]));
+ACZO_COLOR_ICON_SHAPES['🐟']='<path fill="#80cde0" stroke="#427e91" d="M2 17c8-17 20-14 23-3l7-7v18l-7-6C16 30 7 25 2 17Z"/><path fill="#efc879" d="M11 8l6-6 5 9M12 23l7 7 3-8"/><circle cx="8" cy="15" r="2" fill="#183d47"/><circle cx="7.5" cy="14.5" r=".6" fill="#fff"/><path stroke="#d7f2f3" fill="none" d="M12 11q5 6 0 12"/>';
+for(const [symbol,number,color,dark] of [['🥇',1,'#f7cd63','#a7772b'],['🥈',2,'#d4e1ee','#718ba4'],['🥉',3,'#d99a6a','#80543a']]){
+  ACZO_COLOR_ICON_SHAPES[symbol]='<path fill="#6f9ded" d="M5 0h8l6 15-9 2Z"/><path fill="#eb8b86" d="M20 0h8l-8 18-9-3Z"/><circle cx="16" cy="21" r="11" fill="'+color+'" stroke="'+dark+'" stroke-width="1.5"/><text x="16" y="26" text-anchor="middle" font-family="Arial,sans-serif" font-size="13" font-weight="700" fill="'+dark+'">'+number+'</text>';
+}
+const ACZO_COLOR_ICON_ALIASES={'❔':'❓','👁':'👁','⚠':'⚠','📒':'📖','🕒':'⏱','⛅':'🌤','⭐':'★','🏅':'🏆','✅':'✓','🐟':'🎣','🧨':'⚠'};
+const ACZO_COLOR_ICON_PATTERN=new RegExp('('+[...new Set([...Object.keys(ACZO_COLOR_ICON_SHAPES),...Object.keys(ACZO_COLOR_ICON_ALIASES)])].sort((a,b)=>b.length-a.length).join('|')+')[\uFE0E\uFE0F]?','gu');
+const ACZO_COLOR_ICON_URLS=new Map();
+const ACZO_COLOR_ICON_SKIP='script,style,textarea,input,select,option,svg,canvas,.aczo-emoji,[contenteditable]';
+function aczoColorIcon(symbol){
+  const key=String(symbol).replace(/[\uFE0E\uFE0F]/g,''),shape=ACZO_COLOR_ICON_SHAPES[key]||ACZO_COLOR_ICON_SHAPES[ACZO_COLOR_ICON_ALIASES[key]];
+  if(!shape)return null;
+  let url=ACZO_COLOR_ICON_URLS.get(key);
+  if(!url){url='data:image/svg+xml;charset=utf-8,'+encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">'+shape+'</svg>');ACZO_COLOR_ICON_URLS.set(key,url);}
+  const img=document.createElement('img');img.className='aczo-color-icon';img.alt='';img.setAttribute('aria-hidden','true');img.draggable=false;img.src=url;return img;
+}
+function aczoColorIcons(root){
+  if(!root)return;
+  const nodes=[];
+  if(root.nodeType===3)nodes.push(root);
+  else{
+    if(root.matches?.(ACZO_COLOR_ICON_SKIP))return;
+    const walker=document.createTreeWalker(root,NodeFilter.SHOW_TEXT);
+    while(walker.nextNode())nodes.push(walker.currentNode);
+  }
+  for(const node of nodes){
+    if(!node.parentElement||node.parentElement.closest(ACZO_COLOR_ICON_SKIP))continue;
+    ACZO_COLOR_ICON_PATTERN.lastIndex=0;
+    if(!ACZO_COLOR_ICON_PATTERN.test(node.textContent))continue;
+    ACZO_COLOR_ICON_PATTERN.lastIndex=0;
+    const fragment=document.createDocumentFragment();let at=0;
+    for(const match of node.textContent.matchAll(ACZO_COLOR_ICON_PATTERN)){
+      fragment.append(document.createTextNode(node.textContent.slice(at,match.index)));
+      const icon=aczoColorIcon(match[0]);
+      if(icon){
+        const wrap=document.createElement('span');wrap.className='aczo-emoji';
+        const label=document.createElement('span');label.className='aczo-icon-label';label.textContent=match[0];
+        wrap.append(icon,label);fragment.append(wrap);
+      }else fragment.append(document.createTextNode(match[0]));
+      at=match.index+match[0].length;
+    }
+    fragment.append(document.createTextNode(node.textContent.slice(at)));node.replaceWith(fragment);
+  }
+}
+function aczoSetIconText(element,value){
+  if(!element)return;
+  const text=String(value);
+  if(element.textContent!==text){element.textContent=text;aczoColorIcons(element);}
+}
+(function aczoWatchColorIcons(){
+  aczoColorIcons(document.body);
+  const dirty=new Set();let queued=false;
+  const observer=new MutationObserver(records=>{
+    const add=node=>{
+      if(node.nodeType!==1&&node.nodeType!==3)return;
+      const parent=node.nodeType===3?node.parentElement:node;
+      if(!parent||parent.closest(ACZO_COLOR_ICON_SKIP))return;
+      ACZO_COLOR_ICON_PATTERN.lastIndex=0;
+      if(ACZO_COLOR_ICON_PATTERN.test(node.textContent||''))dirty.add(node);
+    };
+    for(const record of records){
+      if(record.type==='characterData')add(record.target);
+      else for(const node of record.addedNodes)add(node);
+    }
+    if(dirty.size&&!queued){
+      queued=true;queueMicrotask(()=>{queued=false;const batch=[...dirty];dirty.clear();for(const node of batch)if(node.isConnected)aczoColorIcons(node);});
+    }
+  });
+  observer.observe(document.body,{childList:true,characterData:true,subtree:true});
+  document.addEventListener('DOMContentLoaded',()=>aczoColorIcons(document.body),{once:true});
+})();
+</script>
 <script>
 // ACZO56 CLEAN V4: Neuaufbau auf Basis der letzten guten V1.3 + ReefMaster V4.
 
@@ -4984,7 +5140,7 @@ body.aczo-share-preview-open{overflow:hidden!important}
            </section><section id="aczoGuestNudge" class="angling-main-section" hidden><strong>🔐 Deinen Spielstand sichern?</strong><p>Mit einem Spielerkonto kannst du auch auf einem anderen Gerät weiterspielen.</p><div class="angling-main-actions"><button type="button" id="aczoNudgeNow" class="angling-main-btn primary">Jetzt sichern</button><button type="button" id="aczoNudgeLater" class="angling-main-btn">Später</button></div></section></div><div id="aczo-main-profile" data-main-page="profile" hidden><section class="angling-main-section">
              <div class="angling-main-section-title">
                <div><small>MEIN ANGLER</small><h3>👤 Profil & Spielstand</h3></div>
-               <p>Name, Cloud-Sicherung und Gerätewechsel gehören hier zusammen.</p>
+               <p>Spielerkonto, Privatsphäre und Cloud-Sicherung gehören hier zusammen.</p>
              </div>
 
              <div id="aczoAccountArea" class="aczo-account-area">
@@ -5182,7 +5338,7 @@ body.aczo-share-preview-open{overflow:hidden!important}
        <div class="angling-recovery-body">
          <div class="angling-recovery-card angling-recovery-restore-card">
            <h3>Spielstand auf diesem Gerät laden</h3>
-           <p>Gib den Code deines bisherigen Geräts ein. Der Cloud-Spielstand ersetzt EP, Fortschritt, Bestwerte, Käufe, Bestände und die 3D-Fischsammlung. Das lokale Fangbuch dieses Geräts bleibt unangetastet.</p>
+           <p>Mit einem Spielerkonto meldest du dich unter „Profil“ mit Benutzername und Passwort an. Für ein Gastprofil oder eine Wiederherstellung gib hier deinen privaten Code ein. Er lädt das zugehörige Cloud-Profil mit Fortschritt, Bestwerten, Käufen, Beständen und Fischsammlung; einzelne Fangbuchzeilen bleiben lokal.</p>
            <div class="angling-recovery-code-row">
              <input id="anglingRecoveryInput" type="text" maxlength="29" autocomplete="off" autocapitalize="characters" autocorrect="off" spellcheck="false" enterkeyhint="go" placeholder="XXXX-XXXX-XXXX-XXXX-XXXX-XXXX" aria-label="Wiederherstellungscode eingeben">
            </div>
@@ -5190,13 +5346,13 @@ body.aczo-share-preview-open{overflow:hidden!important}
          </div>
          <div class="angling-recovery-card angling-recovery-own-card">
            <h3>Dein Wiederherstellungscode</h3>
-           <p>Mit diesem Code kannst du deinen gespeicherten Spielstand auf einem anderen Gerät laden. Bewahre ihn privat auf.</p>
+           <p>Dieser private Code dient der Wiederherstellung und beim Spielerkonto zum Zurücksetzen eines vergessenen Passworts. Für den normalen Gerätewechsel meldest du dich mit Benutzername und Passwort an. Bewahre den Code sicher auf.</p>
            <div class="angling-recovery-code-row">
              <input id="anglingRecoveryCodeDisplay" type="text" readonly value="Wird eingerichtet …" aria-label="Wiederherstellungscode">
              <button id="anglingRecoveryCopyBtn">Kopieren</button>
            </div>
            <button id="anglingRecoveryRotateBtn" class="angling-recovery-action danger-lite" hidden>Neuen Code erzeugen</button>
-           <div class="angling-recovery-warning">Ein neu erzeugter Code macht den bisherigen Code ungültig.</div>
+           <div class="angling-recovery-warning">Teile diesen Code niemals öffentlich. Für die normale Anmeldung brauchst du Benutzername und Passwort.</div>
          </div>
          <div id="anglingRecoveryStatus" class="angling-recovery-status">Cloud-Spielstand wird geprüft …</div>
        </div>
@@ -5207,6 +5363,13 @@ body.aczo-share-preview-open{overflow:hidden!important}
          <button id="anglingGameHelpClose" class="angling-panel-close" aria-label="Spielhilfe schließen"><span>‹</span><small>Zurück</small></button>
        </div>
        <div class="angling-help-content">
+         <section class="aczo-account-help"><h3>👤 Spielerkonto erstellen oder aktivieren</h3><p>Öffne „Angeln“ und im Hauptmenü den Bereich „Profil“. Wähle „Spielerkonto erstellen“; bei einem vorhandenen Spielstand heißt die Schaltfläche „Spielerkonto aktivieren“. Gib einen freien Benutzernamen und ein Passwort ein und wiederhole das Passwort. Der Benutzername muss 3 bis 30 Zeichen haben; erlaubt sind Buchstaben, Zahlen, Leerzeichen, Punkt, Unterstrich und Bindestrich. Das Passwort braucht mindestens 12 und höchstens 256 Zeichen. Bestätige mit „Spielerkonto erstellen“ und warte auf die Rückmeldung.</p><p>Aktiviere einen vorhandenen Spielstand auf dem Gerät, auf dem du bisher gespielt hast. Deine Spieler-ID, EP, Gesamt-EP, Rekorde, Käufe und Bestände bleiben mit diesem Profil verbunden. Erstelle für einen Gerätewechsel kein zweites Konto.</p></section>
+         <section class="aczo-account-help"><h3>🔐 Anmelden &amp; Gerätewechsel</h3><p>Wähle im Bereich „Profil“ „Mit Spielerkonto anmelden“, gib deinen Benutzernamen und dein Passwort ein und drücke „Anmelden“. Auf einem unbekannten Gerät kannst du dieselben Zugangsdaten verwenden. Der Cloud-Spielstand wird geladen; der grüne Hinweis mit deinem Namen und „Spielerkonto verbunden“ bestätigt die Anmeldung. Auf einem bekannten Gerät wird die gespeicherte Sitzung normalerweise automatisch wieder aufgenommen. Warte bei langsamem Laden auf die Rückmeldung.</p><p>Das einzelne Fangbuch bleibt auf dem jeweiligen Gerät. Cloud-Fortschritt, Fangsumme und persönliche Rekorde werden geladen; einzelne Fangbuchzeilen wandern nicht automatisch auf ein anderes Gerät.</p></section>
+         <section class="aczo-account-help"><h3>📱 Passwort speichern &amp; automatisch ausfüllen</h3><p>Wenn Safari oder dein PC-Browser die Speicherung anbietet, kannst du Benutzername und Passwort im Passwortmanager des Geräts speichern. Beim nächsten Anmelden lassen sie sich automatisch ausfüllen; auf einem entsprechend eingerichteten iPhone kann Face ID die gespeicherten Zugangsdaten freigeben. Das Spiel entscheidet nicht über den Speicherhinweis. Dieser kann auch erst beim Verlassen des Formulars erscheinen. Falls kein Angebot kommt, prüfe die Passwort- und AutoFill-Einstellungen deines Browsers beziehungsweise Geräts.</p></section>
+         <section class="aczo-account-help"><h3>🔑 Passwort vergessen &amp; Sicherungscode</h3><p>Tippe im Anmeldeformular auf „Passwort vergessen?“. Gib deinen Benutzernamen, den privaten Sicherungscode und zweimal dein neues Passwort ein. Mit „Passwort zurücksetzen“ wird das neue Passwort gesetzt; alte Sitzungen werden ungültig. Andere Geräte müssen sich danach erneut anmelden. Es gibt keinen Zurücksetzen-Link per E-Mail.</p><p>Den Wiederherstellungscode beziehungsweise Sicherungscode findest du unter „Profil“ im Abschnitt „Wiederherstellungscode“. Kopiere ihn und bewahre ihn privat außerhalb des Browsers auf. Er ist für die Wiederherstellung und den Notfall gedacht; beim normalen Anmelden oder Gerätewechsel mit einem Konto brauchst du nur Benutzername und Passwort. Ohne den passenden Code kann das Formular dein Passwort nicht zurücksetzen.</p></section>
+         <section class="aczo-account-help"><h3>⚙️ Konto ändern &amp; abmelden</h3><p>Unter „Profil“ kannst du mit „Benutzername ändern“ einen freien neuen Namen wählen und mit „Passwort ändern“ das aktuelle Passwort durch ein neues ersetzen. Nach einer Passwortänderung müssen andere Geräte sich erneut anmelden. „Auf diesem Gerät abmelden“ sichert zunächst den aktuellen Cloud-Spielstand und beendet die Sitzung dieses Geräts. Scheitert die Sicherung, bleibt die Anmeldung bestehen. Dein Konto und Cloud-Spielstand werden durch Abmelden nicht gelöscht.</p></section>
+         <section class="aczo-account-help"><h3>🎣 Als Gastangler spielen</h3><p>Ein Konto ist freiwillig. Wähle „Als Gastangler spielen“, wenn du ohne Passwortkonto beginnen möchtest. Einen bestehenden Gastspielstand kannst du später unter „Profil“ aktivieren. Für Gastprofile bleibt der private Wiederherstellungscode wichtig, um einen Cloud-Spielstand wiederherzustellen. Wer bereits ein Konto besitzt und seinen Fortschritt laden möchte, meldet sich mit seinen Zugangsdaten an.</p></section>
+         <section class="aczo-account-help"><h3>👥 Community &amp; Privatsphäre</h3><p>Unter „Community“ findest du aktive Angler, „Alle Angler“, die Suche und öffentliche Anglerkarten. Ein verborgener Name bedeutet nicht, dass kein Konto vorhanden ist. Namen erscheinen bei Namensfreigabe oder bereits veröffentlichten Rekorden. Unter „Profil“ stellst du die Namenssichtbarkeit und die Veröffentlichung neuer Rekorde ein und drückst „Privatsphäre speichern“. Warte auf die Bestätigung. Die Namensfreigabe wird online gespeichert; die Rekordfreigabe gilt für zukünftige Veröffentlichungen dieses Geräts. Bereits veröffentlichte Rekorde bleiben öffentlich. Passwort und Sicherungscode stehen nie auf einer Anglerkarte.</p></section>
          <section><h3>🎯 Angelstelle & Auswurf</h3><p>Wähle zuerst einen Platz am Ufer, auf einem Gitterroststeg, auf dem Nordsteg oder auf dem Bootssteg am Südufer. Der Nordsteg bietet die Spitze geradeaus sowie zwei mittlere Positionen parallel zum Ufer; am Bootssteg blickst du gerade aufs Wasser. Danach bewegst du das Zielkreuz auf die gewünschte Wasserstelle und bestätigst sie. Erst dann wird der Auswurf freigegeben. Tiefe, Entfernung, Struktur, Wetter und Tageszeit beeinflussen die Fischaktivität.</p></section>
          <section><h3>📱 Mobile Steuerung</h3><p>Tippe in die Szene, um Ziel oder Aktion auszuführen. Halten kurbelt kontinuierlich; ein Doppeltipp holt Kunstköder oder Deeper schnell vollständig zum Ufer zurück. Während des Drills hältst du „Kurbeln“ gedrückt und führst Rute beziehungsweise Finger auf die Gegenseite des Fisches. Beim Keschern bewegst du den Kescher mit dem Finger unter den Fisch. Textauswahl, iOS-Lupe und Kontextmenü sind während der aktiven Spielsteuerung gesperrt.</p></section>
          <section><h3>🖱️ Desktop-Steuerung</h3><p>Klick und Halten bedienen die Angelaktionen; Kunstköder oder Deeper können per Rechtsklick schnell zurückgeholt werden. Im Drill bewegt die Maus die Rute. Das Mausrad verstellt die Rollenbremse stufenweise: nach oben/von dir weg = fester, nach unten/zu dir = lockerer. Das Mausrad verändert die Bremse nur während eines laufenden Drills und zoomt dann nicht die Karte.</p></section>
@@ -5230,7 +5393,7 @@ body.aczo-share-preview-open{overflow:hidden!important}
          <section><h3>📏 Fischgrößen &amp; Gewichte</h3><p>Fischgrößen und Gewichte werden artspezifisch berechnet. Besonders große Exemplare bleiben selten und können sich im Drill deutlich von durchschnittlichen Fischen unterscheiden. Persönliche Rekorde, Highscore und Online-Bestenliste verwenden dieselbe Bewertung.</p></section>
          <section><h3>⭐ EP &amp; Shop</h3><p>Gefangene Fische bringen EP; größere, seltenere und besonders sauber gelandete Fänge können zusätzliche Belohnungen erhalten. EP sind die ausgebbare Währung im Tackle-Shop. Gesamt-EP bestimmen dauerhaft deine Anglerstufe und werden durch Einkäufe nicht reduziert.</p></section>
          <section><h3>🎯 Tagesaufgaben</h3><p>Jeden Spieltag warten drei Aufgaben mit unterschiedlicher Schwierigkeit. Jede erledigte Aufgabe bringt EP; wer alle drei schafft, erhält den zusätzlichen Tagesbonus. Nach der kurzen Einblendung bleiben die Aufgaben jederzeit im Hauptmenü abrufbar.</p></section>
-         <section><h3>☁️ Cloud-Spielstand</h3><p>EP, Gesamt-EP, Fortschritt, persönliche Bestwerte, Köderfische, gekaufte Köder und Futterbestände sowie die in der 3D-Unterwasseransicht entdeckten Fischarten werden automatisch online gespeichert. Das Fangbuch mit den einzelnen Fangereignissen bleibt ausschließlich lokal.</p></section><section><h3>🔑 Gerätewechsel</h3><p>Unter „Spielstand“ findest du einen privaten Wiederherstellungscode. Mit ihm kannst du deinen Cloud-Spielstand auf einem anderen Gerät übernehmen. Der übernommene Datensatz wird dem neuen Gerät zugeordnet; ein neu erzeugter Code macht den bisherigen Code ungültig.</p></section>
+         <section><h3>☁️ Cloud-Spielstand</h3><p>EP, Gesamt-EP, Fortschritt, persönliche Bestwerte, Köderfische, gekaufte Köder und Futterbestände sowie die in der 3D-Unterwasseransicht entdeckten Fischarten werden automatisch online gespeichert. Das Fangbuch mit den einzelnen Fangereignissen bleibt ausschließlich lokal.</p></section><section><h3>🔑 Cloud-Wiederherstellung</h3><p>Mit einem Spielerkonto meldest du dich auf einem anderen Gerät mit Benutzername und Passwort an. Für ältere Gastprofile steht im Bereich „Spielstand“ weiterhin die Wiederherstellung per privatem Code zur Verfügung. Verwende nur deinen eigenen Code; die Wiederherstellung lädt dessen Cloud-Profil. Der Code gehört nicht in öffentliche Nachrichten oder die Community.</p></section>
          <section><h3>🏆 Highscore &amp; Bestenliste</h3><p>Deine persönlichen Bestfänge stehen im Highscore. Mit Anzeigename und aktivierter Veröffentlichung können deine freigegebenen Artenrekorde automatisch mit der öffentlichen Bestenliste abgeglichen werden. Die Liste lädt beim Öffnen selbstständig.</p></section><section><h3>✨ Hall of Fame</h3><p>Die Hall of Fame zeigt Gesamtwertung, Artenrekorde, Vielfalt, Erfahrung, Aktivität und besondere Ehrenfänge. Ihre Daten werden im Hintergrund vorgeladen. Nach der Kamerafahrt zur Hütte erscheint die Begrüßung; die Ranglisten folgen, sobald die Online-Daten bereitstehen. Während der Präsentation pausiert das Spiel. „Produced by Predatorpit“ öffnet ein zusätzliches Porträt; „Zurück“ führt zur Hall of Fame beziehungsweise zur zuvor gespeicherten Angelansicht.</p></section>
          <section><h3>🟢 Angler online</h3><p>Ist die Namenssichtbarkeit aktiviert, meldet eine kurze Einblendung andere gerade aktive Angler. Die Meldung verschwindet selbstständig und zeigt keine private Spieler-ID oder Wiederherstellungscodes.</p></section>
        </div>
@@ -5467,6 +5630,12 @@ body.aczo-share-preview-open{overflow:hidden!important}
        <h2 id="helpTitle">🗺️ Bedienung der Tiefenkarte</h2>
        <p class="help-intro">Die wichtigsten Funktionen und Steuerungen im Überblick.</p>
        <div class="help-grid">
+         <div class="help-item aczo-account-help"><strong>👤 Spielerkonto erstellen</strong><span>Öffne „Angeln“ → Hauptmenü → „Profil“ → „Spielerkonto erstellen“. Hast du bereits einen Spielstand, wähle auf deinem bisherigen Gerät „Spielerkonto aktivieren“: EP, Rekorde, Käufe und Bestände bleiben erhalten. Wähle einen freien Benutzernamen mit 3 bis 30 Zeichen und ein Passwort mit 12 bis 256 Zeichen, wiederhole das Passwort und bestätige. Erlaubt sind im Namen Buchstaben, Zahlen, Leerzeichen, Punkt, Unterstrich und Bindestrich. Ein Konto ist freiwillig; „Als Gastangler spielen“ bleibt möglich.</span></div>
+         <div class="help-item aczo-account-help"><strong>🔐 Anmelden &amp; Gerätewechsel</strong><span>Unter „Profil“ wählst du „Mit Spielerkonto anmelden“. Gib Benutzername und Passwort ein und drücke „Anmelden“. Nutze auf einem anderen Gerät dieselben Zugangsdaten und erstelle kein zweites Konto. Warte, bis dein Name und „Spielerkonto verbunden“ grün angezeigt werden. Eine gespeicherte Sitzung wird normalerweise automatisch wieder aufgenommen. Cloud-Fortschritt, Fangsumme, Bestwerte, Bestände und Ausrüstung werden geladen; einzelne Fangbuchzeilen bleiben auf dem bisherigen Gerät.</span></div>
+         <div class="help-item aczo-account-help"><strong>📱 Speichern &amp; AutoFill</strong><span>Bietet der Browser an, Benutzername und Passwort zu speichern, kannst du das bestätigen. Danach ist automatisches Ausfüllen möglich; auf einem entsprechend eingerichteten iPhone kann Face ID die gespeicherten Daten freigeben. Der Browser steuert den Hinweis und kann ihn erst beim Verlassen des Formulars anzeigen. Bei fehlendem Angebot prüfe die Passwort-/AutoFill-Einstellungen des Geräts oder Browsers.</span></div>
+         <div class="help-item aczo-account-help"><strong>🔑 Passwort vergessen</strong><span>Wähle im Anmeldeformular „Passwort vergessen?“. Trage Benutzernamen, privaten Sicherungscode und zweimal ein neues Passwort ein und bestätige „Passwort zurücksetzen“. Anschließend müssen andere Geräte sich erneut anmelden. Den Code findest du unter „Profil“ → „Wiederherstellungscode“. Privat außerhalb des Browsers aufbewahren: Er dient dem Notfall, während der normale Gerätewechsel per Benutzername und Passwort erfolgt. Ohne passenden Code ist das Zurücksetzen hier nicht möglich; es gibt keinen E-Mail-Link. Gastprofile können weiterhin per Code wiederhergestellt werden.</span></div>
+         <div class="help-item aczo-account-help"><strong>⚙️ Konto &amp; Abmelden</strong><span>Unter „Profil“ stehen „Benutzername ändern“, „Passwort ändern“ und „Auf diesem Gerät abmelden“. Eine Passwortänderung erfordert das aktuelle Passwort und beendet die bisherigen Sitzungen anderer Geräte. Abmelden sichert zuerst den Cloud-Spielstand und beendet nur die Sitzung dieses Geräts; bei fehlgeschlagener Sicherung bleibt die Anmeldung bestehen. Konto und Fortschritt werden dabei nicht gelöscht.</span></div>
+         <div class="help-item aczo-account-help"><strong>👥 Community &amp; Freigaben</strong><span>Im Angelspiel zeigt „Community“ aktive Angler, „Alle Angler“, eine Suche und öffentliche Anglerkarten. Ein verborgener Name bedeutet kein fehlendes Konto. Unter „Profil“ legst du Namenssichtbarkeit und neue Rekord-Veröffentlichungen fest. „Privatsphäre speichern“ bestätigt die Online-Namensfreigabe; die Rekordfreigabe gilt auf diesem Gerät. Bereits veröffentlichte Rekorde bleiben öffentlich. Passwort und Sicherungscode sind niemals Teil der Karte.</span></div>
          <div class="help-item"><strong>🗺️ 2D / 3D</strong><span>Wechselt zwischen der dreh- und verschiebbaren Draufsicht und der räumlichen 3D-Ansicht.</span></div>
          <div class="help-item"><strong>🖱️ Desktop 3D</strong><span>Linke Maustaste: Karte drehen. Rechte Maustaste: verschieben. Mausrad: zoomen. Am Horizont weiter nach oben ziehen öffnet den freien Himmelblick.</span></div>
          <div class="help-item"><strong>📱 Mobile 3D</strong><span>Ein Finger dreht die Karte, zwei Finger zoomen und verschieben. Für den Himmel die Ansicht bis zum Horizont kippen und mit einem Finger deutlich weiter nach oben wischen. Die Gestenhilfe erscheint beim Einstieg beziehungsweise Ansichtswechsel kurz und blendet sich danach automatisch aus.</span></div>
@@ -5504,6 +5673,10 @@ Bitte gefundene Darstellungs-, Steuerungs- oder Spielfehler mit Gerät, Browser 
 </div>
        <details class="help-note" style="cursor:pointer">
          <summary style="font-weight:800">Update-Historie</summary>
+         <div style="margin-top:8px;cursor:default;overflow-wrap:anywhere">
+           <strong>Version V.2.1 · 02.10.2026</strong>
+           <ul style="padding-left:20px"><li>Neues Anmeldesystem mit Benutzername und Passwort.</li></ul>
+         </div>
          <div style="margin-top:8px;cursor:default;overflow-wrap:anywhere">
            <strong>Version V.2.0 · 30.09.2026</strong>
            <ul style="padding-left:20px">
@@ -5629,8 +5802,8 @@ Wetterdaten: Open-Meteo · Astronomische Berechnungen: SunCalc<br>
 <script>
 // V7.75: Der Startlayer ist bereits durch HTML/CSS sichtbar, bevor dieser schwere
 // Three.js-Block ausgeführt wird. Er wird erst nach einem echten Renderbild freigegeben.
-// Öffentliche Version V.2.0: Stand vom 30.09.2026.
-const VIEWER_VERSION='ACZO56-Interaktiv-V.2.0';
+// Öffentliche Version V.2.1: Stand vom 02.10.2026.
+const VIEWER_VERSION='ACZO56-Interaktiv-V.2.1';
 const ACZO_INTERNAL_BUILD='1.38';
 const helpVersion=document.getElementById('helpVersion');
 if(helpVersion) helpVersion.textContent=VIEWER_VERSION;
@@ -29030,13 +29203,12 @@ var aczoPhoneTypographyFrame=0;
 function aczoPhoneTextTrack(element){
   const existing=element.firstElementChild;
   if(existing&&existing.classList.contains('aczo-phone-text-track')&&element.children.length===1)return existing;
-  if(element.children.length!==0)return null;
+  if([...element.children].some(child=>!child.classList.contains('aczo-emoji')))return null;
   const label=String(element.textContent||'').trim();
   if(!label)return null;
   const track=document.createElement('span');
   track.className='aczo-phone-text-track';
-  track.textContent=label;
-  element.textContent='';
+  track.append(...element.childNodes);
   element.appendChild(track);
   return track;
 }
@@ -29046,7 +29218,7 @@ function updateAczoPhoneTypography(){
   if(!phone){
     document.querySelectorAll('.aczo-phone-text-track').forEach(track=>{
       const parent=track.parentElement;
-      if(parent&&parent.children.length===1)parent.textContent=track.textContent;
+      if(parent&&parent.children.length===1)track.replaceWith(...track.childNodes);
     });
     return;
   }
@@ -34440,7 +34612,7 @@ function updateAnglingSetupUi(){
   anglingDepth.disabled=artificial||deeper;
   anglingSetupHint.textContent=deeper?'Deeper: Ziel wählen, auswerfen und langsam einholen. Das Sonar zeichnet dabei das Bodenprofil auf.':(artificial?'Kunstköder: nur Bewegung fängt. Kurbeln hebt ihn an, Pause lässt ihn absinken.':'Zielkreuz seitlich bewegen: Kamera schwenkt mit und erweitert den Wurfsektor.');
   anglingFloatZoom.classList.toggle('lure-cam',artificial);anglingFloatZoom.classList.toggle('deeper-cam',deeper);
-  if(anglingLogBtn)anglingLogBtn.textContent='📒 Fangbuch · '+anglingProgress.catches.length;
+  if(anglingLogBtn)aczoSetIconText(anglingLogBtn,'📒 Fangbuch · '+anglingProgress.catches.length);
   anglingAimDistance.textContent=Math.round(anglingCastDistance)+' m';
   anglingDepth.value=anglingRigDepth.toFixed(1);
   anglingDepthValue.textContent=anglingRigDepth.toFixed(1).replace('.',',')+' m';
@@ -35687,11 +35859,11 @@ function updateAnglingObstacleSnagState(){
     const jitter=.06*Math.sin(anglingStateTime*7.2);
     anglingLure.rotation.z=baseYaw+jitter;
     const atPier=anglingObstacleSnag.obstacleKind==='north-pier'||anglingObstacleSnag.obstacleKind==='small-pier'||anglingObstacleSnag.obstacleKind==='east-boat-pier';
-    anglingLineSummary.textContent=atPier?'⛔ Hänger am Steg':'⛔ Hänger im Holz';
+    aczoSetIconText(anglingLineSummary,atPier?'⛔ Hänger am Steg':'⛔ Hänger im Holz');
     anglingFloatCaption.textContent=(anglingBaitLabels[anglingSelectedBait]||'Kunstköder')+(atPier?' · am Steg fest':' · im Totholz fest');
   }else{
     setAnglingBobberRestPose(.01,.04*Math.sin(anglingStateTime*5.6));
-    anglingLineSummary.textContent='⛔ Montage hängt fest';
+    aczoSetIconText(anglingLineSummary,'⛔ Montage hängt fest');
   }
   if(!anglingObstacleSnag.promptShown&&performance.now()>=anglingObstacleSnag.messageAt){
     anglingObstacleSnag.promptShown=true;
@@ -35903,14 +36075,22 @@ function anglingDailyQuestProgressText(entry,def){
   return value+'/'+def.target;
 }
 function anglingDailyQuestDifficultyLabel(def){return def.difficulty==='light'?'LEICHT':def.difficulty==='medium'?'MITTEL':'SCHWER';}
-function anglingDailyQuestDifficultyIcon(def){return def.difficulty==='light'?'●':def.difficulty==='medium'?'◆':'★';}
+function aczoDailyQuestBadge(def,completed){
+  const colors=completed?['#174e38','#81e2aa']:def.difficulty==='light'?['#194b3b','#92dcad']:def.difficulty==='medium'?['#1d4357','#8acdea']:['#574726','#f6d47d'];
+  const symbols={volume:'🐟',variety:'📊',method:'🎣',bait:'🎒',tactic:'🎯',depth:'💧',size:'📏',target:'🐟',fishgroup:'🐟'};
+  const symbol=completed?'✓':symbols[def.category]||'🎯';
+  const key=ACZO_COLOR_ICON_ALIASES[symbol]||symbol;
+  const shape=ACZO_COLOR_ICON_SHAPES[symbol]||ACZO_COLOR_ICON_SHAPES[key];
+  const svg='<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 40 40"><rect x="1" y="1" width="38" height="38" rx="12" fill="'+colors[0]+'" stroke="'+colors[1]+'" stroke-width="1.6"/><g transform="translate(6 6) scale(.875)">'+shape+'</g></svg>';
+  const img=document.createElement('img');img.className='aczo-quest-badge';img.alt='';img.setAttribute('aria-hidden','true');img.src='data:image/svg+xml;charset=utf-8,'+encodeURIComponent(svg);return img;
+}
 function renderAnglingDailyQuestList(container){
   if(!container)return;
   const state=ensureAnglingDailyQuestState();container.innerHTML='';
   state.quests.forEach(entry=>{
     const def=anglingDailyQuestDef(entry.id);if(!def)return;
     const row=document.createElement('div');row.className='angling-daily-quest-item'+(entry.completed?' done':'');
-    const icon=document.createElement('div');icon.className='angling-daily-quest-icon';icon.textContent=entry.completed?'✓':anglingDailyQuestDifficultyIcon(def);
+    const icon=document.createElement('div');icon.className='angling-daily-quest-icon';icon.appendChild(aczoDailyQuestBadge(def,entry.completed));
     const copy=document.createElement('div');copy.className='angling-daily-quest-copy';
     const title=document.createElement('strong');title.textContent=def.title+' · '+anglingDailyQuestDifficultyLabel(def);
     const desc=document.createElement('span');desc.textContent=def.desc;
@@ -40355,9 +40535,9 @@ function renderAnglingFloatCamera(){
   anglingFloatCamera.up.set(0,0,1);
   anglingFloatCamera.fov=31;anglingFloatCamera.aspect=w/h;anglingFloatCamera.updateProjectionMatrix();anglingFloatCamera.lookAt(anglingFloatCameraTarget);
   const feedFeedbackActive=anglingFeedCastFeedback&&performance.now()<anglingFeedCastFeedbackUntil;
-  anglingFloatCaption.textContent=anglingState==='casting'
+  aczoSetIconText(anglingFloatCaption,anglingState==='casting'
     ?'Pose · Flug'
-    :(feedFeedbackActive?anglingFeedCastFeedback:'Tiefe '+anglingRigDepth.toFixed(1).replace('.',',')+' m');
+    :(feedFeedbackActive?anglingFeedCastFeedback:'Tiefe '+anglingRigDepth.toFixed(1).replace('.',',')+' m'));
   // Im Schwimmer-Livebild soll die gelbe Futterfläche klar erkennbar sein,
   // damit man ohne Meterwerte sieht, ob die Pose innerhalb des Platzes liegt.
   const feedSpotVisibleState=anglingFeedSpotMeshes.map(mesh=>mesh.visible);
@@ -41367,7 +41547,7 @@ function updateAnglingMode(dt){
     }
     else{const surface=anglingSurfaceZ(terminal.position.x,terminal.position.y);anglingLureDepth=Math.max(0,surface-terminal.position.z);}
     const metres=Math.max(0,Math.hypot(terminal.position.x-anglingSelection.shore.x,terminal.position.y-anglingSelection.shore.y));
-    anglingLineSummary.textContent=(deeper?'📡 Deeper · ':(artificial?'🌀 ':'🎣 ')+(anglingBaitLabels[anglingSelectedBait]||'Köder')+' · ')+metres.toFixed(1).replace('.',',')+' m';
+    aczoSetIconText(anglingLineSummary,(deeper?'📡 Deeper · ':(artificial?'🌀 ':'🎣 ')+(anglingBaitLabels[anglingSelectedBait]||'Köder')+' · ')+metres.toFixed(1).replace('.',',')+' m');
     if(u>=1){
       waterUniforms.underwaterView.value=0;scene.fog=null;setFishSubmergedLayers(false);fishGroup.visible=false;
       anglingUnderwaterEntry.classList.remove('show');anglingLureEntryTime=0;anglingCinematicView='shore';
@@ -41386,7 +41566,7 @@ function updateAnglingMode(dt){
     anglingBobber.position.z=surface-.005+Math.sin(anglingStateTime*5.2)*.010*(1-u);updateAnglingBobberWaterTint(surface);
     updateAnglingRetrieveWake(dt,anglingBobber,false);
     const metres=Math.max(0,Math.hypot(anglingBobber.position.x-anglingSelection.shore.x,anglingBobber.position.y-anglingSelection.shore.y));
-    anglingLineSummary.textContent='🎣 '+anglingBaitLabels[anglingSelectedBait]+' · Tiefe '+anglingRigDepth.toFixed(1).replace('.',',')+' m · '+metres.toFixed(metres<10?1:0).replace('.',',')+' m';
+    aczoSetIconText(anglingLineSummary,'🎣 '+anglingBaitLabels[anglingSelectedBait]+' · Tiefe '+anglingRigDepth.toFixed(1).replace('.',',')+' m · '+metres.toFixed(metres<10?1:0).replace('.',',')+' m');
     anglingFloatCaption.textContent='Entfernung '+metres.toFixed(1).replace('.',',')+' m';
     if(u>=1){
       recalcAnglingAtCurrentTerminal();
@@ -41508,7 +41688,7 @@ function updateAnglingMode(dt){
     }
     const surface=anglingSurfaceZ(anglingLure.position.x,anglingLure.position.y);anglingLureDepth=Math.max(.12,surface-anglingLure.position.z);
     const metres=Math.max(0,Math.hypot(anglingLure.position.x-anglingSelection.shore.x,anglingLure.position.y-anglingSelection.shore.y));
-    anglingLineSummary.textContent='🌀 '+anglingBaitLabels[anglingSelectedBait]+' · '+metres.toFixed(1).replace('.',',')+' m';
+    aczoSetIconText(anglingLineSummary,'🌀 '+anglingBaitLabels[anglingSelectedBait]+' · '+metres.toFixed(1).replace('.',',')+' m');
     anglingFloatCaption.textContent=anglingBaitLabels[anglingSelectedBait]+' · '+anglingLureDepth.toFixed(1).replace('.',',')+' m tief · '+anglingRodDepthLabel();
     // Exakt jetzt pruefen, nachdem der Koeder seine neue Position fuer dieses
     // Bild erhalten hat. So entspricht die Kollision der sichtbaren Bewegung.
@@ -41679,44 +41859,6 @@ function aczoRenderAccount(){
   aczoEl('anglingMainRecoveryCode').closest('.angling-main-recovery-block').hidden=signedOut||!anglingRecoveryCode;
   if(hasAccount)aczoEl('aczoPasswordUsername').value=aczoAccount.username;
   aczoColorIcons(anglingMainMenu);
-}
-function aczoColorIcon(symbol){
-  const shapes={
-    '🏆':'<path fill="#ffcb45" d="M8 3h16v11c0 7-16 7-16 0z"/><path fill="none" stroke="#e99f23" stroke-width="3" d="M8 6H3v4c0 5 5 7 9 7m12-11h5v4c0 5-5 7-9 7"/><path fill="#ffd45c" d="M14 19h4v7h-4zM9 26h14v4H9z"/>',
-    '🎣':'<path stroke="#e0ba78" stroke-width="2.5" fill="none" d="M3 28L19 4Q31 5 27 22"/><path fill="#69d8f5" d="M10 23c5-6 11-4 14 0l5-4v8l-5-3c-6 5-11 4-14-1"/><circle cx="16" cy="22" r="1.2" fill="#102d36"/>',
-    '👤':'<circle cx="16" cy="9" r="6" fill="#ffc897"/><path d="M5 29v-6c0-9 22-9 22 0v6" fill="#62b6f7"/>',
-    '👥':'<circle cx="11" cy="10" r="5" fill="#ffc897"/><circle cx="23" cy="11" r="4.5" fill="#f0b37e"/><path d="M1 29v-6c0-9 20-9 20 0v6" fill="#6ab8fb"/><path d="M22 18c7-1 9 3 9 7v4h-8z" fill="#91dbbd"/>',
-    '✨':'<path fill="#ffe06c" d="M16 1l4 11 11 4-11 4-4 11-4-11-11-4 11-4z"/><path fill="#fff4ba" d="M4 2l2 4 4 2-4 2-2 4-2-4-4-2 4-2z"/>',
-    '📖':'<path fill="#73bdf5" stroke="#c6eaff" d="M2 6q7-3 14 1v23q-7-4-14-1zM16 7q7-4 14-1v23q-7-3-14 1z"/><path stroke="#fff1c2" stroke-width="2" d="M5 12h7m-7 5h7m-7 5h7m8-10h7m-7 5h7m-7 5h7"/>',
-    '📊':'<path fill="#ffca56" d="M2 17h7v13H2z"/><path fill="#7bcff5" d="M12 9h7v21h-7z"/><path fill="#7de1ad" d="M22 2h7v28h-7z"/>',
-    '❓':'<circle cx="16" cy="16" r="14" fill="#79b8ee"/><path d="M12 10c0-5 10-5 10 0 0 4-6 4-6 8" fill="none" stroke="#fff" stroke-width="3"/><circle cx="16" cy="24" r="1.8" fill="#fff"/>',
-    '🎯':'<circle cx="16" cy="16" r="14" fill="#f27073"/><circle cx="16" cy="16" r="10" fill="#fff1d8"/><circle cx="16" cy="16" r="6" fill="#f27073"/><circle cx="16" cy="16" r="2" fill="#fff1d8"/><path stroke="#64c7e5" stroke-width="3" d="M16 16L29 3"/>',
-    '☁️':'<path fill="#a6dfff" stroke="#71b8dc" d="M7 27c-10 0-8-14 0-14 0-13 20-13 20 0 9-1 9 14-1 14z"/>',
-    '🔐':'<path d="M8 14V9a8 8 0 0 1 16 0v5" fill="none" stroke="#c4d7e4" stroke-width="4"/><rect x="4" y="13" width="24" height="17" rx="4" fill="#ffcb51"/><circle cx="16" cy="21" r="3" fill="#705124"/>',
-    '🔑':'<circle cx="9" cy="10" r="7" fill="none" stroke="#ffce55" stroke-width="4"/><path d="M14 15l14 14m-4-4l4-4m-8 0l4-4" stroke="#ffce55" stroke-width="4"/>',
-    '⚙️':'<path fill="#9cb5c8" d="M12 1h8l1 5 5 3 5-1 3 7-4 4v6l-5 4-5-1-4 3-6-3-5 1-4-6 2-5-2-5 4-5h5z"/><circle cx="16" cy="16" r="6" fill="#173d39"/>',
-    '🆕':'<rect x="2" y="3" width="28" height="26" rx="5" fill="#83d7c0"/><path stroke="#123c35" stroke-width="3" d="M7 10h18M7 16h18M7 22h10"/>',
-    '🔎':'<circle cx="13" cy="13" r="9" fill="#a4e6f7" fill-opacity=".6" stroke="#72c3e9" stroke-width="3"/><path stroke="#eac482" stroke-width="5" d="M20 20l10 10"/>',
-    '🟢':'<circle cx="16" cy="16" r="11" fill="#63e5a0"/><circle cx="12" cy="12" r="4" fill="#b7ffda" opacity=".6"/>',
-    '🌐':'<circle cx="16" cy="16" r="13" fill="#68bce9" stroke="#bceeff" stroke-width="1.5"/><ellipse cx="16" cy="16" rx="6" ry="13" fill="none" stroke="#d0f5ff" stroke-width="1.5"/><path d="M3 16h26M6 9h20M6 23h20" stroke="#d0f5ff" stroke-width="1.5"/>',
-    '📷':'<rect x="2" y="8" width="28" height="21" rx="4" fill="#94aabc"/><path fill="#c9d6e1" d="M8 8l3-5h10l3 5z"/><circle cx="16" cy="18" r="8" fill="#183d51"/><circle cx="16" cy="18" r="5" fill="#70c7ed"/>',
-    '💾':'<path fill="#69a7d9" d="M3 2h23l4 5v23H3z"/><path fill="#dbeaf2" d="M8 2h14v10H8zM8 18h17v12H8z"/><path fill="#32658a" d="M18 3h3v7h-3z"/>',
-    '📱':'<rect x="7" y="1" width="18" height="30" rx="4" fill="#a7bdca"/><rect x="9" y="5" width="14" height="20" rx="1" fill="#6ccbdd"/><circle cx="16" cy="28" r="1.3" fill="#274e62"/>'
-  };
-  const aliases={'⭐':'✨','🐟':'🎣','🏅':'🏆','✅':'🟢'};
-  const content=shapes[symbol]||shapes[aliases[symbol]];if(!content)return null;
-  const img=document.createElement('img');img.className='aczo-color-icon';img.alt='';img.setAttribute('aria-hidden','true');
-  img.src='data:image/svg+xml;charset=utf-8,'+encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">'+content+'</svg>');return img;
-}
-function aczoColorIcons(root){
-  if(!root)return;
-  const walker=document.createTreeWalker(root,NodeFilter.SHOW_TEXT),nodes=[];
-  while(walker.nextNode())if(!walker.currentNode.parentElement?.closest('script,style,textarea,.aczo-emoji'))nodes.push(walker.currentNode);
-  const pattern=/(🏆|🎣|👤|👥|✨|📖|📊|❓|🎯|☁️|🔐|🔑|⚙️|🆕|🔎|🟢|🌐|⭐|🐟|🏅|📷|💾|✅|📱)/gu;
-  for(const node of nodes){
-    const parts=node.textContent.split(pattern);if(parts.length<=1)continue;
-    const fragment=document.createDocumentFragment();for(const part of parts)fragment.append(aczoColorIcon(part)||document.createTextNode(part));node.replaceWith(fragment);
-  }
 }
 function aczoRankMedal(index){
   const colors=[['#fff4af','#e4ae31','#a76d19'],['#f4faff','#a5b6c7','#617b90'],['#ffd5a2','#b97742','#76441f']];
