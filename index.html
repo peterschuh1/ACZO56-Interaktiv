@@ -4722,6 +4722,31 @@ body.aczo-share-preview-open{overflow:hidden!important}
 </style>
 
 
+<style>
+#aczoAccountArea{padding:7px 0 12px;border-bottom:1px solid #55705b66;margin-bottom:10px}
+.aczo-account-actions,.aczo-community-nav{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px;margin:9px 0}
+.aczo-account-form{display:grid;grid-template-columns:1fr;gap:6px;margin:10px 0;padding:11px;border:1px solid #748c6b77;border-radius:10px;background:#112b25}
+.aczo-account-form[hidden],#aczoAccountControls[hidden],#aczoAccountChoices[hidden],#aczoCommunityAll[hidden],#aczoCommunityPond[hidden],#aczoCommunityRank[hidden],#aczoAnglerCard[hidden],#aczoLegacyProfile[hidden]{display:none!important}
+.aczo-account-form input,#aczoCommunitySearch{width:100%;max-width:100%;min-width:0;box-sizing:border-box;min-height:44px;font-size:16px;padding:8px;border-radius:7px;background:#071c18;color:#fff;border:1px solid #648978}
+.aczo-account-form label,#aczoCommunityAll label{font-size:12px;font-weight:bold}
+#aczoAccountStatus{font-size:12px;min-height:16px;color:#ffdf90}
+#aczoAccountSummary.aczo-account-connected{color:#62ef98!important;font-weight:700}
+.aczo-account-dot{display:inline-block;width:10px;height:10px;margin:0 5px;border-radius:50%;background:#43e982;box-shadow:0 0 7px #43e98280;vertical-align:middle}
+#anglingMainMenu [hidden]{display:none!important}
+.angling-community-item[data-public-id]{cursor:pointer}
+.angling-community-item[data-public-id]:hover,.angling-community-item[data-public-id]:focus-visible{outline:1px solid #70e7a5;background:#24573f}
+.aczo-hof-load-status{display:block;max-width:360px;margin-top:6px;font-size:12px;color:#ffe4a1}
+.aczo-hof-load-status[hidden],.aczo-hof-retry[hidden]{display:none!important}
+.aczo-hof-retry{margin-top:6px;padding:7px 11px;border:1px solid #82b895;border-radius:8px;color:#f1fff4;background:#153d2a;cursor:pointer}
+.aczo-community-nav{grid-template-columns:repeat(3,minmax(0,1fr))}
+.aczo-community-nav button{min-width:0;min-height:42px;border-radius:7px;background:#1a4236;color:white;border:1px solid #709079;font-size:11px}
+.aczo-community-nav button[aria-pressed="true"]{color:#ffe4a1;border-color:#d7b965}
+#aczoAllAnglers{margin:10px 0;display:grid;gap:5px}
+#aczoAllAnglers button{width:100%;text-align:left;background:#1d4539;color:white;border:0;padding:10px;border-radius:7px}
+.aczo-angler-card{position:absolute;z-index:30;inset:10%;overflow:auto;background:#09261f;border:1px solid #d7b965;border-radius:13px;padding:16px;box-shadow:0 0 0 100vmax #0009}
+#aczoCloseCard{float:right;background:#205947;color:white;border:0;border-radius:50%;font-size:22px;width:40px;height:40px}
+@media(max-width:450px){.aczo-account-actions{grid-template-columns:1fr}.aczo-community-nav button{font-size:10px}}
+</style>
 </head>
 <body>
 <div class="wrap">
@@ -4872,7 +4897,7 @@ body.aczo-share-preview-open{overflow:hidden!important}
    <div id="anglingHallOfFame" class="angling-hof" aria-hidden="true">
      <canvas id="anglingHallOfFameCanvas" class="angling-hof-canvas"></canvas>
      <button id="anglingHallOfFameBack" class="angling-hof-back">← Zurück zur letzten Ansicht</button>
-     <div class="angling-hof-brand"><small>AC 1956 ZEWEN-OBERKIRCH</small><strong>HALL OF FAME</strong></div>
+     <div class="angling-hof-brand"><small>AC 1956 ZEWEN-OBERKIRCH</small><strong>HALL OF FAME</strong><span id="aczoHofLoadStatus" class="aczo-hof-load-status" role="status" hidden></span><button id="aczoHofRetry" class="aczo-hof-retry" type="button" hidden>Ranglisten erneut laden</button></div>
      <div id="anglingHallOfFameCard" class="angling-hof-card" aria-live="polite">
        <div id="anglingHallOfFameKicker" class="angling-hof-kicker">VEREINSWEIHER</div>
        <h2 id="anglingHallOfFameTitle">Hall of Fame</h2>
@@ -4914,7 +4939,7 @@ body.aczo-share-preview-open{overflow:hidden!important}
            </div>
          </div>
 
-<button id="anglingMainRecoveryDetailsBtn" class="angling-main-link-btn" type="button"><span aria-hidden="true">🔑</span><span><strong>Spielstand wiederherstellen</strong><small>Neues Gerät? Mit deinem privaten Code weiterspielen.</small></span></button><nav class="aczo-main-nav" aria-label="Bereiche im Hauptmenü"><button type="button" data-main-target="overview" aria-controls="aczo-main-overview" aria-pressed="true">Übersicht</button><button type="button" data-main-target="profile" aria-controls="aczo-main-profile" aria-pressed="false">Profil</button><button type="button" data-main-target="community" aria-controls="aczo-main-community" aria-pressed="false">Community</button><button type="button" data-main-target="settings" aria-controls="aczo-main-settings" aria-pressed="false">Einstellungen</button></nav><div class="angling-main-grid"><div id="aczo-main-overview" data-main-page="overview"><section class="angling-main-section angling-main-section-play">
+<nav class="aczo-main-nav" aria-label="Bereiche im Hauptmenü"><button type="button" data-main-target="overview" aria-controls="aczo-main-overview" aria-pressed="true">Übersicht</button><button type="button" data-main-target="profile" aria-controls="aczo-main-profile" aria-pressed="false">Profil</button><button type="button" data-main-target="community" aria-controls="aczo-main-community" aria-pressed="false">Community</button><button type="button" data-main-target="settings" aria-controls="aczo-main-settings" aria-pressed="false">Einstellungen</button></nav><div class="angling-main-grid"><div id="aczo-main-overview" data-main-page="overview"><section class="angling-main-section angling-main-section-play">
              <div class="angling-main-section-title">
                <div><small>SPIEL</small><h3>🎣 Angeln</h3></div>
                <p>Hier steuerst du nur die aktuelle Angelsitzung.</p>
@@ -4935,15 +4960,63 @@ body.aczo-share-preview-open{overflow:hidden!important}
                <button id="anglingMainLeaderboardBtn" class="angling-main-btn">🏆 Highscore</button>
                <button id="anglingMainHallOfFameBtn" class="angling-main-btn">✨ Hall of Fame</button>
                <button id="anglingMainDailyQuestBtn" class="angling-main-btn">🎯 Tagesaufgaben 0/3</button>
-               <button id="anglingMainHelpBtn" class="angling-main-btn alt">❔ Hilfe</button>
+             </div></section><section class="angling-main-section"><div class="angling-main-section-title"><div><small>SERVICE</small><h3>❔ Hilfe</h3></div></div><div class="angling-main-actions"><button id="anglingMainHelpBtn" class="angling-main-btn alt">❔ Hilfe</button>
              </div>
-           </section></div><div id="aczo-main-profile" data-main-page="profile" hidden><section class="angling-main-section">
+           </section><section id="aczoGuestNudge" class="angling-main-section" hidden><strong>🔐 Deinen Spielstand sichern?</strong><p>Mit einem Spielerkonto kannst du auch auf einem anderen Gerät weiterspielen.</p><div class="angling-main-actions"><button type="button" id="aczoNudgeNow" class="angling-main-btn primary">Jetzt sichern</button><button type="button" id="aczoNudgeLater" class="angling-main-btn">Später</button></div></section></div><div id="aczo-main-profile" data-main-page="profile" hidden><section class="angling-main-section">
              <div class="angling-main-section-title">
                <div><small>MEIN ANGLER</small><h3>👤 Profil & Spielstand</h3></div>
                <p>Name, Cloud-Sicherung und Gerätewechsel gehören hier zusammen.</p>
              </div>
 
-             <div class="angling-main-compact-row">
+             <div id="aczoAccountArea" class="aczo-account-area">
+               <div id="aczoAccountSummary"></div>
+               <div id="aczoAccountChoices" class="aczo-account-actions">
+                 <button type="button" id="aczoShowLogin" class="angling-main-btn">Mit Spielerkonto anmelden</button>
+                 <button type="button" id="aczoShowRegister" class="angling-main-btn primary">Spielerkonto erstellen</button>
+                 <button type="button" id="aczoGuestStart" class="angling-main-btn">Als Gastangler spielen</button>
+               </div>
+               <form id="aczoLoginForm" class="aczo-account-form" hidden>
+                 <h4>👤 Spielerkonto anmelden</h4><p>Melde dich an, um deinen vorhandenen Spielstand auf diesem Gerät zu laden.</p>
+                 <label for="aczoLoginName">Benutzername</label><input id="aczoLoginName" name="username" type="text" autocomplete="username" required>
+                 <label for="aczoLoginPassword">Passwort</label><input id="aczoLoginPassword" name="password" type="password" autocomplete="current-password" required>
+                 <button class="angling-main-btn primary" type="submit">Anmelden</button>
+                 <button class="angling-main-btn" id="aczoShowReset" type="button">Passwort vergessen?</button>
+                 <button class="angling-main-btn" type="button" data-account-back>Als Gastangler spielen</button>
+               </form>
+               <form id="aczoRegisterForm" class="aczo-account-form" hidden>
+                 <h4>🔐 Spielerkonto aktivieren</h4>
+                 <label for="aczoRegisterName">Benutzername</label><input id="aczoRegisterName" name="username" type="text" autocomplete="username" minlength="3" maxlength="30" required>
+                 <label for="aczoRegisterPassword">Passwort</label><input id="aczoRegisterPassword" name="new-password" type="password" autocomplete="new-password" minlength="12" required>
+                 <label for="aczoRegisterRepeat">Passwort wiederholen</label><input id="aczoRegisterRepeat" name="confirm-password" type="password" autocomplete="new-password" minlength="12" required>
+                 <button class="angling-main-btn primary" type="submit">Spielerkonto erstellen</button>
+                 <button class="angling-main-btn" type="button" data-account-back>Zurück</button>
+               </form>
+               <form id="aczoResetForm" class="aczo-account-form" hidden>
+                 <h4>🔑 Passwort zurücksetzen</h4>
+                 <label for="aczoResetName">Benutzername</label><input id="aczoResetName" name="username" type="text" autocomplete="username" required>
+                 <label for="aczoResetCode">Sicherungscode</label><input id="aczoResetCode" name="recovery-code" type="text" required>
+                 <label for="aczoResetPassword">Neues Passwort</label><input id="aczoResetPassword" name="new-password" type="password" autocomplete="new-password" minlength="12" required>
+                 <label for="aczoResetRepeat">Neues Passwort wiederholen</label><input id="aczoResetRepeat" name="confirm-password" type="password" autocomplete="new-password" minlength="12" required>
+                 <button class="angling-main-btn primary" type="submit">Passwort zurücksetzen</button>
+                 <button class="angling-main-btn" type="button" data-account-back>Zurück zur Anmeldung</button>
+               </form>
+               <form id="aczoPasswordForm" class="aczo-account-form" hidden>
+                 <h4>🔐 Passwort ändern</h4>
+                 <input name="username" id="aczoPasswordUsername" autocomplete="username" hidden>
+                 <label for="aczoOldPassword">Aktuelles Passwort</label><input id="aczoOldPassword" name="password" type="password" autocomplete="current-password" required>
+                 <label for="aczoNewPassword">Neues Passwort</label><input id="aczoNewPassword" name="new-password" type="password" autocomplete="new-password" minlength="12" required>
+                 <label for="aczoNewRepeat">Neues Passwort wiederholen</label><input id="aczoNewRepeat" name="confirm-password" type="password" autocomplete="new-password" minlength="12" required>
+                 <button class="angling-main-btn primary" type="submit">Passwort ändern</button>
+                 <button class="angling-main-btn" type="button" data-account-back>Zurück</button>
+               </form>
+               <div id="aczoAccountControls" class="aczo-account-actions" hidden>
+                 <button type="button" id="aczoRename" class="angling-main-btn">Benutzername ändern</button>
+                 <button type="button" id="aczoChangePassword" class="angling-main-btn">Passwort ändern</button>
+                 <button type="button" id="aczoLogout" class="angling-main-btn">Auf diesem Gerät abmelden</button>
+               </div>
+               <div id="aczoAccountStatus" role="status" aria-live="polite"></div>
+             </div>
+             <div id="aczoLegacyProfile" class="angling-main-compact-row">
                <div class="angling-main-field" style="margin:0">
                  <label for="anglingMainName">Benutzername</label>
                  <input id="anglingMainName" type="text" maxlength="30" placeholder="Dein Anzeigename">
@@ -4955,22 +5028,24 @@ body.aczo-share-preview-open{overflow:hidden!important}
              <div class="angling-main-profile-options">
                <label><input id="anglingMainCloudEnabled" type="checkbox"><span>☁️ Spielstand online sichern</span></label>
                <label><input id="anglingMainHighscorePublic" type="checkbox"><span>🏆 Rekorde öffentlich anzeigen</span></label>
-               <label><input id="anglingMainPresenceNamed" type="checkbox"><span>🟢 Online mit Namen sichtbar</span></label>
+               <label><input id="anglingMainPresenceNamed" type="checkbox"><span>🟢 Online mit Namen sichtbar (auch in „Alle Angler“)</span></label>
              </div>
+             <button id="aczoSavePrivacy" type="button" class="angling-main-btn primary" hidden>Privatsphäre speichern</button>
 
              <div id="anglingMainCloudState" class="angling-cloud-state">Cloud-Status wird geprüft …</div>
 
              <div class="angling-main-recovery-block">
                <div class="angling-main-subheading">🔑 Wiederherstellungscode</div>
-               <p>Für ein neues Handy, Tablet oder einen anderen PC. Diesen Code privat aufbewahren.</p>
+               <p>Privat aufbewahren. Auf einem neuen Gerät kann der ursprüngliche Code nur mit deiner Kopie eingegeben werden.</p>
                <div class="angling-main-recovery-line">
                  <input id="anglingMainRecoveryCode" class="angling-main-recovery" type="text" readonly value="Wird eingerichtet …">
                  <button id="anglingMainCopyRecoveryBtn" class="angling-main-btn">Kopieren</button>
-                 <button id="anglingMainNewRecoveryBtn" class="angling-main-btn warn new-code-btn">Neuen Code</button>
+                 <button id="anglingMainNewRecoveryBtn" class="angling-main-btn warn new-code-btn" hidden>Neuen Code</button>
                </div>
                
              </div>
 
+             <button id="anglingMainRecoveryDetailsBtn" class="angling-main-btn" type="button">🔑 Notfall-Wiederherstellung</button>
              <details class="angling-main-details">
                <summary>Was wird gespeichert und was ist öffentlich?</summary>
                <p>Cloud-Sicherung speichert EP, Fortschritt, Käufe, Bestände, persönliche Rekorde und die im Unterwasser-Tauchmodus entdeckten Fischarten. Das Fangbuch mit einzelnen Fängen bleibt lokal. Öffentliche Rekorde und dein sichtbarer Online-Name sind zwei getrennte freiwillige Freigaben.</p>
@@ -4980,7 +5055,8 @@ body.aczo-share-preview-open{overflow:hidden!important}
                <div><small>COMMUNITY</small><h3>👥 Am Weiher</h3></div>
                <p>Neue Spieler und Angler, die gerade ebenfalls im Angelspiel aktiv sind.</p>
              </div>
-             <div class="angling-main-community-wrap">
+             <div class="aczo-community-nav"><button type="button" data-community-view="pond">🟢 Am Weiher</button><button type="button" data-community-view="all">👥 Alle Angler</button><button type="button" data-community-view="rank">🏆 Bestenlisten</button></div>
+             <div id="aczoCommunityPond" class="angling-main-community-wrap">
                <div class="angling-main-community-box">
                  <h4>🆕 Neueste Angler</h4>
                  <div id="anglingRecentPlayers" class="angling-community-list"><div class="angling-community-item"><span>Wird geladen …</span></div></div>
@@ -4990,6 +5066,9 @@ body.aczo-share-preview-open{overflow:hidden!important}
                  <div id="anglingActivePlayers" class="angling-community-list"><div class="angling-community-item"><span>Wird geladen …</span></div></div>
                </div>
              </div>
+             <div id="aczoCommunityAll" hidden><label for="aczoCommunitySearch">🔎 Angler suchen</label><input id="aczoCommunitySearch" type="search" placeholder="Benutzername suchen"><div id="aczoAllAnglers" class="angling-community-list"></div><button type="button" id="aczoLoadMore" class="angling-main-btn">Weitere anzeigen</button></div>
+             <div id="aczoCommunityRank" hidden><p>Die bestehenden Ranglisten und Auszeichnungen.</p><div class="angling-main-actions"><button type="button" id="aczoCommunityHighscore" class="angling-main-btn">🏆 Highscore</button><button type="button" id="aczoCommunityHall" class="angling-main-btn">✨ Hall of Fame</button></div></div>
+             <div id="aczoAnglerCard" class="aczo-angler-card" hidden role="dialog" aria-modal="true"><button type="button" id="aczoCloseCard" aria-label="Anglerkarte schließen">×</button><div id="aczoAnglerCardBody"></div></div>
            </section></div><div id="aczo-main-settings" data-main-page="settings" hidden><section class="angling-main-section angling-main-section-settings">
              <div class="angling-main-section-title">
                <div><small>SYSTEM</small><h3>⚙️ Einstellungen</h3></div>
@@ -5097,7 +5176,7 @@ body.aczo-share-preview-open{overflow:hidden!important}
              <input id="anglingRecoveryCodeDisplay" type="text" readonly value="Wird eingerichtet …" aria-label="Wiederherstellungscode">
              <button id="anglingRecoveryCopyBtn">Kopieren</button>
            </div>
-           <button id="anglingRecoveryRotateBtn" class="angling-recovery-action danger-lite">Neuen Code erzeugen</button>
+           <button id="anglingRecoveryRotateBtn" class="angling-recovery-action danger-lite" hidden>Neuen Code erzeugen</button>
            <div class="angling-recovery-warning">Ein neu erzeugter Code macht den bisherigen Code ungültig.</div>
          </div>
          <div id="anglingRecoveryStatus" class="angling-recovery-status">Cloud-Spielstand wird geprüft …</div>
@@ -22504,6 +22583,10 @@ const aczoWildBoarRouteLengths=[];let aczoWildBoarRouteTotal=0;for(let i=0;i<acz
 let aczoWildBoarDistance=7.5,aczoWildBoarClock=0,aczoWildBoarLastUpdate=0;
 function aczoWildBoarRoutePose(distance,out){let d=((distance%aczoWildBoarRouteTotal)+aczoWildBoarRouteTotal)%aczoWildBoarRouteTotal;for(let i=0;i<aczoWildBoarRoute.length;i++){const len=aczoWildBoarRouteLengths[i];if(d<=len){const a=aczoWildBoarRoute[i],b=aczoWildBoarRoute[(i+1)%aczoWildBoarRoute.length],u=d/len;out.x=THREE.MathUtils.lerp(a.x,b.x,u);out.y=THREE.MathUtils.lerp(a.y,b.y,u);out.heading=Math.atan2(b.y-a.y,b.x-a.x);return out;}d-=len;}return out;}
 const aczoWildBoarPose={x:0,y:0,heading:0};
+// Schon beim Aufbau an die Waldroute setzen; nicht auf den ersten Animationsframe warten.
+aczoWildBoarRoutePose(aczoWildBoarDistance,aczoWildBoarPose);
+aczoWildBoarGroup.position.set(aczoWildBoarPose.x,aczoWildBoarPose.y,0);
+aczoWildBoarGroup.rotation.z=aczoWildBoarPose.heading;
 function updateAczoWildBoars(dt){
   const underwater=(typeof fishMode!=='undefined'&&fishMode)||(typeof anglingMode!=='undefined'&&anglingMode&&anglingCinematicView==='underwater');
   aczoWildBoarGroup.visible=!is2D&&!underwater;if(!aczoWildBoarGroup.visible)return;
@@ -31681,7 +31764,7 @@ function openAnglingShop(){if(guardAnglingMenuOpen())return;closeAnglingGamePane
 
 
 const ANGLING_LEADERBOARD_ENDPOINT='https://script.google.com/macros/s/AKfycbyJ1_6pwlsyKAXjyojruOEDNvZOuYii3wMJbVY0NX5yxneShEHu9pq3uYfR-0LGXQ/exec';
-const ANGLING_REQUIRED_CLOUD_API=15;
+const ANGLING_REQUIRED_CLOUD_API=18;
 const ANGLING_PLAYER_KEY='aczo56-angling-player-v1';
 const ANGLING_RECOVERY_KEY='aczo56-angling-recovery-v1';
 const ANGLING_CLOUD_ENABLED_KEY='aczo56-angling-cloud-enabled-v1';
@@ -31710,6 +31793,10 @@ try{
 }catch(err){}
 let anglingRecoveryCode='';
 try{anglingRecoveryCode=String(localStorage.getItem(ANGLING_RECOVERY_KEY)||'');}catch(err){}
+const ACZO_SESSION_KEY='aczo56-account-session-v1';
+let aczoSessionToken='';
+let aczoAccount=null;
+try{aczoSessionToken=String(localStorage.getItem(ACZO_SESSION_KEY)||'');}catch(err){}
 const ANGLING_LEADERBOARD_SPECIES_TO_API={
   roach:'Rotauge',rudd:'Rotfeder',pike:'Hecht',catfish:'Wels',carp:'Karpfen',
   mirrorcarp:'Spiegelkarpfen',grasscarp:'Graskarpfen',sturgeon:'Stör',
@@ -31785,6 +31872,7 @@ function anglingCloudSyncPayload(){
     action:'syncPlayer',
     playerId:anglingPlayerProfile.id,
     recoveryCode:anglingRecoveryCode||'',
+    sessionToken:aczoSessionToken,
     name:anglingPlayerProfile.name||'',
     revision:Math.max(0,Math.floor(Number(anglingProgress.xpRevision)||0)),
     xp:s.xp,
@@ -31980,7 +32068,8 @@ async function loadAnglingPlayerCloud({skipShared=false,retryTransient=true}={})
       body:JSON.stringify({
         action:'getPlayer',
         playerId:anglingPlayerProfile.id,
-        recoveryCode:anglingRecoveryCode||''
+        recoveryCode:anglingRecoveryCode||'',
+        sessionToken:aczoSessionToken
       }),
       cache:'no-store'
     },30000);
@@ -32306,7 +32395,7 @@ function renderAnglingCommunityList(el,players,emptyText,recent=false){
     const name=document.createElement('strong');name.textContent=String(p.name||'Angler');
     const when=document.createElement('small');
     when.textContent=anglingRelativeTime(recent?p.createdAt:p.lastActiveAt);
-    row.append(name,when);el.appendChild(row);
+    row.append(name,when);if(p.publicId){row.dataset.publicId=p.publicId;row.tabIndex=0;row.setAttribute('role','button');}el.appendChild(row);
   });
 }
 
@@ -32404,8 +32493,9 @@ function updateAnglingActiveToast(players){
 }
 
 async function sendAnglingPresence(){
+  if(!anglingSetupComplete)return false;
   if(typeof aczoNetworkBusyWithFish==='function'&&aczoNetworkBusyWithFish())return false;
-  if(!anglingMode||!anglingCloudEnabled||!ANGLING_LEADERBOARD_ENDPOINT||!anglingPlayerProfile?.id||!anglingRecoveryCode)return false;
+  if(!anglingMode||!anglingCloudEnabled||!ANGLING_LEADERBOARD_ENDPOINT||!anglingPlayerProfile?.id||!(anglingRecoveryCode||aczoSessionToken))return false;
   try{
     const data=await anglingLeaderboardJson(ANGLING_LEADERBOARD_ENDPOINT,{
       method:'POST',
@@ -32414,6 +32504,7 @@ async function sendAnglingPresence(){
         action:'presence',
         playerId:anglingPlayerProfile.id,
         recoveryCode:anglingRecoveryCode||'',
+        sessionToken:aczoSessionToken,
         name:anglingPlayerProfile.name||'',
         presenceNameVisible:!!anglingPresenceNamed
       })
@@ -32480,7 +32571,7 @@ function updateAnglingMainMenuUi(){
   anglingMainEpBadge.querySelector('strong').textContent=String(anglingProgress.xp);
   anglingMainRecoveryCode.value=anglingRecoveryCode||'Noch nicht erstellt';
   anglingMainCopyRecoveryBtn.disabled=!anglingRecoveryCode;
-  anglingMainNewRecoveryBtn.disabled=!anglingRecoveryCode;
+  anglingMainNewRecoveryBtn.disabled=true;
 
   anglingMainPlayBtn.style.display=active?'none':'';
   anglingMainContinueBtn.style.display=active?'':'none';
@@ -32499,6 +32590,7 @@ function updateAnglingMainMenuUi(){
   if(anglingSetupComplete&&anglingCloudEnabled&&anglingRecoveryCode&&anglingLastCloudSuccessAt)loadAnglingCommunity();
   syncAnglingHallOfFameMenuAvailability();
   updateAnglingDailyQuestMenuButton();
+  aczoRenderAccount();
 }
 
 
@@ -32510,6 +32602,7 @@ function aczoMainNavigate(page){
  anglingMainMenu.querySelectorAll('[data-main-target]').forEach(el=>{el.setAttribute('aria-pressed',String(el.dataset.mainTarget===page));});
  if(page==='settings')anglingMainSettings.style.display='block';
  const body=anglingMainMenu.querySelector('.angling-main-grid');if(body)body.scrollTop=0;
+ if(page==='community'){loadAnglingCommunity();syncAnglingHallOfFameMenuAvailability();}
 }
 
 function openAnglingFirstSetup(){
@@ -32694,6 +32787,7 @@ function refreshAnglingAfterFullReset(){
 }
 
 async function resetAnglingAsBrandNewUser(){
+  if(aczoSessionToken){anglingMainStatus.textContent='Bitte melde dich im Profil ab. Dein Spielerkonto und Cloud-Spielstand bleiben erhalten.';aczoMainNavigate('profile');return;}
   const first=window.confirm(
     'KOMPLETT NEU BEGINNEN?\n\n'+
     'Dabei werden nicht nur EP und Spielfortschritt gelöscht, sondern auch dein bisheriges Spielerprofil, Benutzername, Spieler-ID, Wiederherstellungscode und die Cloud-Verknüpfung.\n\n'+
@@ -32832,10 +32926,10 @@ async function resetAnglingEverything(){
     // Falls ein alter Spieler noch keinen Recovery-Code besitzt, zuerst einen
     // normalen Cloud-Abgleich durchführen. Sonst darf ein Komplett-Reset niemals
     // nur lokal erfolgen und später vom alten Cloud-Stand wieder aufgehoben werden.
-    if(!anglingRecoveryCode){
+    if(!(anglingRecoveryCode||aczoSessionToken)){
       anglingMainStatus.textContent='Cloud-Zugang wird für den sicheren Reset vorbereitet …';
       await syncAnglingPlayerCloud();
-      if(!anglingRecoveryCode){
+      if(!(anglingRecoveryCode||aczoSessionToken)){
         anglingMainStatus.textContent='Reset abgebrochen: Cloud-Zugang konnte nicht bestätigt werden.';
         return;
       }
@@ -32848,7 +32942,8 @@ async function resetAnglingEverything(){
         body:JSON.stringify({
           action:'resetPlayer',
           playerId:anglingPlayerProfile.id,
-          recoveryCode:anglingRecoveryCode
+          recoveryCode:anglingRecoveryCode,
+          sessionToken:aczoSessionToken
         })
       },7000);
       const data=await res.json().catch(()=>null);
@@ -33312,10 +33407,10 @@ function buildAnglingHallOfFameSlides(){
   if(anglingHallOfFameSlideIndex>=slides.length)anglingHallOfFameSlideIndex=-1;
   updateAnglingHallOfFameDots();
 }
-async function requestAnglingHallOfFameData(){
+async function requestAnglingHallOfFameData({forceRefresh=false}={}){
   const key='hallOfFame',revision=anglingHallOfFameCacheRevision;
   const cached=anglingLeaderboardCache.get(key);
-  if(cached&&cached.revision===revision&&Date.now()-cached.savedAt<60000)return cached.data;
+  if(!forceRefresh&&cached?.data?.ranking&&cached.revision===revision&&Date.now()-cached.savedAt<60000)return cached.data;
   const pending=anglingLeaderboardLoads.get(key);
   if(pending&&pending.revision===revision)return pending.task;
   if(!ANGLING_LEADERBOARD_ENDPOINT)return {ranking:null,rows:[]};
@@ -33323,28 +33418,35 @@ async function requestAnglingHallOfFameData(){
   const task=(async()=>{
     let result=null;
     try{
-      const hof=await anglingLeaderboardJson(base+'action=hallOfFame',{method:'GET',cache:'no-store'},30000);
+      const hof=await anglingLeaderboardJsonRetry(base+'action=hallOfFame',{method:'GET',cache:'no-store'},[30000,60000]);
       if(hof&&hof.ok!==false&&Array.isArray(hof.overall))result={ranking:hof,rows:Array.isArray(hof.entries)?hof.entries:[]};
     }catch(err){console.warn('Hall-of-Fame-V14 noch nicht verfügbar, alte Bestenliste wird verwendet:',err);}
+    if(!result&&cached?.data?.ranking)result={...cached.data,stale:true};
     if(!result){
       const data=await anglingLeaderboardJson(base+'action=list&species=all',{method:'GET',cache:'no-store'},30000);
       const rows=Array.isArray(data)?data:(Array.isArray(data.entries)?data.entries:(Array.isArray(data.rows)?data.rows:[]));
       result={ranking:null,rows:rows.filter(r=>Number(r.lengthCm ?? r.cm)>0)};
     }
-    if(revision===anglingHallOfFameCacheRevision)anglingLeaderboardCache.set(key,{revision,savedAt:Date.now(),data:result});
+    if(result.ranking&&!result.stale&&revision===anglingHallOfFameCacheRevision)anglingLeaderboardCache.set(key,{revision,savedAt:Date.now(),data:result});
     return result;
   })();
   anglingLeaderboardLoads.set(key,{revision,task});
   try{return await task;}
   finally{if(anglingLeaderboardLoads.get(key)?.task===task)anglingLeaderboardLoads.delete(key);}
 }
-async function loadAnglingHallOfFameRows(generation=anglingHallOfFameLoadGeneration){
+function aczoHofLoadStatus(message,retry=false){
+  const status=document.getElementById('aczoHofLoadStatus'),button=document.getElementById('aczoHofRetry');
+  if(status){status.textContent=message;status.hidden=!message;}
+  if(button)button.hidden=!retry;
+}
+async function loadAnglingHallOfFameRows(generation=anglingHallOfFameLoadGeneration,forceRefresh=false){
   try{
-    const data=await requestAnglingHallOfFameData();
+    const data=await requestAnglingHallOfFameData({forceRefresh});
     if(generation!==anglingHallOfFameLoadGeneration||!anglingHallOfFameActive||anglingHallOfFamePhase==='returning')return;
     anglingHallOfFameRanking=data.ranking;anglingHallOfFameRows=data.rows;
     buildAnglingHallOfFameSlides();
-  }catch(err){console.warn('Hall-of-Fame-Bestenliste nicht verfügbar:',err);}
+    aczoHofLoadStatus(data.stale?'Verbindung unterbrochen. Die zuletzt geladenen vollständigen Ranglisten werden angezeigt.':data.ranking?'':'Die vollständigen Ranglisten konnten noch nicht geladen werden.',data.stale||!data.ranking);
+  }catch(err){console.warn('Hall-of-Fame-Bestenliste nicht verfügbar:',err);if(generation===anglingHallOfFameLoadGeneration&&anglingHallOfFameActive)aczoHofLoadStatus('Ranglisten gerade nicht erreichbar. Bitte erneut laden.',true);}
 }
 function updateAnglingHallOfFameDots(){
   if(!anglingHallOfFameDots)return;
@@ -33873,6 +33975,7 @@ function openAnglingHallOfFame(){
   anglingHallOfFameCreator.setAttribute('aria-hidden','true');
   anglingHallOfFameActive=true;anglingHallOfFamePhase='flying-in';anglingHallOfFameElapsed=0;anglingHallOfFameSlideElapsed=0;anglingHallOfFameSlideIndex=-1;anglingHallOfFameFireworkTimer=.45;
   anglingHallOfFameDataReady=false;anglingHallOfFameCameraReady=false;
+  aczoHofLoadStatus('Lade vollständige Ranglisten …');
   anglingHallOfFameLayoutKey='';anglingHallOfFameLayoutPreferLeft=null;
   anglingHallOfFameSlides=[createAnglingHallOfFameIntroSlide()];anglingHallOfFameRows=[];anglingHallOfFameRanking=null;updateAnglingHallOfFameDots();
   anglingHallOfFameRockets.length=0;anglingHallOfFameParticles.length=0;
@@ -34254,6 +34357,7 @@ function anglingLeaderboardPayload(caught){
  return {
    playerId:anglingPlayerProfile.id,
    recoveryCode:anglingRecoveryCode||'',
+   sessionToken:aczoSessionToken,
    name:anglingPlayerProfile.name,
    species:ANGLING_LEADERBOARD_SPECIES_TO_API[caught.species]||caught.species,
    lengthCm:cm,
@@ -34262,11 +34366,12 @@ function anglingLeaderboardPayload(caught){
  };
 }
 async function submitAnglingPersonalBest(caught){
+ if(!anglingSetupComplete)return false;
  if(!ANGLING_LEADERBOARD_ENDPOINT||!anglingPlayerProfile.shareRecords||!anglingPlayerProfile.name)return false;
  try{
-   if(!anglingRecoveryCode){
+   if(!(anglingRecoveryCode||aczoSessionToken)){
      await syncAnglingPlayerCloud();
-     if(!anglingRecoveryCode)return false;
+     if(!(anglingRecoveryCode||aczoSessionToken))return false;
    }
    await anglingLeaderboardJson(ANGLING_LEADERBOARD_ENDPOINT,{
      method:'POST',
@@ -41514,6 +41619,238 @@ function updateAnglingMode(dt){
   updateAnglingLine();
   updateAnglingUnderwaterLureLine();
 }
+
+
+// Spielerkonto und Community: Ergänzung des bestehenden Menüs.
+let aczoAccountMode='choices',aczoCommunityPage=0,aczoCommunityQuery='',aczoCommunityTimer=null;
+const aczoEl=id=>document.getElementById(id);
+function aczoStatus(message){aczoEl('aczoAccountStatus').textContent=message;}
+function aczoRenderAccount(){
+  if(!aczoEl('aczoAccountArea'))return;
+  const hasAccount=!!(aczoSessionToken&&aczoAccount),signedOut=!anglingSetupComplete;
+  aczoEl('aczoAccountSummary').classList.toggle('aczo-account-connected',hasAccount);
+  aczoEl('aczoAccountSummary').textContent=hasAccount
+    ?'👤 '+aczoAccount.username+' · Spielerkonto verbunden'
+    :signedOut?'👤 Spielerkonto anmelden oder als Gastangler spielen'
+      :(anglingPlayerProfile.name?'👤 '+anglingPlayerProfile.name+' · vorhandener Spielstand':'🎣 Gastangler · '+anglingProgress.xp+' EP · '+anglingProgress.totalCatches+' Fänge');
+  if(hasAccount){const dot=document.createElement('span');dot.className='aczo-account-dot';dot.setAttribute('aria-hidden','true');aczoEl('aczoAccountSummary').prepend(dot);}
+  aczoEl('aczoAccountChoices').hidden=hasAccount||aczoAccountMode!=='choices';
+  aczoEl('aczoAccountControls').hidden=!hasAccount||aczoAccountMode!=='choices';
+  for(const [mode,id] of [['login','aczoLoginForm'],['register','aczoRegisterForm'],['reset','aczoResetForm'],['password','aczoPasswordForm']])aczoEl(id).hidden=aczoAccountMode!==mode;
+  aczoEl('aczoLegacyProfile').hidden=signedOut||hasAccount;
+  aczoEl('anglingMainSaveProfileBtn').hidden=signedOut||hasAccount;
+  aczoEl('aczoSavePrivacy').hidden=!hasAccount;
+  anglingMainCloudEnabled.closest('label').hidden=hasAccount;
+  if(hasAccount){anglingCloudEnabled=true;anglingMainCloudEnabled.checked=true;}
+  const nudge=aczoEl('aczoGuestNudge');if(nudge){let until=0;try{until=Number(localStorage.getItem('aczo56-account-nudge-until')||0);}catch(err){}nudge.hidden=hasAccount||signedOut||Date.now()<until||!(anglingProgress.xp>=100||anglingProgress.totalCatches>=3);}
+  aczoEl('aczoGuestStart').hidden=!signedOut;
+  aczoEl('aczoShowRegister').textContent=anglingPlayerProfile.name?'Spielerkonto aktivieren':'Spielerkonto erstellen';
+  aczoEl('anglingMainNewRecoveryBtn').hidden=true;
+  aczoEl('anglingMainRecoveryCode').closest('.angling-main-recovery-block').hidden=signedOut||!anglingRecoveryCode;
+  if(hasAccount)aczoEl('aczoPasswordUsername').value=aczoAccount.username;
+}
+function aczoSetAccountMode(mode){aczoAccountMode=mode;aczoRenderAccount();aczoStatus('');}
+async function aczoPasswordCredential(password,isNew=false){
+  const value=String(password||'');
+  if(value.length>256||value.length<(isNew?12:1))throw new Error(isNew?'Passwort: 12 bis 256 Zeichen.':'Bitte das Passwort eingeben.');
+  if(!globalThis.crypto?.subtle)throw new Error('Die Anmeldung benötigt einen aktuellen Browser und eine HTTPS-Spieladresse.');
+  const encoder=new TextEncoder();
+  const key=await crypto.subtle.importKey('raw',encoder.encode(value),'PBKDF2',false,['deriveBits']);
+  const bits=await crypto.subtle.deriveBits({name:'PBKDF2',hash:'SHA-256',salt:encoder.encode('aczo56-account-client-kdf-v1'),iterations:600000},key,256);
+  return Array.from(new Uint8Array(bits),b=>b.toString(16).padStart(2,'0')).join('');
+}
+async function aczoApi(action,fields){
+  const payload={...fields};
+  if(Object.prototype.hasOwnProperty.call(payload,'password'))payload.password=await aczoPasswordCredential(payload.password,action==='registerAccount');
+  if(Object.prototype.hasOwnProperty.call(payload,'newPassword'))payload.newPassword=await aczoPasswordCredential(payload.newPassword,true);
+  const entropy=new Uint8Array(32);crypto.getRandomValues(entropy);
+  const clientEntropy=Array.from(entropy,b=>b.toString(16).padStart(2,'0')).join('');
+  const data=await anglingLeaderboardJson(ANGLING_LEADERBOARD_ENDPOINT,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify({action,clientEntropy,...payload})},60000);
+  if(data?.ok===false)throw new Error(data.error||'Anmeldung fehlgeschlagen.');
+  return data;
+}
+function aczoSaveSession(data){
+  if(data.sessionToken)aczoSessionToken=data.sessionToken;
+  if(!/^[a-f0-9]{128}$/.test(String(aczoSessionToken||'')))throw new Error('Keine gültige Sitzung erhalten. Bitte erneut anmelden.');
+  aczoAccount=data.account;
+  try{localStorage.setItem(ACZO_SESSION_KEY,aczoSessionToken);}catch(err){}
+  aczoSetAccountMode('choices');
+}
+function aczoArchiveLocalPlayer(){
+  const id=anglingPlayerProfile.id;
+  try{
+    localStorage.setItem('aczo56-guest-backup-'+id,JSON.stringify(anglingProgress));
+    localStorage.setItem('aczo56-account-local-'+id,JSON.stringify({profile:anglingPlayerProfile,presenceNamed:anglingPresenceNamed,recoveryCode:anglingRecoveryCode}));
+  }catch(err){throw new Error('Der lokale Spielstand konnte nicht gesichert werden. Bitte Speicherplatz im Browser freigeben.');}
+}
+function aczoRestoreLocalPlayer(id){
+  let saved=null,progress=null;
+  try{saved=JSON.parse(localStorage.getItem('aczo56-account-local-'+id)||'null');progress=JSON.parse(localStorage.getItem('aczo56-guest-backup-'+id)||'null');}catch(err){}
+  anglingProgress.catches=Array.isArray(progress?.catches)?progress.catches:[];
+  anglingPlayerProfile.shareRecords=!!saved?.profile?.shareRecords;
+  anglingPresenceNamed=!!saved?.presenceNamed;
+  anglingRecoveryCode=String(saved?.recoveryCode||'');
+  try{
+    if(anglingRecoveryCode)localStorage.setItem(ANGLING_RECOVERY_KEY,anglingRecoveryCode);else localStorage.removeItem(ANGLING_RECOVERY_KEY);
+    localStorage.setItem(ANGLING_PRESENCE_NAMED_KEY,anglingPresenceNamed?'1':'0');
+  }catch(err){}
+}
+function aczoApplyAccountPlayer(data){
+  const id=String(data.account.playerId);
+  const samePlayer=id===anglingPlayerProfile.id;
+  if(!samePlayer){
+    aczoArchiveLocalPlayer();aczoRestoreLocalPlayer(id);
+    anglingSelectedBait='worm';
+  }
+  anglingPlayerProfile.id=id;
+  anglingPlayerProfile.name=String(data.account.username).slice(0,30);
+  saveAnglingPlayerProfile();
+  anglingCloudEnabled=true;anglingSetupComplete=true;
+  try{localStorage.setItem(ANGLING_CLOUD_ENABLED_KEY,'1');localStorage.setItem(ANGLING_SETUP_COMPLETE_KEY,'1');}catch(err){}
+  if(data.player)applyAnglingCloudPlayer(data.player);
+  saveAnglingProgress({preserveXpRevision:true,skipCloudSync:true,skipEpSync:true});
+  aczoSaveSession(data);updateAnglingMainMenuUi();
+}
+async function aczoFinishAccountLogin(data){
+  const wasReady=anglingSetupComplete;anglingSetupComplete=false;
+  try{
+    if(anglingCloudPlayerLoadPromise)await anglingCloudPlayerLoadPromise;
+    if(anglingCloudSyncPromise)await anglingCloudSyncPromise;
+    if(anglingCloudSyncTimer){clearTimeout(anglingCloudSyncTimer);anglingCloudSyncTimer=null;}
+    if(anglingMode&&String(data.account.playerId)!==anglingPlayerProfile.id){finishLeaveAngling();anglingUi.style.display='';openAnglingMainMenu();}
+    aczoApplyAccountPlayer(data);
+    anglingLastCloudSuccessAt=Date.now();anglingLastCloudMessage='Abgeglichen';updateAnglingCloudStatus();
+  }catch(err){anglingSetupComplete=wasReady;throw err;}
+}
+async function aczoHandleForm(form,task){
+  const button=form.querySelector('[type="submit"]');button.disabled=true;aczoStatus('Bitte warten …');
+  try{if(aczoCloudSyncBusyWithFish())throw new Error('Bitte zuerst den laufenden Fang beenden.');await task();aczoStatus('✅ Fertig.');}
+  catch(err){aczoStatus(String(err?.message||'Vorgang fehlgeschlagen.'));}
+  finally{button.disabled=false;}
+}
+function aczoBindForm(id,task){aczoEl(id).addEventListener('submit',event=>{event.preventDefault();aczoHandleForm(event.currentTarget,()=>task(event.currentTarget));});}
+aczoEl('aczoNudgeNow').addEventListener('click',()=>{aczoMainNavigate('profile');aczoEl('aczoShowRegister').click();});
+aczoEl('aczoNudgeLater').addEventListener('click',()=>{try{localStorage.setItem('aczo56-account-nudge-until',String(Date.now()+7*86400000));}catch(err){}aczoRenderAccount();});
+aczoEl('aczoShowLogin').addEventListener('click',()=>aczoSetAccountMode('login'));
+aczoEl('aczoShowRegister').addEventListener('click',()=>{aczoEl('aczoRegisterName').value=anglingPlayerProfile.name||'';aczoSetAccountMode('register');});
+aczoEl('aczoShowReset').addEventListener('click',()=>{aczoEl('aczoResetName').value=aczoEl('aczoLoginName').value;aczoSetAccountMode('reset');});
+aczoEl('aczoChangePassword').addEventListener('click',()=>aczoSetAccountMode('password'));
+aczoEl('aczoRename').addEventListener('click',async()=>{
+  const name=window.prompt('Neuer Benutzername:',aczoAccount?.username||'');if(name===null)return;
+  try{const data=await aczoApi('changeAccountName',{sessionToken:aczoSessionToken,username:name});aczoAccount=data.account;anglingPlayerProfile.name=data.account.username;saveAnglingPlayerProfile();aczoRenderAccount();aczoStatus('Benutzername geändert.');}catch(err){aczoStatus(err.message);}
+});
+aczoEl('aczoLogout').addEventListener('click',aczoLogout);
+aczoEl('aczoSavePrivacy').addEventListener('click',()=>{anglingMainName.value=anglingPlayerProfile.name;saveAnglingMainProfile();aczoStatus('Privatsphäre gespeichert.');});
+aczoEl('aczoGuestStart').addEventListener('click',()=>{
+  aczoSessionToken='';aczoAccount=null;
+  try{localStorage.removeItem(ACZO_SESSION_KEY);}catch(err){}
+  if(!anglingSetupComplete){
+    try{aczoArchiveLocalPlayer();}catch(err){aczoStatus(err.message);return;}
+    anglingRecoveryCode='';anglingPresenceNamed=false;
+    try{localStorage.removeItem(ANGLING_RECOVERY_KEY);localStorage.setItem(ANGLING_PRESENCE_NAMED_KEY,'0');}catch(err){}
+    anglingPlayerProfile={id:createAnglingPlayerId(),name:'',shareRecords:false};saveAnglingPlayerProfile();
+    refreshAnglingAfterFullReset();anglingProgress.xpRevision=0;saveAnglingProgress({preserveXpRevision:true,skipCloudSync:true,skipEpSync:true});
+    anglingMainName.value='';anglingMainCloudEnabled.checked=true;anglingMainHighscorePublic.checked=false;anglingMainPresenceNamed.checked=false;
+    finishAnglingSetupAndStart();
+  }else aczoSetAccountMode('choices');
+});
+aczoEl('aczoLoginForm').querySelector('[data-account-back]').addEventListener('click',()=>aczoEl('aczoGuestStart').click());
+aczoEl('aczoRegisterForm').querySelector('[data-account-back]').addEventListener('click',()=>aczoSetAccountMode('choices'));
+aczoEl('aczoResetForm').querySelector('[data-account-back]').addEventListener('click',()=>aczoSetAccountMode('login'));
+aczoEl('aczoPasswordForm').querySelector('[data-account-back]').addEventListener('click',()=>aczoSetAccountMode('choices'));
+aczoBindForm('aczoLoginForm',async form=>{
+  const data=await aczoApi('loginAccount',{username:form.elements.namedItem('username').value,password:form.elements.namedItem('password').value});
+  await aczoFinishAccountLogin(data);form.elements.namedItem('password').value='';
+});
+aczoBindForm('aczoRegisterForm',async form=>{
+  if(form.elements.namedItem('new-password').value!==form.elements.namedItem('confirm-password').value)throw new Error('Die Passwörter stimmen nicht überein.');
+  if(!anglingSetupComplete){anglingMainName.value=anglingPlayerProfile.name||'';anglingMainCloudEnabled.checked=true;saveAnglingMainProfile();}
+  if(!anglingRecoveryCode){await loadAnglingPlayerCloud();if(!anglingRecoveryCode)throw new Error('Cloud-Sicherung bitte zuerst erfolgreich abgleichen.');}
+  if(!await syncAnglingPlayerCloud())throw new Error('Cloud-Spielstand bitte erst erfolgreich sichern.');
+  const data=await aczoApi('registerAccount',{playerId:anglingPlayerProfile.id,recoveryCode:anglingRecoveryCode,username:form.elements.namedItem('username').value,password:form.elements.namedItem('new-password').value});
+  await aczoFinishAccountLogin(data);form.elements.namedItem('new-password').value='';form.elements.namedItem('confirm-password').value='';
+});
+aczoBindForm('aczoResetForm',async form=>{
+  if(form.elements.namedItem('new-password').value!==form.elements.namedItem('confirm-password').value)throw new Error('Die Passwörter stimmen nicht überein.');
+  const data=await aczoApi('resetAccountPassword',{username:form.elements.namedItem('username').value,recoveryCode:form.elements.namedItem('recovery-code').value,newPassword:form.elements.namedItem('new-password').value});
+  await aczoFinishAccountLogin(data);form.elements.namedItem('new-password').value='';form.elements.namedItem('confirm-password').value='';
+});
+aczoBindForm('aczoPasswordForm',async form=>{
+  if(form.elements.namedItem('new-password').value!==form.elements.namedItem('confirm-password').value)throw new Error('Die Passwörter stimmen nicht überein.');
+  const data=await aczoApi('changeAccountPassword',{sessionToken:aczoSessionToken,password:form.elements.namedItem('password').value,newPassword:form.elements.namedItem('new-password').value});
+  aczoSaveSession(data);form.elements.namedItem('password').value='';form.elements.namedItem('new-password').value='';form.elements.namedItem('confirm-password').value='';
+});
+async function aczoLogout(){
+  const button=aczoEl('aczoLogout');if(button.disabled)return;
+  if(!window.confirm('Dein Cloud-Spielstand bleibt vollständig erhalten. Auf diesem Gerät wirst du lediglich abgemeldet.'))return;
+  button.disabled=true;
+  try{
+  if(anglingCloudSyncPromise)await anglingCloudSyncPromise;
+  if(!await syncAnglingPlayerCloud()){aczoStatus('Abmelden wartet auf die Cloud-Sicherung. Bitte den laufenden Fang beenden oder die Verbindung prüfen.');return;}
+  try{aczoArchiveLocalPlayer();}catch(err){aczoStatus(err.message);return;}
+  try{await aczoApi('logoutAccount',{sessionToken:aczoSessionToken});}catch(err){aczoStatus('Abmelden nicht bestätigt. Bitte Verbindung prüfen.');return;}
+  stopAnglingPresence();if(anglingCloudSyncTimer)clearTimeout(anglingCloudSyncTimer);
+  aczoSessionToken='';aczoAccount=null;anglingSetupComplete=false;
+  try{localStorage.removeItem(ACZO_SESSION_KEY);localStorage.removeItem(ANGLING_SETUP_COMPLETE_KEY);}catch(err){}
+  if(anglingMode)finishLeaveAngling();
+  anglingUi.style.display='';openAnglingMainMenu();
+  aczoSetAccountMode('login');updateAnglingMainMenuUi();aczoMainNavigate('profile');aczoStatus('Abgemeldet. Dein Cloud-Spielstand bleibt erhalten.');
+  }finally{button.disabled=false;}
+}
+async function aczoResumeSession(){
+  if(!aczoSessionToken)return;
+  try{const data=await aczoApi('sessionAccount',{sessionToken:aczoSessionToken});aczoAccount=data.account;
+    if(anglingPlayerProfile.id!==data.account.playerId||!anglingSetupComplete)await aczoFinishAccountLogin(data);
+    else {anglingCloudEnabled=true;await loadAnglingPlayerCloud();}
+    aczoRenderAccount();
+  }catch(err){
+    if(['Sitzung abgelaufen.','Spielerkonto nicht gefunden.','Spieler nicht gefunden.'].includes(err?.message)){
+      aczoSessionToken='';aczoAccount=null;anglingSetupComplete=false;
+      try{localStorage.removeItem(ACZO_SESSION_KEY);localStorage.removeItem(ANGLING_SETUP_COMPLETE_KEY);}catch(e){}
+      aczoSetAccountMode('login');aczoStatus('Bitte erneut anmelden. Dein Spielstand bleibt erhalten.');
+    }else aczoStatus('Konto derzeit nicht erreichbar. Die gespeicherte Sitzung bleibt erhalten. Bitte Verbindung prüfen.');
+  }
+}
+function aczoSetCommunityView(view){
+  for(const [v,id] of [['pond','aczoCommunityPond'],['all','aczoCommunityAll'],['rank','aczoCommunityRank']])aczoEl(id).hidden=v!==view;
+  document.querySelectorAll('[data-community-view]').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.communityView===view)));
+  if(view==='all')aczoLoadAnglers(true);
+}
+document.querySelectorAll('[data-community-view]').forEach(btn=>btn.addEventListener('click',()=>aczoSetCommunityView(btn.dataset.communityView)));
+async function aczoLoadAnglers(reset=false){
+  if(reset){aczoCommunityPage=0;aczoCommunityQuery=aczoEl('aczoCommunitySearch').value.trim();aczoEl('aczoAllAnglers').replaceChildren();}
+  const list=aczoEl('aczoAllAnglers'),button=aczoEl('aczoLoadMore');button.disabled=true;
+  try{
+    const base=ANGLING_LEADERBOARD_ENDPOINT+(ANGLING_LEADERBOARD_ENDPOINT.includes('?')?'&':'?');
+    const data=await anglingLeaderboardJson(base+'action=communityPlayers&page='+aczoCommunityPage+'&search='+encodeURIComponent(aczoCommunityQuery),{method:'GET',cache:'no-store'},30000);
+    for(const player of data.players||[]){const row=document.createElement('button');row.type='button';row.className='angling-community-item';row.textContent='🎣 '+player.name;row.addEventListener('click',()=>aczoOpenCard(player.publicId));list.appendChild(row);}
+    if(!list.children.length)list.textContent='Keine sichtbaren Angler gefunden.';
+    button.hidden=!data.hasMore;aczoCommunityPage++;
+  }catch(err){if(!list.children.length)list.textContent='Community gerade nicht erreichbar.';}
+  finally{button.disabled=false;}
+}
+aczoEl('aczoLoadMore').addEventListener('click',()=>aczoLoadAnglers(false));
+aczoEl('aczoCommunitySearch').addEventListener('input',()=>{clearTimeout(aczoCommunityTimer);aczoCommunityTimer=setTimeout(()=>aczoLoadAnglers(true),350);});
+async function aczoOpenCard(publicId){
+  if(!publicId)return;
+  const card=aczoEl('aczoAnglerCard'),body=aczoEl('aczoAnglerCardBody');card.hidden=false;body.textContent='Anglerkarte wird geladen …';
+  try{const base=ANGLING_LEADERBOARD_ENDPOINT+(ANGLING_LEADERBOARD_ENDPOINT.includes('?')?'&':'?');
+    const {angler:p}=await anglingLeaderboardJson(base+'action=anglerCard&publicId='+encodeURIComponent(publicId),{method:'GET',cache:'no-store'},30000);
+    body.replaceChildren();const title=document.createElement('h3');title.textContent='🎣 '+p.name;body.appendChild(title);
+    for(const text of ['Gesamt-EP: '+p.lifetimeXp,'Fänge: '+p.totalCatches,'Entdeckte Fischarten: '+p.speciesCount,'Persönliche Rekorde: '+p.recordCount,p.biggestCatch?'Größter öffentlicher Fang: '+p.biggestCatch.species+' · '+p.biggestCatch.lengthCm+' cm':'',p.active?'🟢 Gerade am Weiher':''])if(text){const row=document.createElement('p');row.textContent=text;body.appendChild(row);}
+  }catch(err){body.textContent='Anglerkarte nicht verfügbar.';}
+}
+aczoEl('aczoCloseCard').addEventListener('click',()=>{aczoEl('aczoAnglerCard').hidden=true;});
+aczoEl('aczoCommunityHighscore').addEventListener('click',()=>openAnglingMainSubpanel(openAnglingLeaderboard));
+aczoEl('aczoCommunityHall').addEventListener('click',openAnglingHallOfFame);
+aczoEl('aczoHofRetry').addEventListener('click',async()=>{
+  const button=aczoEl('aczoHofRetry');button.disabled=true;aczoHofLoadStatus('Lade vollständige Ranglisten …');
+  try{await loadAnglingHallOfFameRows(anglingHallOfFameLoadGeneration,true);}finally{button.disabled=false;}
+});
+aczoEl('anglingRecentPlayers').addEventListener('click',e=>{const id=e.target.closest('[data-public-id]')?.dataset.publicId;if(id)aczoOpenCard(id);});
+aczoEl('anglingActivePlayers').addEventListener('click',e=>{const id=e.target.closest('[data-public-id]')?.dataset.publicId;if(id)aczoOpenCard(id);});
+for(const id of ['anglingRecentPlayers','anglingActivePlayers'])aczoEl(id).addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){const key=e.target.closest('[data-public-id]')?.dataset.publicId;if(key){e.preventDefault();aczoOpenCard(key);}}});
+aczoResumeSession();
 
 anglingStartBtn.addEventListener('click',startAnglingFromMainButton);
 anglingFixedMenuBtn.addEventListener('click',openAnglingMainMenu);
