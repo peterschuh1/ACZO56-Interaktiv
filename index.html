@@ -4728,13 +4728,25 @@ body.aczo-share-preview-open{overflow:hidden!important}
 }
 /* Both deployed bank rigs need only a small selector while waiting. */
 .angling-ui.bank-waiting-compact .angling-setup{display:none!important}
-.angling-bank-compact{position:absolute;top:8px;left:50%;transform:translateX(-50%);display:flex;gap:5px;width:min(280px,calc(100% - 132px));pointer-events:auto;z-index:12}
+.angling-bank-compact{position:absolute;top:8px;left:50%;transform:translateX(-50%);display:flex;gap:5px;width:min(232px,calc(100% - 156px));pointer-events:auto;z-index:12}
 .angling-bank-compact[hidden]{display:none!important}
-.angling-bank-compact button{flex:1;min-width:0;min-height:40px;padding:5px 7px;border:1px solid #91bba3;border-radius:9px;background:rgba(8,42,32,.94);color:#eef6ec;font:800 11px/1.15 system-ui;cursor:pointer}
+.angling-bank-compact button{flex:1;min-width:0;min-height:32px;padding:3px 6px;border:1px solid #91bba3;border-radius:9px;background:rgba(8,42,32,.94);color:#eef6ec;font:800 10px/1.15 system-ui;cursor:pointer;position:relative}
 .angling-bank-compact button[aria-pressed=true]{border-color:#e8ce70;background:rgba(78,81,34,.96);color:#fff0a7}
 .angling-ui.game-panel-open .angling-bank-compact{pointer-events:none;opacity:.45}
 
 .angling-ui.time-shifting .angling-bank-compact{pointer-events:none;opacity:.45}
+
+/* Same small lower feeding position as the float method, with one boilie action. */
+.angling-bank-feed:not([hidden]){display:flex!important;width:auto!important}
+.angling-bank-feed[hidden]{display:none!important}
+.aczo-phone-layout .angling-bank-feed{left:50%!important;right:auto!important;transform:translateX(-50%)!important;width:auto!important}
+.aczo-phone-layout .angling-bank-feed .angling-bank-feed-btn{flex:0 0 auto!important;height:24px!important;min-height:24px!important;padding:2px 9px!important;font-size:8px!important;overflow:visible!important}
+.angling-bank-compact button::before{content:'';position:absolute;inset:-6px 0}
+.angling-bank-feed-btn::before{content:'';position:absolute;inset:-10px 0}
+.angling-bank-feed-btn{position:relative}
+.angling-ui.game-panel-open .angling-bank-feed,.angling-ui.time-shifting .angling-bank-feed{pointer-events:none!important;opacity:.45}
+
+.angling-ui.game-panel-open .angling-bank-feed button,.angling-ui.time-shifting .angling-bank-feed button{pointer-events:none!important}
 
 </style>
 
@@ -29823,8 +29835,9 @@ function anglingBankInstallUi(){
  const ui=document.createElement('div');ui.className='angling-bank-controls';ui.hidden=true;
  for(let i=0;i<2;i++){const b=document.createElement('button');b.type='button';b.dataset.rod=i;b.addEventListener('click',()=>anglingBankSelectRod(i));ui.append(b);}
  const retrieve=document.createElement('button');retrieve.type='button';retrieve.dataset.retrieve='';retrieve.hidden=true;retrieve.textContent='Ruten einholen';retrieve.addEventListener('click',()=>anglingBankRetrieve());ui.append(retrieve);
- const feed=document.createElement('button');feed.type='button';feed.dataset.feed='';feed.textContent='Füttern · 10';feed.addEventListener('click',()=>anglingBankFeed());ui.append(feed);
- anglingSetupHint.parentElement.append(ui);rt.ui=ui;
+ const feed=document.createElement('button');feed.type='button';feed.dataset.feed='';feed.textContent='Füttern · 10';feed.addEventListener('click',()=>{if(!feed.disabled&&!anglingTimeShiftActive&&!anglingCameraTransition)anglingBankFeed();});ui.append(feed);
+ anglingSetupHint.parentElement.append(ui);rt.ui=ui;rt.feedButton=feed;
+ const feedBar=document.createElement('div');feedBar.className='angling-feed-controls angling-bank-feed';feedBar.hidden=true;feedBar.setAttribute('aria-label','Boilies anfüttern');feedBar.addEventListener('pointerdown',e=>e.stopPropagation());anglingUi.append(feedBar);rt.feedBar=feedBar;rt.waitingHudKey=null;
  const compact=document.createElement('div');compact.className='angling-bank-compact';compact.hidden=true;compact.setAttribute('role','group');compact.setAttribute('aria-label','Rute zum Einholen auswählen');
  for(let i=0;i<2;i++){const b=document.createElement('button');b.type='button';b.dataset.rod=i;b.textContent=i?'Rechte Rute':'Linke Rute';b.setAttribute('aria-label',(i?'Rechte':'Linke')+' Rute zum Einholen auswählen');b.addEventListener('click',()=>anglingBankSelectRod(i));compact.append(b);}
  compact.addEventListener('pointerdown',e=>e.stopPropagation());anglingUi.append(compact);rt.compactUi=compact;
@@ -29845,10 +29858,22 @@ function anglingBankSyncWaitingHud(){
  const atShore=anglingMode&&anglingUsesBankSet()&&anglingSelection&&anglingBankShoreAllowed()&&!['selecting','overview-flight','shore-flight','exit-flight'].includes(anglingState);
  const both=!!(atShore&&rt.casting<0&&rt.rigs.length===2&&rt.rigs.every(r=>r&&r.point&&anglingBankAllowed(r.bait)));
  const compact=both&&['ready','bank-waiting','bank-bite','bank-pickup'].includes(anglingState),controlsVisible=compact&&['ready','bank-waiting'].includes(anglingState)&&rt.active<0;
- const key=[compact,controlsVisible,rt.selected,anglingMenusLocked()].join(':');
+ const carp=anglingProgress.selectedEquipment==='carp_set',stock=carp?anglingBankAvailable('boilie'):0,flying=carp&&rt.feedBalls.some(b=>!b.done);
+ const feedVisible=controlsVisible&&carp;
+ const key=[compact,controlsVisible,rt.selected,anglingMenusLocked(),carp,stock,flying,!!anglingCameraTransition,!!anglingTimeShiftActive].join(':');
  if(rt.waitingHudKey===key)return;rt.waitingHudKey=key;
  if(rt.waitingHudCompact!==compact){rt.waitingHudCompact=compact;rt.mobileMenuAt=0;rt.mobileFrame=null;rt.mobileMenuTop=null;}
  anglingUi.classList.toggle('bank-waiting-compact',compact);
+ if(rt.feedBar&&rt.feedButton){
+  const feed=rt.feedButton,container=feedVisible?rt.feedBar:rt.ui;
+  if(feed.parentElement!==container)container.append(feed);
+  rt.feedBar.hidden=!feedVisible;
+  feed.classList.toggle('angling-bank-feed-btn',feedVisible);feed.classList.toggle('angling-feed-btn',feedVisible);
+  const side=rt.selected?'Rechts':'Links',label=feedVisible?side+' füttern · 10 Boilies':side+' · Füttern 10';if(feed.textContent!==label)feed.textContent=label;
+  feed.disabled=anglingMenusLocked()||rt.casting>=0||stock<10||flying||!!anglingCameraTransition||!!anglingTimeShiftActive;
+  const title=stock<10?'Mindestens 10 freie Boilies nötig · frei '+stock:flying?'Anfüttern läuft':('10 Boilies · '+(rt.selected?'rechte':'linke')+' Rute · frei '+stock);
+  if(feed.title!==title){feed.title=title;feed.setAttribute('aria-label',title);}
+ }
  if(rt.compactUi){rt.compactUi.hidden=!controlsVisible;rt.compactUi.querySelectorAll('[data-rod]').forEach(b=>{const i=Number(b.dataset.rod);b.setAttribute('aria-pressed',String(i===rt.selected));b.disabled=anglingMenusLocked();});}
 }
 
@@ -29860,7 +29885,7 @@ function anglingBankRefreshUi(){
  const choices=anglingBankChoices(),busy=anglingMenusLocked()||rt.casting>=0;
  rt.ui.querySelectorAll('[data-rod]').forEach(b=>{const i=Number(b.dataset.rod),r=rt.rigs[i],c=r||choices[i];const bait=anglingBaitLabels[c.bait]||c.bait,flavour=ANGLING_BOILIE_FLAVOURS[c.bait]?.find(f=>f.id===c.flavour)?.name;const heading=document.createElement('strong'),label=document.createElement('span');heading.textContent=(i?'Rechts':'Links')+' · '+(r?'im Wasser':'noch auswerfen');label.textContent=bait+(flavour?' · '+flavour:'');b.replaceChildren(heading,label);b.dataset.castState=r?'cast':'uncast';b.title=(i?'Rechte':'Linke')+' Rute · '+(r?'ausgeworfen':'noch auswerfen')+' · '+label.textContent;b.setAttribute('aria-label',b.title);b.disabled=busy;b.setAttribute('aria-pressed',String(rt.selected===i));});
  rt.ui.querySelector('[data-retrieve]').disabled=busy||!rt.rigs.some(Boolean);
- const feed=rt.ui.querySelector('[data-feed]');feed.hidden=anglingProgress.selectedEquipment!=='carp_set';rt.ui.classList.toggle('catfish',feed.hidden);feed.disabled=busy||anglingBankAvailable('boilie')<10;
+ const feed=rt.feedButton||rt.ui.querySelector('[data-feed]');feed.hidden=anglingProgress.selectedEquipment!=='carp_set';rt.ui.classList.toggle('catfish',feed.hidden);feed.disabled=busy||anglingBankAvailable('boilie')<10||rt.feedBalls.some(b=>!b.done)||!!anglingCameraTransition||!!anglingTimeShiftActive;
  anglingDepth.disabled=true;
  anglingCurrentBaitLabel.textContent=(rt.selected?'Rechte':'Linke')+' Rute · '+(anglingBaitLabels[choices[rt.selected].bait]||'Köder')+' · frei ×'+anglingBankAvailable(choices[rt.selected].bait);
  if(['ready','bank-waiting'].includes(anglingState)){
@@ -29983,7 +30008,7 @@ function anglingBankMissPickup(){
  anglingState=rt.rigs[rt.selected]?'bank-waiting':'ready';anglingStateTime=0;anglingExitBtn.disabled=false;anglingBankRefreshUi();showAnglingToast('Fisch ausgestiegen · '+(rig.consumed?'Köder verloren.':'Köder bleibt montiert.'),1700);
 }
 function anglingBankBeforeReset(){
- anglingBankResetLandingView();const rt=anglingBankRuntime;rt.waitingHudKey=null;rt.waitingHudCompact=false;if(rt.compactUi)rt.compactUi.hidden=true;anglingUi.classList.remove('bank-waiting-compact');rt.landingLimits=null;rt.beforeLandingCamera=null;if(rt.active>=0){rt.rigs[rt.active]=null;rt.active=-1;}
+ anglingBankResetLandingView();const rt=anglingBankRuntime;rt.waitingHudKey=null;rt.waitingHudCompact=false;if(rt.compactUi)rt.compactUi.hidden=true;if(rt.feedBar)rt.feedBar.hidden=true;anglingUi.classList.remove('bank-waiting-compact');rt.landingLimits=null;rt.beforeLandingCamera=null;if(rt.active>=0){rt.rigs[rt.active]=null;rt.active=-1;}
  rt.casting=-1;if(rt.castBall)rt.castBall.visible=false;if(rt.pickButton)rt.pickButton.hidden=true;aczoSoundStop('catfishBells');anglingRodGroup.scale.setScalar(1);
 }
 function anglingBankAfterReset(){
@@ -29991,7 +30016,7 @@ function anglingBankAfterReset(){
  rt.selected=rt.rigs[0]?1:0;anglingSelectedBait=anglingBankChoices()[rt.selected].bait;anglingState=rt.rigs[rt.selected]?'bank-waiting':'ready';anglingExitBtn.disabled=false;anglingBankRefreshUi();
 }
 function anglingBankClearRuntime(){
- anglingBankResetLandingView();const rt=anglingBankRuntime;rt.waitingHudKey=null;rt.waitingHudCompact=false;if(rt.compactUi)rt.compactUi.hidden=true;anglingUi.classList.remove('bank-waiting-compact');rt.landingLimits=null;rt.beforeLandingCamera=null;rt.rigs=[null,null];rt.active=rt.casting=-1;rt.placedFor=null;rt.feedSpots=[];rt.lines.forEach(l=>l.visible=false);rt.markers.forEach(m=>m.hidden=true);rt.feedBalls.forEach(b=>{b.done=true;b.splashed=false;b.mesh.visible=false;});
+ anglingBankResetLandingView();const rt=anglingBankRuntime;rt.waitingHudKey=null;rt.waitingHudCompact=false;if(rt.compactUi)rt.compactUi.hidden=true;if(rt.feedBar)rt.feedBar.hidden=true;anglingUi.classList.remove('bank-waiting-compact');rt.landingLimits=null;rt.beforeLandingCamera=null;rt.rigs=[null,null];rt.active=rt.casting=-1;rt.placedFor=null;rt.feedSpots=[];rt.lines.forEach(l=>l.visible=false);rt.markers.forEach(m=>m.hidden=true);rt.feedBalls.forEach(b=>{b.done=true;b.splashed=false;b.mesh.visible=false;});
  if(rt.group)rt.group.visible=false;if(rt.castBall)rt.castBall.visible=false;if(rt.pickButton)rt.pickButton.hidden=true;if(rt.ui)rt.ui.hidden=true;anglingRodGroup.scale.setScalar(1);anglingUi.classList.remove('bank-set-active','bank-aiming');anglingBankShoreDepth(false);aczoSoundStop('catfishBells');
 }
 function anglingBankShoreDepth(enabled){
