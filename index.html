@@ -4743,8 +4743,27 @@ body.aczo-share-preview-open{overflow:hidden!important}
 .aczo-community-nav button[aria-pressed="true"]{color:#ffe4a1;border-color:#d7b965}
 #aczoAllAnglers{margin:10px 0;display:grid;gap:5px}
 #aczoAllAnglers button{width:100%;text-align:left;background:#1d4539;color:white;border:0;padding:10px;border-radius:7px}
-.aczo-angler-card{position:absolute;z-index:30;inset:10%;overflow:auto;background:#09261f;border:1px solid #d7b965;border-radius:13px;padding:16px;box-shadow:0 0 0 100vmax #0009}
-#aczoCloseCard{float:right;background:#205947;color:white;border:0;border-radius:50%;font-size:22px;width:40px;height:40px}
+.aczo-community-privacy{font-size:11px!important;line-height:1.5;color:#a5cbbd}
+#aczoCommunityCount{font-size:13px;font-weight:700;color:#e5f8ed}
+.aczo-card-backdrop{position:fixed;z-index:2690;inset:0;background:#00120f9c;backdrop-filter:blur(5px);pointer-events:auto}.aczo-card-backdrop[hidden]{display:none!important}
+.aczo-angler-card{position:fixed;z-index:2700;inset:auto;left:50%;top:50%;transform:translate(-50%,-50%);width:min(480px,calc(100vw - 28px));height:auto;max-height:calc(100svh - 36px);overflow:auto;overscroll-behavior:contain;background:linear-gradient(145deg,#103c30,#081e1d);color:#f4fff8;border:1px solid #98bba280;border-radius:22px;padding:26px;box-shadow:0 24px 80px #0008;pointer-events:auto;text-align:left;font-size:14px;line-height:1.5}
+#aczoCloseCard{position:absolute;top:12px;right:12px;padding:0;min-width:36px;min-height:36px;width:36px;height:36px;border:1px solid #b7e0c530;background:#1e5243;color:#ecfff4;border-radius:50%;font-size:24px;line-height:1}
+.aczo-card-hero{display:flex;gap:16px;align-items:center;padding:8px 28px 20px 0}
+.aczo-card-avatar{display:grid;place-items:center;flex:0 0 66px;height:66px;border-radius:20px;background:linear-gradient(145deg,#e6cc7a,#b99238);color:#153c30;font-size:30px;font-weight:800;box-shadow:0 8px 24px #0003}
+.aczo-card-heading{min-width:0}.aczo-card-heading h3{font-size:25px!important;line-height:1.15;margin:5px 0 9px!important;color:#fff!important;overflow-wrap:anywhere}
+.aczo-card-eyebrow{display:block;font-size:9px!important;letter-spacing:.13em;color:#bcd8cc;font-weight:700}
+.aczo-card-status{display:inline-block;padding:4px 9px;background:#d9e9e914;border:1px solid #a3c7b233;border-radius:99px;font-size:11px;color:#cfdfd8}.aczo-card-status.is-active{color:#82f3b6;background:#39c7811a;border-color:#4cdd983d}
+.aczo-card-stats{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin:0 0 16px}
+.aczo-card-stat{padding:14px;background:#c7fce408;border:1px solid #b6e6ca20;border-radius:13px}
+.aczo-card-stat strong{display:block;font-size:25px;line-height:1.2;color:#f5e2a6}.aczo-card-stat span{font-size:11px;color:#a9c9bb}
+.aczo-card-record{position:relative;border:1px solid #d2b15a55;border-radius:14px;background:linear-gradient(110deg,#d9b85316,#d9b85306);padding:16px}
+.aczo-card-record strong{display:block;font-size:19px;margin:7px 75px 0 0}.aczo-card-length{position:absolute;right:16px;bottom:16px;font-size:20px;font-weight:700;color:#f5dfa0}
+.aczo-card-since{font-size:11px!important;margin:15px 0 4px!important;color:#adc8bd}.aczo-card-note{font-size:10px!important;line-height:1.5;margin:8px 0 0!important;color:#88aa9a}
+.aczo-card-loading{padding:40px 12px;font-size:15px;text-align:center;color:#cbe4d6}
+.aczo-color-icon{display:inline-block;width:1.15em;height:1.15em;vertical-align:-.16em;object-fit:contain;margin-right:.18em}
+.aczo-rank-medal{width:26px;height:31px;display:block;margin:auto;object-fit:contain}
+.angling-hof-dots[hidden]{display:none!important}
+@media(max-width:450px){.aczo-angler-card{padding:20px;border-radius:18px}.aczo-card-avatar{flex-basis:56px;height:56px;font-size:27px}.aczo-card-heading h3{font-size:22px!important}.aczo-card-stat strong{font-size:22px}.aczo-card-stat{padding:12px}.aczo-card-length{font-size:18px}.aczo-rank-medal{width:22px;height:27px}}
 @media(max-width:450px){.aczo-account-actions{grid-template-columns:1fr}.aczo-community-nav button{font-size:10px}}
 </style>
 </head>
@@ -4975,32 +4994,32 @@ body.aczo-share-preview-open{overflow:hidden!important}
                  <button type="button" id="aczoShowRegister" class="angling-main-btn primary">Spielerkonto erstellen</button>
                  <button type="button" id="aczoGuestStart" class="angling-main-btn">Als Gastangler spielen</button>
                </div>
-               <form id="aczoLoginForm" class="aczo-account-form" hidden>
+               <form id="aczoLoginForm" class="aczo-account-form" method="post" autocomplete="on" hidden>
                  <h4>👤 Spielerkonto anmelden</h4><p>Melde dich an, um deinen vorhandenen Spielstand auf diesem Gerät zu laden.</p>
-                 <label for="aczoLoginName">Benutzername</label><input id="aczoLoginName" name="username" type="text" autocomplete="username" required>
+                 <label for="aczoLoginName">Benutzername</label><input id="aczoLoginName" name="username" type="text" autocapitalize="none" spellcheck="false" autocomplete="username" required>
                  <label for="aczoLoginPassword">Passwort</label><input id="aczoLoginPassword" name="password" type="password" autocomplete="current-password" required>
                  <button class="angling-main-btn primary" type="submit">Anmelden</button>
                  <button class="angling-main-btn" id="aczoShowReset" type="button">Passwort vergessen?</button>
                  <button class="angling-main-btn" type="button" data-account-back>Als Gastangler spielen</button>
                </form>
-               <form id="aczoRegisterForm" class="aczo-account-form" hidden>
+               <form id="aczoRegisterForm" class="aczo-account-form" method="post" autocomplete="on" hidden>
                  <h4>🔐 Spielerkonto aktivieren</h4>
-                 <label for="aczoRegisterName">Benutzername</label><input id="aczoRegisterName" name="username" type="text" autocomplete="username" minlength="3" maxlength="30" required>
+                 <label for="aczoRegisterName">Benutzername</label><input id="aczoRegisterName" name="username" type="text" autocapitalize="none" spellcheck="false" autocomplete="username" minlength="3" maxlength="30" required>
                  <label for="aczoRegisterPassword">Passwort</label><input id="aczoRegisterPassword" name="new-password" type="password" autocomplete="new-password" minlength="12" required>
                  <label for="aczoRegisterRepeat">Passwort wiederholen</label><input id="aczoRegisterRepeat" name="confirm-password" type="password" autocomplete="new-password" minlength="12" required>
                  <button class="angling-main-btn primary" type="submit">Spielerkonto erstellen</button>
                  <button class="angling-main-btn" type="button" data-account-back>Zurück</button>
                </form>
-               <form id="aczoResetForm" class="aczo-account-form" hidden>
+               <form id="aczoResetForm" class="aczo-account-form" method="post" autocomplete="on" hidden>
                  <h4>🔑 Passwort zurücksetzen</h4>
-                 <label for="aczoResetName">Benutzername</label><input id="aczoResetName" name="username" type="text" autocomplete="username" required>
+                 <label for="aczoResetName">Benutzername</label><input id="aczoResetName" name="username" type="text" autocapitalize="none" spellcheck="false" autocomplete="username" required>
                  <label for="aczoResetCode">Sicherungscode</label><input id="aczoResetCode" name="recovery-code" type="text" required>
                  <label for="aczoResetPassword">Neues Passwort</label><input id="aczoResetPassword" name="new-password" type="password" autocomplete="new-password" minlength="12" required>
                  <label for="aczoResetRepeat">Neues Passwort wiederholen</label><input id="aczoResetRepeat" name="confirm-password" type="password" autocomplete="new-password" minlength="12" required>
                  <button class="angling-main-btn primary" type="submit">Passwort zurücksetzen</button>
                  <button class="angling-main-btn" type="button" data-account-back>Zurück zur Anmeldung</button>
                </form>
-               <form id="aczoPasswordForm" class="aczo-account-form" hidden>
+               <form id="aczoPasswordForm" class="aczo-account-form" method="post" autocomplete="on" hidden>
                  <h4>🔐 Passwort ändern</h4>
                  <input name="username" id="aczoPasswordUsername" autocomplete="username" hidden>
                  <label for="aczoOldPassword">Aktuelles Passwort</label><input id="aczoOldPassword" name="password" type="password" autocomplete="current-password" required>
@@ -5028,7 +5047,7 @@ body.aczo-share-preview-open{overflow:hidden!important}
              <div class="angling-main-profile-options">
                <label><input id="anglingMainCloudEnabled" type="checkbox"><span>☁️ Spielstand online sichern</span></label>
                <label><input id="anglingMainHighscorePublic" type="checkbox"><span>🏆 Rekorde öffentlich anzeigen</span></label>
-               <label><input id="anglingMainPresenceNamed" type="checkbox"><span>🟢 Online mit Namen sichtbar (auch in „Alle Angler“)</span></label>
+               <label><input id="anglingMainPresenceNamed" type="checkbox"><span>🟢 Online mit Namen sichtbar</span></label>
              </div>
              <button id="aczoSavePrivacy" type="button" class="angling-main-btn primary" hidden>Privatsphäre speichern</button>
 
@@ -5053,7 +5072,7 @@ body.aczo-share-preview-open{overflow:hidden!important}
            </section></div><div id="aczo-main-community" data-main-page="community" hidden><section class="angling-main-section">
              <div class="angling-main-section-title">
                <div><small>COMMUNITY</small><h3>👥 Am Weiher</h3></div>
-               <p>Neue Spieler und Angler, die gerade ebenfalls im Angelspiel aktiv sind.</p>
+               <p>Die neuesten Profile und Angler, die gerade am Weiher sind. Die gesamte Community findest du unter „Alle Angler“.</p>
              </div>
              <div class="aczo-community-nav"><button type="button" data-community-view="pond">🟢 Am Weiher</button><button type="button" data-community-view="all">👥 Alle Angler</button><button type="button" data-community-view="rank">🏆 Bestenlisten</button></div>
              <div id="aczoCommunityPond" class="angling-main-community-wrap">
@@ -5066,9 +5085,9 @@ body.aczo-share-preview-open{overflow:hidden!important}
                  <div id="anglingActivePlayers" class="angling-community-list"><div class="angling-community-item"><span>Wird geladen …</span></div></div>
                </div>
              </div>
-             <div id="aczoCommunityAll" hidden><label for="aczoCommunitySearch">🔎 Angler suchen</label><input id="aczoCommunitySearch" type="search" placeholder="Benutzername suchen"><div id="aczoAllAnglers" class="angling-community-list"></div><button type="button" id="aczoLoadMore" class="angling-main-btn">Weitere anzeigen</button></div>
+             <div id="aczoCommunityAll" hidden><p id="aczoCommunityCount" role="status"></p><p class="aczo-community-privacy">Namen erscheinen bei Namensfreigabe oder bereits veröffentlichten Rekorden. Verborgene Namen bleiben anonym; sie bedeuten nicht, dass kein Konto besteht.</p><label for="aczoCommunitySearch">🔎 Angler suchen</label><input id="aczoCommunitySearch" type="search" placeholder="Benutzername suchen"><div id="aczoAllAnglers" class="angling-community-list"></div><button type="button" id="aczoLoadMore" class="angling-main-btn">Weitere anzeigen</button></div>
              <div id="aczoCommunityRank" hidden><p>Die bestehenden Ranglisten und Auszeichnungen.</p><div class="angling-main-actions"><button type="button" id="aczoCommunityHighscore" class="angling-main-btn">🏆 Highscore</button><button type="button" id="aczoCommunityHall" class="angling-main-btn">✨ Hall of Fame</button></div></div>
-             <div id="aczoAnglerCard" class="aczo-angler-card" hidden role="dialog" aria-modal="true"><button type="button" id="aczoCloseCard" aria-label="Anglerkarte schließen">×</button><div id="aczoAnglerCardBody"></div></div>
+             <div id="aczoCardBackdrop" class="aczo-card-backdrop" hidden aria-hidden="true"></div><div id="aczoAnglerCard" class="aczo-angler-card" hidden role="dialog" aria-modal="true" aria-label="Anglerprofil"><button type="button" id="aczoCloseCard" aria-label="Anglerkarte schließen">×</button><div id="aczoAnglerCardBody" aria-live="polite"></div></div>
            </section></div><div id="aczo-main-settings" data-main-page="settings" hidden><section class="angling-main-section angling-main-section-settings">
              <div class="angling-main-section-title">
                <div><small>SYSTEM</small><h3>⚙️ Einstellungen</h3></div>
@@ -32390,7 +32409,7 @@ function renderAnglingCommunityList(el,players,emptyText,recent=false){
     const row=document.createElement('div');row.className='angling-community-item';
     row.textContent=emptyText;el.appendChild(row);return;
   }
-  players.slice(0,5).forEach(p=>{
+  (recent?players.slice(0,5):players).forEach(p=>{
     const row=document.createElement('div');row.className='angling-community-item';
     const name=document.createElement('strong');name.textContent=String(p.name||'Angler');
     const when=document.createElement('small');
@@ -32415,7 +32434,8 @@ async function loadAnglingCommunity(){
     const base=ANGLING_LEADERBOARD_ENDPOINT+(ANGLING_LEADERBOARD_ENDPOINT.includes('?')?'&':'?');
 
     try{
-      const data=await anglingLeaderboardJson(
+      const preload=await aczoPreloadPublicData();
+      const data=preload?.community||await anglingLeaderboardJson(
         base+'action=community&limit=5&minutes=5&exclude='+encodeURIComponent(anglingPlayerProfile.id||''),
         {method:'GET',cache:'no-store'},
         30000
@@ -32602,7 +32622,7 @@ function aczoMainNavigate(page){
  anglingMainMenu.querySelectorAll('[data-main-target]').forEach(el=>{el.setAttribute('aria-pressed',String(el.dataset.mainTarget===page));});
  if(page==='settings')anglingMainSettings.style.display='block';
  const body=anglingMainMenu.querySelector('.angling-main-grid');if(body)body.scrollTop=0;
- if(page==='community'){loadAnglingCommunity();syncAnglingHallOfFameMenuAvailability();}
+ if(page==='community'){loadAnglingCommunity();requestAnglingHallOfFameData().catch(()=>{});syncAnglingHallOfFameMenuAvailability();}
 }
 
 function openAnglingFirstSetup(){
@@ -33450,6 +33470,7 @@ async function loadAnglingHallOfFameRows(generation=anglingHallOfFameLoadGenerat
 }
 function updateAnglingHallOfFameDots(){
   if(!anglingHallOfFameDots)return;
+  anglingHallOfFameDots.hidden=anglingHallOfFameSlides.length<=1;
   anglingHallOfFameDots.replaceChildren();
   anglingHallOfFameSlides.forEach((_,i)=>{const d=document.createElement('i');d.classList.toggle('on',i===anglingHallOfFameSlideIndex);anglingHallOfFameDots.appendChild(d);});
 }
@@ -33460,15 +33481,15 @@ function showAnglingHallOfFameSlide(index){
   anglingHallOfFameCard.classList.remove('visible');
   window.setTimeout(()=>{
     if(!anglingHallOfFameActive||anglingHallOfFamePhase!=='show'||!slide)return;
-    anglingHallOfFameKicker.textContent=slide.kicker||'';
+    anglingHallOfFameKicker.textContent=slide.kicker||'';aczoColorIcons(anglingHallOfFameKicker);
     anglingHallOfFameTitle.textContent=slide.title||'';
     anglingHallOfFameValue.textContent=slide.value||'';
     if(anglingHallOfFameRankingEl){
       anglingHallOfFameRankingEl.replaceChildren();
       const ranking=Array.isArray(slide.ranking)?slide.ranking:[];
-      ranking.forEach(row=>{
+      ranking.forEach((row,index)=>{
         const line=document.createElement('div');line.className='angling-hof-rank-row';
-        const medal=document.createElement('span');medal.className='angling-hof-rank-medal';medal.textContent=row.medal||'';
+        const medal=document.createElement('span');medal.className='angling-hof-rank-medal';medal.appendChild(aczoRankMedal(index));
         const name=document.createElement('strong');name.className='angling-hof-rank-name';name.textContent=row.name||'Anonym';
         const value=document.createElement('span');value.className='angling-hof-rank-value';value.textContent=row.value||'';
         line.append(medal,name,value);anglingHallOfFameRankingEl.appendChild(line);
@@ -33977,7 +33998,11 @@ function openAnglingHallOfFame(){
   anglingHallOfFameDataReady=false;anglingHallOfFameCameraReady=false;
   aczoHofLoadStatus('Lade vollständige Ranglisten …');
   anglingHallOfFameLayoutKey='';anglingHallOfFameLayoutPreferLeft=null;
-  anglingHallOfFameSlides=[createAnglingHallOfFameIntroSlide()];anglingHallOfFameRows=[];anglingHallOfFameRanking=null;updateAnglingHallOfFameDots();
+  const warm=anglingLeaderboardCache.get('hallOfFame');
+  const seeded=warm?.revision===anglingHallOfFameCacheRevision&&warm?.data?.ranking;
+  anglingHallOfFameRows=seeded?warm.data.rows:[];anglingHallOfFameRanking=seeded?warm.data.ranking:null;
+  anglingHallOfFameSlides=seeded?[]:[createAnglingHallOfFameIntroSlide()];
+  if(seeded){buildAnglingHallOfFameSlides();anglingHallOfFameDataReady=true;}else updateAnglingHallOfFameDots();
   anglingHallOfFameRockets.length=0;anglingHallOfFameParticles.length=0;
   anglingHallOfFameFireworkAccumulator=0;anglingHallOfFameOverlayAccumulator=.08;
   anglingHallOfFameWaterProjectionCache.points.length=0;anglingHallOfFameWaterProjectionCache.valid=false;anglingHallOfFameWaterProjectionCache.validUntil=0;
@@ -34248,7 +34273,10 @@ const anglingLeaderboardCache=new Map();
 const anglingLeaderboardLoads=new Map();
 // Bereits beim Seitenstart abfragen: Menü und Kamerafahrt nutzen denselben
 // laufenden Request bzw. dessen Cache, ohne den Server erneut anzufragen.
-requestAnglingHallOfFameData().catch(()=>{});
+let aczoPublicLoadPromise=null,aczoPublicCache=null,aczoPublicLastAttempt=0;
+const aczoCardCache=new Map();
+const aczoCardLoads=new Map();
+aczoPreloadPublicData().catch(()=>{});
 let anglingLeaderboardAllRows=[];
 let anglingLeaderboardAllRowsAt=0;
 function readAnglingLeaderboardLocalCache(){
@@ -41648,7 +41676,53 @@ function aczoRenderAccount(){
   aczoEl('anglingMainNewRecoveryBtn').hidden=true;
   aczoEl('anglingMainRecoveryCode').closest('.angling-main-recovery-block').hidden=signedOut||!anglingRecoveryCode;
   if(hasAccount)aczoEl('aczoPasswordUsername').value=aczoAccount.username;
+  aczoColorIcons(anglingMainMenu);
 }
+function aczoColorIcon(symbol){
+  const shapes={
+    '🏆':'<path fill="#ffcb45" d="M8 3h16v11c0 7-16 7-16 0z"/><path fill="none" stroke="#e99f23" stroke-width="3" d="M8 6H3v4c0 5 5 7 9 7m12-11h5v4c0 5-5 7-9 7"/><path fill="#ffd45c" d="M14 19h4v7h-4zM9 26h14v4H9z"/>',
+    '🎣':'<path stroke="#e0ba78" stroke-width="2.5" fill="none" d="M3 28L19 4Q31 5 27 22"/><path fill="#69d8f5" d="M10 23c5-6 11-4 14 0l5-4v8l-5-3c-6 5-11 4-14-1"/><circle cx="16" cy="22" r="1.2" fill="#102d36"/>',
+    '👤':'<circle cx="16" cy="9" r="6" fill="#ffc897"/><path d="M5 29v-6c0-9 22-9 22 0v6" fill="#62b6f7"/>',
+    '👥':'<circle cx="11" cy="10" r="5" fill="#ffc897"/><circle cx="23" cy="11" r="4.5" fill="#f0b37e"/><path d="M1 29v-6c0-9 20-9 20 0v6" fill="#6ab8fb"/><path d="M22 18c7-1 9 3 9 7v4h-8z" fill="#91dbbd"/>',
+    '✨':'<path fill="#ffe06c" d="M16 1l4 11 11 4-11 4-4 11-4-11-11-4 11-4z"/><path fill="#fff4ba" d="M4 2l2 4 4 2-4 2-2 4-2-4-4-2 4-2z"/>',
+    '📖':'<path fill="#73bdf5" stroke="#c6eaff" d="M2 6q7-3 14 1v23q-7-4-14-1zM16 7q7-4 14-1v23q-7-3-14 1z"/><path stroke="#fff1c2" stroke-width="2" d="M5 12h7m-7 5h7m-7 5h7m8-10h7m-7 5h7m-7 5h7"/>',
+    '📊':'<path fill="#ffca56" d="M2 17h7v13H2z"/><path fill="#7bcff5" d="M12 9h7v21h-7z"/><path fill="#7de1ad" d="M22 2h7v28h-7z"/>',
+    '❓':'<circle cx="16" cy="16" r="14" fill="#79b8ee"/><path d="M12 10c0-5 10-5 10 0 0 4-6 4-6 8" fill="none" stroke="#fff" stroke-width="3"/><circle cx="16" cy="24" r="1.8" fill="#fff"/>',
+    '🎯':'<circle cx="16" cy="16" r="14" fill="#f27073"/><circle cx="16" cy="16" r="10" fill="#fff1d8"/><circle cx="16" cy="16" r="6" fill="#f27073"/><circle cx="16" cy="16" r="2" fill="#fff1d8"/><path stroke="#64c7e5" stroke-width="3" d="M16 16L29 3"/>',
+    '☁️':'<path fill="#a6dfff" stroke="#71b8dc" d="M7 27c-10 0-8-14 0-14 0-13 20-13 20 0 9-1 9 14-1 14z"/>',
+    '🔐':'<path d="M8 14V9a8 8 0 0 1 16 0v5" fill="none" stroke="#c4d7e4" stroke-width="4"/><rect x="4" y="13" width="24" height="17" rx="4" fill="#ffcb51"/><circle cx="16" cy="21" r="3" fill="#705124"/>',
+    '🔑':'<circle cx="9" cy="10" r="7" fill="none" stroke="#ffce55" stroke-width="4"/><path d="M14 15l14 14m-4-4l4-4m-8 0l4-4" stroke="#ffce55" stroke-width="4"/>',
+    '⚙️':'<path fill="#9cb5c8" d="M12 1h8l1 5 5 3 5-1 3 7-4 4v6l-5 4-5-1-4 3-6-3-5 1-4-6 2-5-2-5 4-5h5z"/><circle cx="16" cy="16" r="6" fill="#173d39"/>',
+    '🆕':'<rect x="2" y="3" width="28" height="26" rx="5" fill="#83d7c0"/><path stroke="#123c35" stroke-width="3" d="M7 10h18M7 16h18M7 22h10"/>',
+    '🔎':'<circle cx="13" cy="13" r="9" fill="#a4e6f7" fill-opacity=".6" stroke="#72c3e9" stroke-width="3"/><path stroke="#eac482" stroke-width="5" d="M20 20l10 10"/>',
+    '🟢':'<circle cx="16" cy="16" r="11" fill="#63e5a0"/><circle cx="12" cy="12" r="4" fill="#b7ffda" opacity=".6"/>',
+    '🌐':'<circle cx="16" cy="16" r="13" fill="#68bce9" stroke="#bceeff" stroke-width="1.5"/><ellipse cx="16" cy="16" rx="6" ry="13" fill="none" stroke="#d0f5ff" stroke-width="1.5"/><path d="M3 16h26M6 9h20M6 23h20" stroke="#d0f5ff" stroke-width="1.5"/>',
+    '📷':'<rect x="2" y="8" width="28" height="21" rx="4" fill="#94aabc"/><path fill="#c9d6e1" d="M8 8l3-5h10l3 5z"/><circle cx="16" cy="18" r="8" fill="#183d51"/><circle cx="16" cy="18" r="5" fill="#70c7ed"/>',
+    '💾':'<path fill="#69a7d9" d="M3 2h23l4 5v23H3z"/><path fill="#dbeaf2" d="M8 2h14v10H8zM8 18h17v12H8z"/><path fill="#32658a" d="M18 3h3v7h-3z"/>',
+    '📱':'<rect x="7" y="1" width="18" height="30" rx="4" fill="#a7bdca"/><rect x="9" y="5" width="14" height="20" rx="1" fill="#6ccbdd"/><circle cx="16" cy="28" r="1.3" fill="#274e62"/>'
+  };
+  const aliases={'⭐':'✨','🐟':'🎣','🏅':'🏆','✅':'🟢'};
+  const content=shapes[symbol]||shapes[aliases[symbol]];if(!content)return null;
+  const img=document.createElement('img');img.className='aczo-color-icon';img.alt='';img.setAttribute('aria-hidden','true');
+  img.src='data:image/svg+xml;charset=utf-8,'+encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">'+content+'</svg>');return img;
+}
+function aczoColorIcons(root){
+  if(!root)return;
+  const walker=document.createTreeWalker(root,NodeFilter.SHOW_TEXT),nodes=[];
+  while(walker.nextNode())if(!walker.currentNode.parentElement?.closest('script,style,textarea,.aczo-emoji'))nodes.push(walker.currentNode);
+  const pattern=/(🏆|🎣|👤|👥|✨|📖|📊|❓|🎯|☁️|🔐|🔑|⚙️|🆕|🔎|🟢|🌐|⭐|🐟|🏅|📷|💾|✅|📱)/gu;
+  for(const node of nodes){
+    const parts=node.textContent.split(pattern);if(parts.length<=1)continue;
+    const fragment=document.createDocumentFragment();for(const part of parts)fragment.append(aczoColorIcon(part)||document.createTextNode(part));node.replaceWith(fragment);
+  }
+}
+function aczoRankMedal(index){
+  const colors=[['#fff4af','#e4ae31','#a76d19'],['#f4faff','#a5b6c7','#617b90'],['#ffd5a2','#b97742','#76441f']];
+  const [light,color,dark]=colors[index%3];
+  const svg='<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 36 42"><path fill="#518cef" d="M7 1h9l7 17-9 4z"/><path fill="#ee737a" d="M20 1h9L18 22l-7-4z"/><circle cx="18" cy="26" r="14" fill="'+dark+'"/><circle cx="18" cy="25" r="12" fill="'+color+'"/><circle cx="18" cy="25" r="9" fill="none" stroke="'+light+'" stroke-width="1.3"/><text x="18" y="30" text-anchor="middle" font-family="Arial,sans-serif" font-size="15" font-weight="700" fill="'+dark+'">'+(index+1)+'</text></svg>';
+  const img=document.createElement('img');img.className='aczo-rank-medal';img.alt=(index+1)+'. Platz';img.src='data:image/svg+xml;charset=utf-8,'+encodeURIComponent(svg);return img;
+}
+
 function aczoSetAccountMode(mode){aczoAccountMode=mode;aczoRenderAccount();aczoStatus('');}
 async function aczoPasswordCredential(password,isNew=false){
   const value=String(password||'');
@@ -41707,7 +41781,12 @@ function aczoApplyAccountPlayer(data){
   saveAnglingPlayerProfile();
   anglingCloudEnabled=true;anglingSetupComplete=true;
   try{localStorage.setItem(ANGLING_CLOUD_ENABLED_KEY,'1');localStorage.setItem(ANGLING_SETUP_COMPLETE_KEY,'1');}catch(err){}
-  if(data.player)applyAnglingCloudPlayer(data.player);
+  const olderSamePlayer=samePlayer&&data.player&&Number(data.player.revision||0)<Number(anglingProgress.xpRevision||0);
+  if(!olderSamePlayer&&typeof data.player?.presenceNameVisible==='boolean'){
+    anglingPresenceNamed=data.player.presenceNameVisible;
+    try{localStorage.setItem(ANGLING_PRESENCE_NAMED_KEY,anglingPresenceNamed?'1':'0');}catch(err){}
+  }
+  if(data.player&&!olderSamePlayer)applyAnglingCloudPlayer(data.player);
   saveAnglingProgress({preserveXpRevision:true,skipCloudSync:true,skipEpSync:true});
   aczoSaveSession(data);updateAnglingMainMenuUi();
 }
@@ -41720,6 +41799,7 @@ async function aczoFinishAccountLogin(data){
     if(anglingMode&&String(data.account.playerId)!==anglingPlayerProfile.id){finishLeaveAngling();anglingUi.style.display='';openAnglingMainMenu();}
     aczoApplyAccountPlayer(data);
     anglingLastCloudSuccessAt=Date.now();anglingLastCloudMessage='Abgeglichen';updateAnglingCloudStatus();
+    aczoPreloadPublicData().catch(()=>{});
   }catch(err){anglingSetupComplete=wasReady;throw err;}
 }
 async function aczoHandleForm(form,task){
@@ -41728,19 +41808,45 @@ async function aczoHandleForm(form,task){
   catch(err){aczoStatus(String(err?.message||'Vorgang fehlgeschlagen.'));}
   finally{button.disabled=false;}
 }
-function aczoBindForm(id,task){aczoEl(id).addEventListener('submit',event=>{event.preventDefault();aczoHandleForm(event.currentTarget,()=>task(event.currentTarget));});}
+const aczoFormTasks=new Map();
+function aczoBindForm(id,task){
+  aczoFormTasks.set(id,task);
+  aczoEl(id).addEventListener('submit',event=>{event.preventDefault();aczoHandleForm(event.currentTarget,()=>task(event.currentTarget));});
+  aczoEl(id).querySelector('[data-account-back]')?.addEventListener('click',()=>{
+    if(id==='aczoLoginForm')aczoEl('aczoGuestStart').click();
+    else aczoSetAccountMode(id==='aczoRegisterForm'?'choices':id==='aczoResetForm'?'login':'choices');
+  });
+  aczoEl(id).querySelector('#aczoShowReset')?.addEventListener('click',()=>{aczoEl('aczoResetName').value=aczoEl('aczoLoginName').value;aczoSetAccountMode('reset');});
+}
+async function aczoOfferPasswordSave(username,password){
+  if(!globalThis.isSecureContext||typeof globalThis.PasswordCredential!=='function'||!navigator.credentials?.store)return;
+  try{
+    const credential=new PasswordCredential({id:String(username),password:String(password),name:String(username)});
+    // The native password manager owns this secret. It never enters app storage or a URL.
+    const store=navigator.credentials.store(credential).catch(()=>{});
+    await Promise.race([store,new Promise(resolve=>setTimeout(resolve,1200))]);
+  }catch(err){} // A declined/unsupported password manager never blocks a valid login.
+}
+function aczoCompletePasswordForm(form){
+  const fresh=form.cloneNode(true);
+  fresh.querySelectorAll('input').forEach(input=>{input.value='';input.removeAttribute('value');});
+  fresh.querySelector('[type="submit"]').disabled=false;fresh.hidden=true;
+  const task=aczoFormTasks.get(form.id);form.replaceWith(fresh);aczoBindForm(fresh.id,task);
+  if(fresh.id==='aczoPasswordForm'&&aczoAccount)aczoEl('aczoPasswordUsername').value=aczoAccount.username;
+}
+
 aczoEl('aczoNudgeNow').addEventListener('click',()=>{aczoMainNavigate('profile');aczoEl('aczoShowRegister').click();});
 aczoEl('aczoNudgeLater').addEventListener('click',()=>{try{localStorage.setItem('aczo56-account-nudge-until',String(Date.now()+7*86400000));}catch(err){}aczoRenderAccount();});
 aczoEl('aczoShowLogin').addEventListener('click',()=>aczoSetAccountMode('login'));
 aczoEl('aczoShowRegister').addEventListener('click',()=>{aczoEl('aczoRegisterName').value=anglingPlayerProfile.name||'';aczoSetAccountMode('register');});
-aczoEl('aczoShowReset').addEventListener('click',()=>{aczoEl('aczoResetName').value=aczoEl('aczoLoginName').value;aczoSetAccountMode('reset');});
+
 aczoEl('aczoChangePassword').addEventListener('click',()=>aczoSetAccountMode('password'));
 aczoEl('aczoRename').addEventListener('click',async()=>{
   const name=window.prompt('Neuer Benutzername:',aczoAccount?.username||'');if(name===null)return;
   try{const data=await aczoApi('changeAccountName',{sessionToken:aczoSessionToken,username:name});aczoAccount=data.account;anglingPlayerProfile.name=data.account.username;saveAnglingPlayerProfile();aczoRenderAccount();aczoStatus('Benutzername geändert.');}catch(err){aczoStatus(err.message);}
 });
 aczoEl('aczoLogout').addEventListener('click',aczoLogout);
-aczoEl('aczoSavePrivacy').addEventListener('click',()=>{anglingMainName.value=anglingPlayerProfile.name;saveAnglingMainProfile();aczoStatus('Privatsphäre gespeichert.');});
+aczoEl('aczoSavePrivacy').addEventListener('click',()=>{anglingMainName.value=anglingPlayerProfile.name;saveAnglingMainProfile();aczoPublicCache=null;aczoPublicLastAttempt=0;aczoCardCache.clear();aczoStatus('Privatsphäre gespeichert.');});
 aczoEl('aczoGuestStart').addEventListener('click',()=>{
   aczoSessionToken='';aczoAccount=null;
   try{localStorage.removeItem(ACZO_SESSION_KEY);}catch(err){}
@@ -41754,31 +41860,39 @@ aczoEl('aczoGuestStart').addEventListener('click',()=>{
     finishAnglingSetupAndStart();
   }else aczoSetAccountMode('choices');
 });
-aczoEl('aczoLoginForm').querySelector('[data-account-back]').addEventListener('click',()=>aczoEl('aczoGuestStart').click());
-aczoEl('aczoRegisterForm').querySelector('[data-account-back]').addEventListener('click',()=>aczoSetAccountMode('choices'));
-aczoEl('aczoResetForm').querySelector('[data-account-back]').addEventListener('click',()=>aczoSetAccountMode('login'));
-aczoEl('aczoPasswordForm').querySelector('[data-account-back]').addEventListener('click',()=>aczoSetAccountMode('choices'));
+
+
+
+
 aczoBindForm('aczoLoginForm',async form=>{
-  const data=await aczoApi('loginAccount',{username:form.elements.namedItem('username').value,password:form.elements.namedItem('password').value});
-  await aczoFinishAccountLogin(data);form.elements.namedItem('password').value='';
+  const username=form.elements.namedItem('username').value,password=form.elements.namedItem('password').value;
+  const data=await aczoApi('loginAccount',{username,password});
+  await aczoOfferPasswordSave(data.account.username,password);
+  await aczoFinishAccountLogin(data);aczoCompletePasswordForm(form);
 });
 aczoBindForm('aczoRegisterForm',async form=>{
-  if(form.elements.namedItem('new-password').value!==form.elements.namedItem('confirm-password').value)throw new Error('Die Passwörter stimmen nicht überein.');
+  const username=form.elements.namedItem('username').value,password=form.elements.namedItem('new-password').value;
+  if(password!==form.elements.namedItem('confirm-password').value)throw new Error('Die Passwörter stimmen nicht überein.');
   if(!anglingSetupComplete){anglingMainName.value=anglingPlayerProfile.name||'';anglingMainCloudEnabled.checked=true;saveAnglingMainProfile();}
   if(!anglingRecoveryCode){await loadAnglingPlayerCloud();if(!anglingRecoveryCode)throw new Error('Cloud-Sicherung bitte zuerst erfolgreich abgleichen.');}
   if(!await syncAnglingPlayerCloud())throw new Error('Cloud-Spielstand bitte erst erfolgreich sichern.');
-  const data=await aczoApi('registerAccount',{playerId:anglingPlayerProfile.id,recoveryCode:anglingRecoveryCode,username:form.elements.namedItem('username').value,password:form.elements.namedItem('new-password').value});
-  await aczoFinishAccountLogin(data);form.elements.namedItem('new-password').value='';form.elements.namedItem('confirm-password').value='';
+  const data=await aczoApi('registerAccount',{playerId:anglingPlayerProfile.id,recoveryCode:anglingRecoveryCode,username,password});
+  await aczoOfferPasswordSave(data.account.username,password);
+  await aczoFinishAccountLogin(data);aczoCompletePasswordForm(form);
 });
 aczoBindForm('aczoResetForm',async form=>{
-  if(form.elements.namedItem('new-password').value!==form.elements.namedItem('confirm-password').value)throw new Error('Die Passwörter stimmen nicht überein.');
-  const data=await aczoApi('resetAccountPassword',{username:form.elements.namedItem('username').value,recoveryCode:form.elements.namedItem('recovery-code').value,newPassword:form.elements.namedItem('new-password').value});
-  await aczoFinishAccountLogin(data);form.elements.namedItem('new-password').value='';form.elements.namedItem('confirm-password').value='';
+  const username=form.elements.namedItem('username').value,password=form.elements.namedItem('new-password').value;
+  if(password!==form.elements.namedItem('confirm-password').value)throw new Error('Die Passwörter stimmen nicht überein.');
+  const data=await aczoApi('resetAccountPassword',{username,recoveryCode:form.elements.namedItem('recovery-code').value,newPassword:password});
+  await aczoOfferPasswordSave(data.account.username,password);
+  await aczoFinishAccountLogin(data);aczoCompletePasswordForm(form);
 });
 aczoBindForm('aczoPasswordForm',async form=>{
-  if(form.elements.namedItem('new-password').value!==form.elements.namedItem('confirm-password').value)throw new Error('Die Passwörter stimmen nicht überein.');
-  const data=await aczoApi('changeAccountPassword',{sessionToken:aczoSessionToken,password:form.elements.namedItem('password').value,newPassword:form.elements.namedItem('new-password').value});
-  aczoSaveSession(data);form.elements.namedItem('password').value='';form.elements.namedItem('new-password').value='';form.elements.namedItem('confirm-password').value='';
+  const password=form.elements.namedItem('new-password').value;
+  if(password!==form.elements.namedItem('confirm-password').value)throw new Error('Die Passwörter stimmen nicht überein.');
+  const data=await aczoApi('changeAccountPassword',{sessionToken:aczoSessionToken,password:form.elements.namedItem('password').value,newPassword:password});
+  await aczoOfferPasswordSave(data.account.username,password);
+  aczoSaveSession(data);aczoCompletePasswordForm(form);
 });
 async function aczoLogout(){
   const button=aczoEl('aczoLogout');if(button.disabled)return;
@@ -41801,7 +41915,7 @@ async function aczoResumeSession(){
   if(!aczoSessionToken)return;
   try{const data=await aczoApi('sessionAccount',{sessionToken:aczoSessionToken});aczoAccount=data.account;
     if(anglingPlayerProfile.id!==data.account.playerId||!anglingSetupComplete)await aczoFinishAccountLogin(data);
-    else {anglingCloudEnabled=true;await loadAnglingPlayerCloud();}
+    else await aczoFinishAccountLogin(data);
     aczoRenderAccount();
   }catch(err){
     if(['Sitzung abgelaufen.','Spielerkonto nicht gefunden.','Spieler nicht gefunden.'].includes(err?.message)){
@@ -41817,30 +41931,117 @@ function aczoSetCommunityView(view){
   if(view==='all')aczoLoadAnglers(true);
 }
 document.querySelectorAll('[data-community-view]').forEach(btn=>btn.addEventListener('click',()=>aczoSetCommunityView(btn.dataset.communityView)));
+let aczoDirectoryGeneration=0;
 async function aczoLoadAnglers(reset=false){
-  if(reset){aczoCommunityPage=0;aczoCommunityQuery=aczoEl('aczoCommunitySearch').value.trim();aczoEl('aczoAllAnglers').replaceChildren();}
+  if(reset){aczoDirectoryGeneration++;aczoCommunityPage=0;aczoCommunityQuery=aczoEl('aczoCommunitySearch').value.trim();}
+  const generation=aczoDirectoryGeneration,page=aczoCommunityPage,query=aczoCommunityQuery;
   const list=aczoEl('aczoAllAnglers'),button=aczoEl('aczoLoadMore');button.disabled=true;
+  if(reset){list.replaceChildren(aczoTextNode('p','','Community wird geladen …'));}
   try{
+    const preload=await aczoPreloadPublicData();
     const base=ANGLING_LEADERBOARD_ENDPOINT+(ANGLING_LEADERBOARD_ENDPOINT.includes('?')?'&':'?');
-    const data=await anglingLeaderboardJson(base+'action=communityPlayers&page='+aczoCommunityPage+'&search='+encodeURIComponent(aczoCommunityQuery),{method:'GET',cache:'no-store'},30000);
-    for(const player of data.players||[]){const row=document.createElement('button');row.type='button';row.className='angling-community-item';row.textContent='🎣 '+player.name;row.addEventListener('click',()=>aczoOpenCard(player.publicId));list.appendChild(row);}
-    if(!list.children.length)list.textContent='Keine sichtbaren Angler gefunden.';
-    button.hidden=!data.hasMore;aczoCommunityPage++;
-  }catch(err){if(!list.children.length)list.textContent='Community gerade nicht erreichbar.';}
-  finally{button.disabled=false;}
+    const data=!query&&page===0&&preload?.directory?preload.directory:await anglingLeaderboardJson(base+'action=communityPlayers&page='+page+'&search='+encodeURIComponent(query),{method:'GET',cache:'no-store'},30000);
+    if(generation!==aczoDirectoryGeneration)return;
+    if(reset)list.replaceChildren();
+    for(const player of data.players||[]){
+      const row=aczoTextNode(player.publicId?'button':'div','angling-community-item','');
+      const name=aczoTextNode('strong','',player.name);row.append(name);
+      if(player.publicId){row.type='button';row.dataset.publicId=player.publicId;row.append(aczoTextNode('small','','Profil ansehen →'));row.addEventListener('click',()=>aczoOpenCard(player.publicId));}
+      else row.append(aczoTextNode('small','','Name nicht freigegeben'));
+      list.appendChild(row);
+    }
+    aczoEl('aczoCommunityCount').textContent=(Number(data.total)||0)+' Angler'+(query?' für „'+query+'“':' in der Community');
+    if(!list.children.length)list.textContent='Keine passenden Angler gefunden.';
+    button.hidden=!data.hasMore;aczoCommunityPage=page+1;
+  }catch(err){if(generation===aczoDirectoryGeneration){if(reset)list.textContent='Community gerade nicht erreichbar. Bitte erneut laden.';button.hidden=false;}}
+  finally{if(generation===aczoDirectoryGeneration)button.disabled=false;}
 }
 aczoEl('aczoLoadMore').addEventListener('click',()=>aczoLoadAnglers(false));
 aczoEl('aczoCommunitySearch').addEventListener('input',()=>{clearTimeout(aczoCommunityTimer);aczoCommunityTimer=setTimeout(()=>aczoLoadAnglers(true),350);});
+async function aczoPreloadPublicData(){
+  if(!ANGLING_LEADERBOARD_ENDPOINT||aczoNetworkBusyWithFish())return null;
+  const exclude=String(anglingPlayerProfile.id||'');
+  if(aczoPublicCache?.exclude===exclude&&Date.now()-aczoPublicCache.savedAt<15000)return aczoPublicCache.data;
+  if(aczoPublicLoadPromise){await aczoPublicLoadPromise;return aczoPublicCache?.exclude===exclude?aczoPublicCache.data:null;}
+  if(Date.now()-aczoPublicLastAttempt<15000&&!aczoPublicCache)return null;
+  aczoPublicLastAttempt=Date.now();
+  const revision=anglingHallOfFameCacheRevision;
+  const base=ANGLING_LEADERBOARD_ENDPOINT+(ANGLING_LEADERBOARD_ENDPOINT.includes('?')?'&':'?');
+  const task=(async()=>{
+    try{
+      const data=await anglingLeaderboardJson(base+'action=communityBootstrap&exclude='+encodeURIComponent(exclude),{method:'GET',cache:'no-store'},30000);
+      if(!data?.community||!Array.isArray(data.directory?.players)||!Array.isArray(data.hallOfFame?.overall))return null;
+      aczoPublicCache={exclude,savedAt:Date.now(),data};
+      for(const p of data.cards||[])if(p.publicId)aczoCardCache.set(p.publicId,{savedAt:Date.now(),angler:p});
+      if(revision===anglingHallOfFameCacheRevision)anglingLeaderboardCache.set('hallOfFame',{revision,savedAt:Date.now(),data:{ranking:data.hallOfFame,rows:data.hallOfFame.entries||[]}});
+      return data;
+    }catch(err){return null;}
+  })();
+  aczoPublicLoadPromise=task;
+  const hofTask=task.then(data=>{if(data)return {ranking:data.hallOfFame,rows:data.hallOfFame.entries||[]};if(anglingLeaderboardLoads.get('hallOfFame')?.task===hofTask)anglingLeaderboardLoads.delete('hallOfFame');return requestAnglingHallOfFameData();});
+  hofTask.catch(()=>{});
+  // Full ranking callers reuse the same initial request.
+  if(!anglingLeaderboardLoads.has('hallOfFame'))anglingLeaderboardLoads.set('hallOfFame',{revision,task:hofTask});
+  try{return await task;}
+  finally{
+    aczoPublicLoadPromise=null;
+    if(anglingLeaderboardLoads.get('hallOfFame')?.task===hofTask)anglingLeaderboardLoads.delete('hallOfFame');
+  }
+}
+function aczoTextNode(tag,className,text){const el=document.createElement(tag);if(className)el.className=className;el.textContent=String(text);return el;}
+function aczoRenderAnglerCard(p){
+  const body=aczoEl('aczoAnglerCardBody');body.replaceChildren();
+  const hero=aczoTextNode('div','aczo-card-hero','');
+  const avatar=aczoTextNode('div','aczo-card-avatar',String(p.name||'A').slice(0,1).toLocaleUpperCase('de-DE'));
+  const heading=aczoTextNode('div','aczo-card-heading','');
+  heading.append(aczoTextNode('small','aczo-card-eyebrow','ANGLER AM VEREINSWEIHER'),aczoTextNode('h3','',p.name));
+  const status=aczoTextNode('span','aczo-card-status'+(p.active?' is-active':''),p.active?'Am Weiher aktiv':'Community-Profil');heading.append(status);hero.append(avatar,heading);body.append(hero);
+  const stats=aczoTextNode('div','aczo-card-stats','');
+  for(const [value,label] of [[p.lifetimeXp,'Gesamt-EP'],[p.totalCatches,'Fänge'],[p.speciesCount,'Entdeckte Arten'],[p.recordCount,'Artenrekorde']]){
+    const tile=aczoTextNode('div','aczo-card-stat','');tile.append(aczoTextNode('strong','',Math.max(0,Number(value)||0).toLocaleString('de-DE')),aczoTextNode('span','',label));stats.append(tile);
+  }
+  body.append(stats);
+  const record=aczoTextNode('div','aczo-card-record','');
+  record.append(aczoTextNode('small','aczo-card-eyebrow','GRÖSSTER ÖFFENTLICHER FANG'));
+  if(p.biggestCatch){
+    const species=ANGLING_LEADERBOARD_API_TO_SPECIES[p.biggestCatch.species]||p.biggestCatch.species;
+    record.append(aczoTextNode('strong','',fishDisplayNames[species]||p.biggestCatch.species),aczoTextNode('span','aczo-card-length',formatAnglingLength(p.biggestCatch.lengthCm)));
+  }else record.append(aczoTextNode('p','','Noch kein Fang veröffentlicht.'));
+  body.append(record);
+  const since=new Date(p.createdAt||'');
+  if(Number.isFinite(since.getTime()))body.append(aczoTextNode('p','aczo-card-since','Dabei seit '+since.toLocaleDateString('de-DE',{day:'numeric',month:'long',year:'numeric'})));
+  body.append(aczoTextNode('p','aczo-card-note','Öffentliches Anglerprofil · Die Sichtbarkeit bestimmt jeder Angler selbst.'));
+}
+let aczoCardGeneration=0,aczoCardReturnFocus=null;
+function aczoCloseAnglerCard(){aczoCardGeneration++;aczoEl('aczoAnglerCard').hidden=true;aczoEl('aczoCardBackdrop').hidden=true;aczoCardReturnFocus?.focus?.();}
 async function aczoOpenCard(publicId){
   if(!publicId)return;
-  const card=aczoEl('aczoAnglerCard'),body=aczoEl('aczoAnglerCardBody');card.hidden=false;body.textContent='Anglerkarte wird geladen …';
-  try{const base=ANGLING_LEADERBOARD_ENDPOINT+(ANGLING_LEADERBOARD_ENDPOINT.includes('?')?'&':'?');
-    const {angler:p}=await anglingLeaderboardJson(base+'action=anglerCard&publicId='+encodeURIComponent(publicId),{method:'GET',cache:'no-store'},30000);
-    body.replaceChildren();const title=document.createElement('h3');title.textContent='🎣 '+p.name;body.appendChild(title);
-    for(const text of ['Gesamt-EP: '+p.lifetimeXp,'Fänge: '+p.totalCatches,'Entdeckte Fischarten: '+p.speciesCount,'Persönliche Rekorde: '+p.recordCount,p.biggestCatch?'Größter öffentlicher Fang: '+p.biggestCatch.species+' · '+p.biggestCatch.lengthCm+' cm':'',p.active?'🟢 Gerade am Weiher':''])if(text){const row=document.createElement('p');row.textContent=text;body.appendChild(row);}
-  }catch(err){body.textContent='Anglerkarte nicht verfügbar.';}
+  const generation=++aczoCardGeneration;
+  const card=aczoEl('aczoAnglerCard'),body=aczoEl('aczoAnglerCardBody');if(card.hidden)aczoCardReturnFocus=document.activeElement;
+  card.hidden=false;aczoEl('aczoCardBackdrop').hidden=false;aczoEl('aczoCloseCard').focus();
+  const cached=aczoCardCache.get(publicId);
+  if(cached&&Date.now()-cached.savedAt<15000){aczoRenderAnglerCard(cached.angler);return;}
+  body.replaceChildren(aczoTextNode('div','aczo-card-loading','Anglerprofil wird geladen …'));
+  try{
+    const base=ANGLING_LEADERBOARD_ENDPOINT+(ANGLING_LEADERBOARD_ENDPOINT.includes('?')?'&':'?');
+    let task=aczoCardLoads.get(publicId);
+    if(!task){task=anglingLeaderboardJson(base+'action=anglerCard&publicId='+encodeURIComponent(publicId),{method:'GET',cache:'no-store'},30000);aczoCardLoads.set(publicId,task);}
+    const data=await task;
+    if(!data.angler)throw new Error('Anglerkarte nicht verfügbar.');
+    aczoCardCache.set(publicId,{savedAt:Date.now(),angler:data.angler});
+    if(generation===aczoCardGeneration&&!card.hidden)aczoRenderAnglerCard(data.angler);
+  }catch(err){if(generation===aczoCardGeneration&&!card.hidden){body.replaceChildren(aczoTextNode('p','','Dieses Profil konnte gerade nicht geladen werden.'));const retry=aczoTextNode('button','angling-main-btn','Erneut laden');retry.type='button';retry.addEventListener('click',()=>aczoOpenCard(publicId));body.append(retry);}}
+  finally{aczoCardLoads.delete(publicId);}
 }
-aczoEl('aczoCloseCard').addEventListener('click',()=>{aczoEl('aczoAnglerCard').hidden=true;});
+document.body.appendChild(aczoEl('aczoCardBackdrop'));document.body.appendChild(aczoEl('aczoAnglerCard'));
+for(const type of ['pointerdown','pointermove','pointerup','click'])aczoEl('aczoCardBackdrop').addEventListener(type,event=>event.stopPropagation());
+aczoEl('aczoCardBackdrop').addEventListener('click',aczoCloseAnglerCard);
+for(const type of ['pointerdown','pointermove','pointerup','click'])aczoEl('aczoAnglerCard').addEventListener(type,event=>event.stopPropagation());
+aczoEl('aczoCloseCard').addEventListener('click',aczoCloseAnglerCard);
+aczoEl('aczoAnglerCard').addEventListener('keydown',event=>{
+  if(event.key==='Escape'){event.preventDefault();event.stopPropagation();aczoCloseAnglerCard();}
+  if(event.key==='Tab'){const controls=[...event.currentTarget.querySelectorAll('button:not([disabled]),[tabindex="0"]')];const first=controls[0],last=controls.at(-1);if(event.shiftKey&&document.activeElement===first){event.preventDefault();last?.focus();}else if(!event.shiftKey&&document.activeElement===last){event.preventDefault();first?.focus();}}
+});
 aczoEl('aczoCommunityHighscore').addEventListener('click',()=>openAnglingMainSubpanel(openAnglingLeaderboard));
 aczoEl('aczoCommunityHall').addEventListener('click',openAnglingHallOfFame);
 aczoEl('aczoHofRetry').addEventListener('click',async()=>{
