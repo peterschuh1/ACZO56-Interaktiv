@@ -3119,6 +3119,10 @@ html,body{
   border:1px solid rgba(255,255,255,.08)
 }
 .angling-main-recovery-block p{font-size:10px!important;line-height:1.45!important;margin:3px 0 8px!important}
+.aczo-attach-recovery{display:grid;gap:7px;margin-top:10px}
+.aczo-attach-recovery[hidden]{display:none!important}
+.aczo-attach-recovery label,.aczo-attach-recovery p{font-size:11px!important;line-height:1.4!important;margin:0!important}
+.aczo-attach-recovery input{width:100%;box-sizing:border-box;min-width:0;padding:9px;color:#fff;background:#102d25;border:1px solid #789888;border-radius:7px}
 .angling-main-subheading{font-size:11.5px;font-weight:950;color:#effff6}
 .angling-main-recovery-line input{font-size:11.5px}
 .angling-main-link-btn{
@@ -5217,6 +5221,13 @@ function aczoSetIconText(element,value){
                  <button id="anglingMainCopyRecoveryBtn" class="angling-main-btn">Kopieren</button>
                  <button id="anglingMainNewRecoveryBtn" class="angling-main-btn warn new-code-btn" hidden>Neuen Code</button>
                </div>
+               <div id="aczoAttachRecovery" class="aczo-attach-recovery" hidden>
+                 <p>Der Code liegt nur auf dem Gerät, auf dem er erstellt wurde. Kopiere ihn dort aus dem Profil und füge ihn hier ein.</p>
+                 <label for="aczoAttachRecoveryInput">Vorhandenen Code auf diesem Gerät hinterlegen</label>
+                 <input id="aczoAttachRecoveryInput" type="text" maxlength="29" autocomplete="off" autocapitalize="characters" autocorrect="off" spellcheck="false" placeholder="XXXX-XXXX-XXXX-XXXX-XXXX-XXXX">
+                 <button id="aczoAttachRecoveryBtn" type="button" class="angling-main-btn">Code prüfen und speichern</button>
+                 <p id="aczoAttachRecoveryStatus" role="status"></p>
+               </div>
                
              </div>
 
@@ -5366,7 +5377,7 @@ function aczoSetIconText(element,value){
          <section class="aczo-account-help"><h3>👤 Spielerkonto erstellen oder aktivieren</h3><p>Öffne „Angeln“ und im Hauptmenü den Bereich „Profil“. Wähle „Spielerkonto erstellen“; bei einem vorhandenen Spielstand heißt die Schaltfläche „Spielerkonto aktivieren“. Gib einen freien Benutzernamen und ein Passwort ein und wiederhole das Passwort. Der Benutzername muss 3 bis 30 Zeichen haben; erlaubt sind Buchstaben, Zahlen, Leerzeichen, Punkt, Unterstrich und Bindestrich. Das Passwort braucht mindestens 12 und höchstens 256 Zeichen. Bestätige mit „Spielerkonto erstellen“ und warte auf die Rückmeldung.</p><p>Aktiviere einen vorhandenen Spielstand auf dem Gerät, auf dem du bisher gespielt hast. Deine Spieler-ID, EP, Gesamt-EP, Rekorde, Käufe und Bestände bleiben mit diesem Profil verbunden. Erstelle für einen Gerätewechsel kein zweites Konto.</p></section>
          <section class="aczo-account-help"><h3>🔐 Anmelden &amp; Gerätewechsel</h3><p>Wähle im Bereich „Profil“ „Mit Spielerkonto anmelden“, gib deinen Benutzernamen und dein Passwort ein und drücke „Anmelden“. Auf einem unbekannten Gerät kannst du dieselben Zugangsdaten verwenden. Der Cloud-Spielstand wird geladen; der grüne Hinweis mit deinem Namen und „Spielerkonto verbunden“ bestätigt die Anmeldung. Auf einem bekannten Gerät wird die gespeicherte Sitzung normalerweise automatisch wieder aufgenommen. Warte bei langsamem Laden auf die Rückmeldung.</p><p>Das einzelne Fangbuch bleibt auf dem jeweiligen Gerät. Cloud-Fortschritt, Fangsumme und persönliche Rekorde werden geladen; einzelne Fangbuchzeilen wandern nicht automatisch auf ein anderes Gerät.</p></section>
          <section class="aczo-account-help"><h3>📱 Passwort speichern &amp; automatisch ausfüllen</h3><p>Wenn Safari oder dein PC-Browser die Speicherung anbietet, kannst du Benutzername und Passwort im Passwortmanager des Geräts speichern. Beim nächsten Anmelden lassen sie sich automatisch ausfüllen; auf einem entsprechend eingerichteten iPhone kann Face ID die gespeicherten Zugangsdaten freigeben. Das Spiel entscheidet nicht über den Speicherhinweis. Dieser kann auch erst beim Verlassen des Formulars erscheinen. Falls kein Angebot kommt, prüfe die Passwort- und AutoFill-Einstellungen deines Browsers beziehungsweise Geräts.</p></section>
-         <section class="aczo-account-help"><h3>🔑 Passwort vergessen &amp; Sicherungscode</h3><p>Tippe im Anmeldeformular auf „Passwort vergessen?“. Gib deinen Benutzernamen, den privaten Sicherungscode und zweimal dein neues Passwort ein. Mit „Passwort zurücksetzen“ wird das neue Passwort gesetzt; alte Sitzungen werden ungültig. Andere Geräte müssen sich danach erneut anmelden. Es gibt keinen Zurücksetzen-Link per E-Mail.</p><p>Den Wiederherstellungscode beziehungsweise Sicherungscode findest du unter „Profil“ im Abschnitt „Wiederherstellungscode“. Kopiere ihn und bewahre ihn privat außerhalb des Browsers auf. Er ist für die Wiederherstellung und den Notfall gedacht; beim normalen Anmelden oder Gerätewechsel mit einem Konto brauchst du nur Benutzername und Passwort. Ohne den passenden Code kann das Formular dein Passwort nicht zurücksetzen.</p></section>
+         <section class="aczo-account-help"><h3>🔑 Passwort vergessen &amp; Sicherungscode</h3><p>Tippe im Anmeldeformular auf „Passwort vergessen?“. Gib deinen Benutzernamen, den privaten Sicherungscode und zweimal dein neues Passwort ein. Mit „Passwort zurücksetzen“ wird das neue Passwort gesetzt; alte Sitzungen werden ungültig. Andere Geräte müssen sich danach erneut anmelden. Es gibt keinen Zurücksetzen-Link per E-Mail.</p><p>Der Sicherungscode liegt unter „Profil“ → „Wiederherstellungscode“ auf dem Gerät, auf dem er erstellt wurde. Ein anderes angemeldetes Gerät zeigt ihn erst, wenn du den vorhandenen Code dort eingibst und prüfen lässt. Bewahre ihn privat außerhalb des Browsers auf. Für die normale Anmeldung reicht Benutzername und Passwort; zum Zurücksetzen des Passworts ist der Code nötig.</p></section>
          <section class="aczo-account-help"><h3>⚙️ Konto ändern &amp; abmelden</h3><p>Unter „Profil“ kannst du mit „Benutzername ändern“ einen freien neuen Namen wählen und mit „Passwort ändern“ das aktuelle Passwort durch ein neues ersetzen. Nach einer Passwortänderung müssen andere Geräte sich erneut anmelden. „Auf diesem Gerät abmelden“ sichert zunächst den aktuellen Cloud-Spielstand und beendet die Sitzung dieses Geräts. Scheitert die Sicherung, bleibt die Anmeldung bestehen. Dein Konto und Cloud-Spielstand werden durch Abmelden nicht gelöscht.</p></section>
          <section class="aczo-account-help"><h3>🎣 Als Gastangler spielen</h3><p>Ein Konto ist freiwillig. Wähle „Als Gastangler spielen“, wenn du ohne Passwortkonto beginnen möchtest. Einen bestehenden Gastspielstand kannst du später unter „Profil“ aktivieren. Für Gastprofile bleibt der private Wiederherstellungscode wichtig, um einen Cloud-Spielstand wiederherzustellen. Wer bereits ein Konto besitzt und seinen Fortschritt laden möchte, meldet sich mit seinen Zugangsdaten an.</p></section>
          <section class="aczo-account-help"><h3>👥 Community &amp; Privatsphäre</h3><p>Unter „Community“ findest du aktive Angler, „Alle Angler“, die Suche und öffentliche Anglerkarten. Ein verborgener Name bedeutet nicht, dass kein Konto vorhanden ist. Namen erscheinen bei Namensfreigabe oder bereits veröffentlichten Rekorden. Unter „Profil“ stellst du die Namenssichtbarkeit und die Veröffentlichung neuer Rekorde ein und drückst „Privatsphäre speichern“. Warte auf die Bestätigung. Die Namensfreigabe wird online gespeichert; die Rekordfreigabe gilt für zukünftige Veröffentlichungen dieses Geräts. Bereits veröffentlichte Rekorde bleiben öffentlich. Passwort und Sicherungscode stehen nie auf einer Anglerkarte.</p></section>
@@ -5502,7 +5513,7 @@ function aczoSetIconText(element,value){
      <div id="anglingFeedCursor" class="angling-feed-cursor" aria-hidden="true"><span>Futterpunkt wählen</span></div>
      <div id="anglingFeedTimer" class="angling-feed-timer" aria-hidden="true"></div>
      <div id="predatorPitPasteTimer" class="predator-pit-paste-timer" aria-live="polite"><strong>☢ Predatorpit Lockpaste</strong><span>4:00</span></div>
-     <div id="anglingClockDisplay" class="angling-clock-display" aria-label="Aktuelle Spielzeit">🕒 <span>14:00</span></div>
+     <div id="anglingClockDisplay" class="angling-clock-display" aria-label="Aktuelle Spielzeit">🕒 <span class="angling-clock-time">--:--</span></div>
      <div class="angling-hud-panel">
        <button id="anglingExitBtn">Angelplatz wechseln</button>
        <div id="anglingStatus" class="angling-status"><strong>Bereit</strong>Wirf die Angel aus.</div>
@@ -5633,7 +5644,7 @@ function aczoSetIconText(element,value){
          <div class="help-item aczo-account-help"><strong>👤 Spielerkonto erstellen</strong><span>Öffne „Angeln“ → Hauptmenü → „Profil“ → „Spielerkonto erstellen“. Hast du bereits einen Spielstand, wähle auf deinem bisherigen Gerät „Spielerkonto aktivieren“: EP, Rekorde, Käufe und Bestände bleiben erhalten. Wähle einen freien Benutzernamen mit 3 bis 30 Zeichen und ein Passwort mit 12 bis 256 Zeichen, wiederhole das Passwort und bestätige. Erlaubt sind im Namen Buchstaben, Zahlen, Leerzeichen, Punkt, Unterstrich und Bindestrich. Ein Konto ist freiwillig; „Als Gastangler spielen“ bleibt möglich.</span></div>
          <div class="help-item aczo-account-help"><strong>🔐 Anmelden &amp; Gerätewechsel</strong><span>Unter „Profil“ wählst du „Mit Spielerkonto anmelden“. Gib Benutzername und Passwort ein und drücke „Anmelden“. Nutze auf einem anderen Gerät dieselben Zugangsdaten und erstelle kein zweites Konto. Warte, bis dein Name und „Spielerkonto verbunden“ grün angezeigt werden. Eine gespeicherte Sitzung wird normalerweise automatisch wieder aufgenommen. Cloud-Fortschritt, Fangsumme, Bestwerte, Bestände und Ausrüstung werden geladen; einzelne Fangbuchzeilen bleiben auf dem bisherigen Gerät.</span></div>
          <div class="help-item aczo-account-help"><strong>📱 Speichern &amp; AutoFill</strong><span>Bietet der Browser an, Benutzername und Passwort zu speichern, kannst du das bestätigen. Danach ist automatisches Ausfüllen möglich; auf einem entsprechend eingerichteten iPhone kann Face ID die gespeicherten Daten freigeben. Der Browser steuert den Hinweis und kann ihn erst beim Verlassen des Formulars anzeigen. Bei fehlendem Angebot prüfe die Passwort-/AutoFill-Einstellungen des Geräts oder Browsers.</span></div>
-         <div class="help-item aczo-account-help"><strong>🔑 Passwort vergessen</strong><span>Wähle im Anmeldeformular „Passwort vergessen?“. Trage Benutzernamen, privaten Sicherungscode und zweimal ein neues Passwort ein und bestätige „Passwort zurücksetzen“. Anschließend müssen andere Geräte sich erneut anmelden. Den Code findest du unter „Profil“ → „Wiederherstellungscode“. Privat außerhalb des Browsers aufbewahren: Er dient dem Notfall, während der normale Gerätewechsel per Benutzername und Passwort erfolgt. Ohne passenden Code ist das Zurücksetzen hier nicht möglich; es gibt keinen E-Mail-Link. Gastprofile können weiterhin per Code wiederhergestellt werden.</span></div>
+         <div class="help-item aczo-account-help"><strong>🔑 Passwort vergessen</strong><span>Wähle im Anmeldeformular „Passwort vergessen?“. Trage Benutzernamen, privaten Sicherungscode und zweimal ein neues Passwort ein und bestätige „Passwort zurücksetzen“. Anschließend müssen andere Geräte sich erneut anmelden. Der Code steht unter „Profil“ → „Wiederherstellungscode“ auf dem Gerät, auf dem er erstellt wurde. Auf einem weiteren Gerät kannst du ihn im Profil eingeben und prüfen lassen. Bewahre ihn privat außerhalb des Browsers auf. Ohne passenden Code ist das Zurücksetzen hier nicht möglich; es gibt keinen E-Mail-Link. Gastprofile können weiterhin per Code wiederhergestellt werden.</span></div>
          <div class="help-item aczo-account-help"><strong>⚙️ Konto &amp; Abmelden</strong><span>Unter „Profil“ stehen „Benutzername ändern“, „Passwort ändern“ und „Auf diesem Gerät abmelden“. Eine Passwortänderung erfordert das aktuelle Passwort und beendet die bisherigen Sitzungen anderer Geräte. Abmelden sichert zuerst den Cloud-Spielstand und beendet nur die Sitzung dieses Geräts; bei fehlgeschlagener Sicherung bleibt die Anmeldung bestehen. Konto und Fortschritt werden dabei nicht gelöscht.</span></div>
          <div class="help-item aczo-account-help"><strong>👥 Community &amp; Freigaben</strong><span>Im Angelspiel zeigt „Community“ aktive Angler, „Alle Angler“, eine Suche und öffentliche Anglerkarten. Ein verborgener Name bedeutet kein fehlendes Konto. Unter „Profil“ legst du Namenssichtbarkeit und neue Rekord-Veröffentlichungen fest. „Privatsphäre speichern“ bestätigt die Online-Namensfreigabe; die Rekordfreigabe gilt auf diesem Gerät. Bereits veröffentlichte Rekorde bleiben öffentlich. Passwort und Sicherungscode sind niemals Teil der Karte.</span></div>
          <div class="help-item"><strong>🗺️ 2D / 3D</strong><span>Wechselt zwischen der dreh- und verschiebbaren Draufsicht und der räumlichen 3D-Ansicht.</span></div>
@@ -29495,12 +29506,14 @@ function anglingTimeAllowance(){const level=anglingLevelForXp(anglingProgress.li
 function resetAnglingSessionTimeRules(){aczoStopTimeShiftMusic(true);anglingTimeUsedForward=0;anglingTimeUsedBackward=0;anglingTimeShiftPending=null;anglingTimeShiftActive=null;anglingMiddayCenter=14+(Math.random()-.5)*.8;anglingMiddayHalfWidth=.9+Math.random()*.3;resetAnglingSurfaceActivitySchedule();anglingUi?.classList.remove('time-shifting');anglingTimeOverlay?.classList.remove('show');updateAnglingTimeUi();}
 function anglingClockHour(){const d=viewerNow();return d.getHours()+d.getMinutes()/60+d.getSeconds()/3600;}
 const anglingClockDisplay=document.getElementById('anglingClockDisplay');
-const anglingClockDisplayValue=anglingClockDisplay?.querySelector('span');
+const anglingClockDisplayValue=anglingClockDisplay?.querySelector('.angling-clock-time');
 let anglingClockDisplayLast='';
 function updateAnglingClockDisplay(){
   if(!anglingClockDisplayValue)return;
   const now=viewerNow();
-  const value=String(now.getHours()).padStart(2,'0')+':'+String(now.getMinutes()).padStart(2,'0');
+  const value=seasonTestMode
+    ?String(now.getHours()).padStart(2,'0')+':'+String(now.getMinutes()).padStart(2,'0')
+    :new Intl.DateTimeFormat('de-DE',{timeZone:'Europe/Berlin',hour:'2-digit',minute:'2-digit',hourCycle:'h23'}).format(now);
   if(value!==anglingClockDisplayLast){anglingClockDisplayLast=value;anglingClockDisplayValue.textContent=value;}
 }
 function anglingHourDistance(a,b){let d=Math.abs(a-b)%24;return Math.min(d,24-d);}
@@ -32042,14 +32055,14 @@ function captureAnglingRecoveryCode(data){
   if(data&&typeof data.recoveryCode==='string')saveAnglingRecoveryCode(data.recoveryCode);
 }
 function updateAnglingRecoveryUi(){
-  if(anglingMainRecoveryCode)anglingMainRecoveryCode.value=anglingRecoveryCode||'Noch nicht erstellt';
+  if(anglingMainRecoveryCode)anglingMainRecoveryCode.value=anglingRecoveryCode||(aczoAccount?'Auf diesem Gerät nicht hinterlegt':'Noch nicht erstellt');
   if(anglingMainCopyRecoveryBtn)anglingMainCopyRecoveryBtn.disabled=!anglingRecoveryCode;
   if(anglingMainNewRecoveryBtn)anglingMainNewRecoveryBtn.disabled=!anglingRecoveryCode;
   if(!anglingRecoveryCode){
-    anglingRecoveryCodeDisplay.value='Noch nicht erstellt';
+    anglingRecoveryCodeDisplay.value=aczoAccount?'Auf diesem Gerät nicht hinterlegt':'Noch nicht erstellt';
     anglingRecoveryCopyBtn.disabled=true;
     anglingRecoveryRotateBtn.disabled=true;
-    anglingRecoveryStatus.textContent='Der Code wird beim nächsten erfolgreichen Cloud-Abgleich automatisch erstellt.';
+    anglingRecoveryStatus.textContent=aczoAccount?'Den vorhandenen Code vom ersten Gerät unter Profil hier im Profil hinterlegen.':'Der Code wird beim nächsten erfolgreichen Cloud-Abgleich automatisch erstellt.';
   }else{
     anglingRecoveryCodeDisplay.value=anglingRecoveryCode;
     anglingRecoveryCopyBtn.disabled=false;
@@ -32743,6 +32756,7 @@ function stopAnglingPresence(){
 }
 
 let anglingMainMenuReturnFromSubpanel=false;
+let anglingMainMenuReturnPage='overview';
 
 function syncAnglingHallOfFameMenuAvailability(){
   if(!anglingMainHallOfFameBtn)return;
@@ -32762,7 +32776,7 @@ function updateAnglingMainMenuUi(){
   anglingMainHighscorePublic.checked=!!anglingPlayerProfile.shareRecords;
   anglingMainPresenceNamed.checked=!!anglingPresenceNamed;
   anglingMainEpBadge.querySelector('strong').textContent=String(anglingProgress.xp);
-  anglingMainRecoveryCode.value=anglingRecoveryCode||'Noch nicht erstellt';
+  anglingMainRecoveryCode.value=anglingRecoveryCode||(aczoAccount?'Auf diesem Gerät nicht hinterlegt':'Noch nicht erstellt');
   anglingMainCopyRecoveryBtn.disabled=!anglingRecoveryCode;
   anglingMainNewRecoveryBtn.disabled=true;
 
@@ -32901,6 +32915,7 @@ function saveAnglingMainProfile(){
 
 function openAnglingMainSubpanel(opener){
   anglingMainMenuReturnFromSubpanel=true;
+  anglingMainMenuReturnPage=anglingMainMenu.querySelector('[data-main-page]:not([hidden])')?.dataset.mainPage||'overview';
   anglingUi.classList.remove('main-menu-open');
   anglingMainMenu.setAttribute('aria-hidden','true');
   opener();
@@ -32911,6 +32926,7 @@ function returnToAnglingMainMenu(){
   if(anglingMainMenuReturnFromSubpanel){
     anglingMainMenuReturnFromSubpanel=false;
     openAnglingMainMenu();
+    aczoMainNavigate(anglingMainMenuReturnPage);
   }
 }
 
@@ -34510,7 +34526,6 @@ async function loadAnglingLeaderboard({forceRefresh=false}={}){
  let task=anglingLeaderboardLoads.get('all');
  if(!task){
    task=(async()=>{
-     await prewarmAnglingCloudBackend(false);
      const url=ANGLING_LEADERBOARD_ENDPOINT+(ANGLING_LEADERBOARD_ENDPOINT.includes('?')?'&':'?')+'action=list&species=all&_='+Date.now();
      const data=await anglingLeaderboardJsonRetry(url,{method:'GET',cache:'no-store'},[18000,32000]);
      const rows=Array.isArray(data)?data:
@@ -34550,7 +34565,7 @@ async function loadAnglingLeaderboard({forceRefresh=false}={}){
 async function openAnglingLeaderboard(){
  if(guardAnglingMenuOpen())return;
  closeAnglingGamePanels();initAnglingLeaderboardSpecies();syncAnglingLeaderboardProfileUi();markAnglingGamePanelOpen(anglingLeaderboardPanel);
- await loadAnglingLeaderboard({forceRefresh:true});
+ await loadAnglingLeaderboard({forceRefresh:false});
 }
 function openAnglingGameHelp(){if(guardAnglingMenuOpen())return;closeAnglingGamePanels();markAnglingGamePanelOpen(anglingGameHelpPanel);}
 function anglingLeaderboardPayload(caught){
@@ -41856,7 +41871,8 @@ function aczoRenderAccount(){
   aczoEl('aczoGuestStart').hidden=!signedOut;
   aczoEl('aczoShowRegister').textContent=anglingPlayerProfile.name?'Spielerkonto aktivieren':'Spielerkonto erstellen';
   aczoEl('anglingMainNewRecoveryBtn').hidden=true;
-  aczoEl('anglingMainRecoveryCode').closest('.angling-main-recovery-block').hidden=signedOut||!anglingRecoveryCode;
+  aczoEl('anglingMainRecoveryCode').closest('.angling-main-recovery-block').hidden=signedOut;
+  aczoEl('aczoAttachRecovery').hidden=!hasAccount||!!anglingRecoveryCode;
   if(hasAccount)aczoEl('aczoPasswordUsername').value=aczoAccount.username;
   aczoColorIcons(anglingMainMenu);
 }
@@ -41999,6 +42015,24 @@ aczoEl('aczoRename').addEventListener('click',async()=>{
   try{const data=await aczoApi('changeAccountName',{sessionToken:aczoSessionToken,username:name});aczoAccount=data.account;anglingPlayerProfile.name=data.account.username;saveAnglingPlayerProfile();aczoRenderAccount();aczoInvalidatePublicData();aczoStatus('Benutzername geändert.');}catch(err){aczoStatus(err.message);}finally{aczoAccountBusy=false;}
 });
 aczoEl('aczoLogout').addEventListener('click',aczoLogout);
+aczoEl('aczoAttachRecoveryBtn').addEventListener('click',async()=>{
+  const input=aczoEl('aczoAttachRecoveryInput'),button=aczoEl('aczoAttachRecoveryBtn'),status=aczoEl('aczoAttachRecoveryStatus');
+  const code=normalizeAnglingRecoveryCode(input.value);
+  if(code.replace(/-/g,'').length!==24){status.textContent='Bitte den vollständigen Code vom anderen Gerät eingeben.';return;}
+  if(!aczoAccount||!aczoSessionToken){status.textContent='Bitte zuerst bei deinem Spielerkonto anmelden.';return;}
+  button.disabled=true;status.textContent='Code wird geprüft …';
+  try{
+    const data=await anglingLeaderboardJson(ANGLING_LEADERBOARD_ENDPOINT,{
+      method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},
+      body:JSON.stringify({action:'recoverPlayer',recoveryCode:code})
+    },30000);
+    if(data?.ok===false||data?.playerId!==aczoAccount.playerId)throw new Error('Dieser Code gehört nicht zu deinem Spielerkonto.');
+    if(!saveAnglingRecoveryCode(code))throw new Error('Code konnte nicht gespeichert werden.');
+    input.value='';status.textContent='Code auf diesem Gerät gespeichert.';
+    aczoRenderAccount();
+  }catch(err){status.textContent=err?.message||'Code konnte gerade nicht geprüft werden.';}
+  finally{button.disabled=false;}
+});
 aczoEl('aczoSavePrivacy').addEventListener('click',aczoSavePrivacy);
 aczoEl('aczoGuestStart').addEventListener('click',()=>{
   if(aczoAccountBusy)return;
@@ -42121,6 +42155,7 @@ function aczoSetCommunityView(view){
   for(const [v,id] of [['pond','aczoCommunityPond'],['all','aczoCommunityAll'],['rank','aczoCommunityRank']])aczoEl(id).hidden=v!==view;
   document.querySelectorAll('[data-community-view]').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.communityView===view)));
   if(view==='all')aczoLoadAnglers(true);
+  if(view==='rank')loadAnglingLeaderboard({forceRefresh:false}).catch(()=>{});
 }
 document.querySelectorAll('[data-community-view]').forEach(btn=>btn.addEventListener('click',()=>aczoSetCommunityView(btn.dataset.communityView)));
 let aczoDirectoryGeneration=0;
@@ -42130,9 +42165,9 @@ async function aczoLoadAnglers(reset=false){
   const list=aczoEl('aczoAllAnglers'),button=aczoEl('aczoLoadMore');button.disabled=true;
   if(reset){list.replaceChildren(aczoTextNode('p','','Community wird geladen …'));}
   try{
-    const preload=await aczoPreloadPublicData();
     const base=ANGLING_LEADERBOARD_ENDPOINT+(ANGLING_LEADERBOARD_ENDPOINT.includes('?')?'&':'?');
-    const data=!query&&page===0&&preload?.directory?preload.directory:await anglingLeaderboardJson(base+'action=communityPlayers&page='+page+'&search='+encodeURIComponent(query),{method:'GET',cache:'no-store'},30000);
+    const ready=aczoPublicCache?.exclude===String(anglingPlayerProfile.id||'')?aczoPublicCache.data:null;
+    const data=!query&&page===0&&ready?.directory?ready.directory:await anglingLeaderboardJson(base+'action=communityPlayers&page='+page+'&search='+encodeURIComponent(query),{method:'GET',cache:'no-store'},30000);
     if(generation!==aczoDirectoryGeneration)return;
     if(reset)list.replaceChildren();
     for(const player of data.players||[]){
@@ -42158,8 +42193,8 @@ function aczoInvalidatePublicData(){
 async function aczoPreloadPublicData(){
   if(!ANGLING_LEADERBOARD_ENDPOINT||aczoNetworkBusyWithFish())return null;
   const exclude=String(anglingPlayerProfile.id||'');
-  if(aczoPublicCache?.exclude===exclude&&Date.now()-aczoPublicCache.savedAt<15000)return aczoPublicCache.data;
-  if(aczoPublicLoadPromise){await aczoPublicLoadPromise;return aczoPublicCache?.exclude===exclude&&Date.now()-aczoPublicCache.savedAt<15000?aczoPublicCache.data:null;}
+  if(aczoPublicCache?.exclude===exclude&&Date.now()-aczoPublicCache.savedAt<120000)return aczoPublicCache.data;
+  if(aczoPublicLoadPromise){await aczoPublicLoadPromise;return aczoPublicCache?.exclude===exclude?aczoPublicCache.data:null;}
   if(Date.now()-aczoPublicLastAttempt<15000&&!aczoPublicCache)return null;
   aczoPublicLastAttempt=Date.now();
   const revision=anglingHallOfFameCacheRevision,publicRevision=aczoPublicRevision;
@@ -42218,8 +42253,9 @@ async function aczoOpenCard(publicId){
   const card=aczoEl('aczoAnglerCard'),body=aczoEl('aczoAnglerCardBody');if(card.hidden)aczoCardReturnFocus=document.activeElement;
   card.hidden=false;aczoEl('aczoCardBackdrop').hidden=false;aczoEl('aczoCloseCard').focus();
   const cached=aczoCardCache.get(publicId);
-  if(cached&&Date.now()-cached.savedAt<15000){aczoRenderAnglerCard(cached.angler);return;}
-  body.replaceChildren(aczoTextNode('div','aczo-card-loading','Anglerprofil wird geladen …'));
+  if(cached&&Date.now()-cached.savedAt<120000){aczoRenderAnglerCard(cached.angler);return;}
+  if(cached)aczoRenderAnglerCard(cached.angler);
+  else body.replaceChildren(aczoTextNode('div','aczo-card-loading','Anglerprofil wird geladen …'));
   let task;
   try{
     const base=ANGLING_LEADERBOARD_ENDPOINT+(ANGLING_LEADERBOARD_ENDPOINT.includes('?')?'&':'?');
@@ -42230,7 +42266,7 @@ async function aczoOpenCard(publicId){
     if(publicRevision!==aczoPublicRevision)return;
     aczoCardCache.set(publicId,{savedAt:Date.now(),angler:data.angler});
     if(generation===aczoCardGeneration&&!card.hidden)aczoRenderAnglerCard(data.angler);
-  }catch(err){if(generation===aczoCardGeneration&&!card.hidden){body.replaceChildren(aczoTextNode('p','','Dieses Profil konnte gerade nicht geladen werden.'));const retry=aczoTextNode('button','angling-main-btn','Erneut laden');retry.type='button';retry.addEventListener('click',()=>aczoOpenCard(publicId));body.append(retry);}}
+  }catch(err){if(generation===aczoCardGeneration&&!card.hidden){if(!cached)body.replaceChildren();const retry=aczoTextNode('button','angling-main-btn','Profil erneut laden');retry.type='button';retry.addEventListener('click',()=>aczoOpenCard(publicId));body.append(aczoTextNode('p','','Profil kann gerade nicht aktualisiert werden.'));body.append(retry);}}
   finally{if(aczoCardLoads.get(publicId)===task)aczoCardLoads.delete(publicId);}
 }
 document.body.appendChild(aczoEl('aczoCardBackdrop'));document.body.appendChild(aczoEl('aczoAnglerCard'));
