@@ -31815,6 +31815,7 @@ try{anglingRecoveryCode=String(localStorage.getItem(ANGLING_RECOVERY_KEY)||'');}
 const ACZO_SESSION_KEY='aczo56-account-session-v1';
 let aczoSessionToken='';
 let aczoAccount=null;
+let aczoAccountBusy=false,aczoAuthGeneration=0;
 try{aczoSessionToken=String(localStorage.getItem(ACZO_SESSION_KEY)||'');}catch(err){}
 const ANGLING_LEADERBOARD_SPECIES_TO_API={
   roach:'Rotauge',rudd:'Rotfeder',pike:'Hecht',catfish:'Wels',carp:'Karpfen',
@@ -33477,10 +33478,10 @@ function updateAnglingHallOfFameDots(){
 function showAnglingHallOfFameSlide(index){
   if(!anglingHallOfFameSlides.length)return;
   anglingHallOfFameSlideIndex=(index+anglingHallOfFameSlides.length)%anglingHallOfFameSlides.length;
-  const slide=anglingHallOfFameSlides[anglingHallOfFameSlideIndex];
+  const slide=anglingHallOfFameSlides[anglingHallOfFameSlideIndex],generation=anglingHallOfFameLoadGeneration;
   anglingHallOfFameCard.classList.remove('visible');
   window.setTimeout(()=>{
-    if(!anglingHallOfFameActive||anglingHallOfFamePhase!=='show'||!slide)return;
+    if(!anglingHallOfFameActive||anglingHallOfFamePhase!=='show'||!slide||generation!==anglingHallOfFameLoadGeneration||slide!==anglingHallOfFameSlides[anglingHallOfFameSlideIndex])return;
     anglingHallOfFameKicker.textContent=slide.kicker||'';aczoColorIcons(anglingHallOfFameKicker);
     anglingHallOfFameTitle.textContent=slide.title||'';
     anglingHallOfFameValue.textContent=slide.value||'';
@@ -34273,7 +34274,7 @@ const anglingLeaderboardCache=new Map();
 const anglingLeaderboardLoads=new Map();
 // Bereits beim Seitenstart abfragen: Menü und Kamerafahrt nutzen denselben
 // laufenden Request bzw. dessen Cache, ohne den Server erneut anzufragen.
-let aczoPublicLoadPromise=null,aczoPublicCache=null,aczoPublicLastAttempt=0;
+let aczoPublicLoadPromise=null,aczoPublicCache=null,aczoPublicLastAttempt=0,aczoPublicRevision=0;
 const aczoCardCache=new Map();
 const aczoCardLoads=new Map();
 aczoPreloadPublicData().catch(()=>{});
@@ -36519,6 +36520,7 @@ function anglingSelectionOverviewHeight(){
 }
 
 function startAnglingMode(){
+  if(aczoAccountBusy){aczoStatus('Bitte den laufenden Kontovorgang abwarten.');return;}
   if(anglingMode||fishMode) return;
   clearAnglingFeedSpot(false);cancelAnglingFeedTargeting();
   resetAllAnglingUiOverlays();
@@ -41790,29 +41792,36 @@ function aczoApplyAccountPlayer(data){
   saveAnglingProgress({preserveXpRevision:true,skipCloudSync:true,skipEpSync:true});
   aczoSaveSession(data);updateAnglingMainMenuUi();
 }
-async function aczoFinishAccountLogin(data){
+async function aczoFinishAccountLogin(data,generation=aczoAuthGeneration){
+  if(generation!==aczoAuthGeneration)return false;
+  if(!data?.account?.playerId||!data?.account?.username||!data?.player)throw new Error('Unvollständige Kontoantwort. Bitte erneut anmelden.');
   const wasReady=anglingSetupComplete;anglingSetupComplete=false;
   try{
     if(anglingCloudPlayerLoadPromise)await anglingCloudPlayerLoadPromise;
     if(anglingCloudSyncPromise)await anglingCloudSyncPromise;
+    if(generation!==aczoAuthGeneration)return false;
     if(anglingCloudSyncTimer){clearTimeout(anglingCloudSyncTimer);anglingCloudSyncTimer=null;}
     if(anglingMode&&String(data.account.playerId)!==anglingPlayerProfile.id){finishLeaveAngling();anglingUi.style.display='';openAnglingMainMenu();}
     aczoApplyAccountPlayer(data);
     anglingLastCloudSuccessAt=Date.now();anglingLastCloudMessage='Abgeglichen';updateAnglingCloudStatus();
-    aczoPreloadPublicData().catch(()=>{});
-  }catch(err){anglingSetupComplete=wasReady;throw err;}
+    aczoInvalidatePublicData();aczoPreloadPublicData().catch(()=>{});
+    return true;
+  }catch(err){if(generation===aczoAuthGeneration)anglingSetupComplete=wasReady;throw err;}
 }
 async function aczoHandleForm(form,task){
+  if(aczoAccountBusy){aczoStatus('Ein Kontovorgang läuft bereits. Bitte kurz warten.');return;}
+  aczoAccountBusy=true;aczoAuthGeneration++;
   const button=form.querySelector('[type="submit"]');button.disabled=true;aczoStatus('Bitte warten …');
   try{if(aczoCloudSyncBusyWithFish())throw new Error('Bitte zuerst den laufenden Fang beenden.');await task();aczoStatus('✅ Fertig.');}
   catch(err){aczoStatus(String(err?.message||'Vorgang fehlgeschlagen.'));}
-  finally{button.disabled=false;}
+  finally{button.disabled=false;aczoAccountBusy=false;}
 }
 const aczoFormTasks=new Map();
 function aczoBindForm(id,task){
   aczoFormTasks.set(id,task);
-  aczoEl(id).addEventListener('submit',event=>{event.preventDefault();aczoHandleForm(event.currentTarget,()=>task(event.currentTarget));});
+  aczoEl(id).addEventListener('submit',event=>{event.preventDefault();const form=event.currentTarget;aczoHandleForm(form,()=>task(form));});
   aczoEl(id).querySelector('[data-account-back]')?.addEventListener('click',()=>{
+    if(aczoAccountBusy)return;
     if(id==='aczoLoginForm')aczoEl('aczoGuestStart').click();
     else aczoSetAccountMode(id==='aczoRegisterForm'?'choices':id==='aczoResetForm'?'login':'choices');
   });
@@ -41842,12 +41851,16 @@ aczoEl('aczoShowRegister').addEventListener('click',()=>{aczoEl('aczoRegisterNam
 
 aczoEl('aczoChangePassword').addEventListener('click',()=>aczoSetAccountMode('password'));
 aczoEl('aczoRename').addEventListener('click',async()=>{
+  if(aczoAccountBusy)return;
   const name=window.prompt('Neuer Benutzername:',aczoAccount?.username||'');if(name===null)return;
-  try{const data=await aczoApi('changeAccountName',{sessionToken:aczoSessionToken,username:name});aczoAccount=data.account;anglingPlayerProfile.name=data.account.username;saveAnglingPlayerProfile();aczoRenderAccount();aczoStatus('Benutzername geändert.');}catch(err){aczoStatus(err.message);}
+  aczoAccountBusy=true;aczoAuthGeneration++;
+  try{const data=await aczoApi('changeAccountName',{sessionToken:aczoSessionToken,username:name});aczoAccount=data.account;anglingPlayerProfile.name=data.account.username;saveAnglingPlayerProfile();aczoRenderAccount();aczoInvalidatePublicData();aczoStatus('Benutzername geändert.');}catch(err){aczoStatus(err.message);}finally{aczoAccountBusy=false;}
 });
 aczoEl('aczoLogout').addEventListener('click',aczoLogout);
-aczoEl('aczoSavePrivacy').addEventListener('click',()=>{anglingMainName.value=anglingPlayerProfile.name;saveAnglingMainProfile();aczoPublicCache=null;aczoPublicLastAttempt=0;aczoCardCache.clear();aczoStatus('Privatsphäre gespeichert.');});
+aczoEl('aczoSavePrivacy').addEventListener('click',aczoSavePrivacy);
 aczoEl('aczoGuestStart').addEventListener('click',()=>{
+  if(aczoAccountBusy)return;
+  aczoAuthGeneration++;aczoInvalidatePublicData();
   aczoSessionToken='';aczoAccount=null;
   try{localStorage.removeItem(ACZO_SESSION_KEY);}catch(err){}
   if(!anglingSetupComplete){
@@ -41894,31 +41907,68 @@ aczoBindForm('aczoPasswordForm',async form=>{
   await aczoOfferPasswordSave(data.account.username,password);
   aczoSaveSession(data);aczoCompletePasswordForm(form);
 });
-async function aczoLogout(){
-  const button=aczoEl('aczoLogout');if(button.disabled)return;
-  if(!window.confirm('Dein Cloud-Spielstand bleibt vollständig erhalten. Auf diesem Gerät wirst du lediglich abgemeldet.'))return;
-  button.disabled=true;
-  try{
+async function aczoSaveStableCloud(){
+  if(anglingCloudPlayerLoadPromise)await anglingCloudPlayerLoadPromise;
   if(anglingCloudSyncPromise)await anglingCloudSyncPromise;
-  if(!await syncAnglingPlayerCloud()){aczoStatus('Abmelden wartet auf die Cloud-Sicherung. Bitte den laufenden Fang beenden oder die Verbindung prüfen.');return;}
+  for(let attempt=0;attempt<3;attempt++){
+    const before=JSON.stringify([anglingCloudSignature(),anglingProgress.xpRevision,anglingPlayerProfile.id,anglingPlayerProfile.name,anglingPresenceNamed]);
+    if(!await syncAnglingPlayerCloud())return false;
+    const after=JSON.stringify([anglingCloudSignature(),anglingProgress.xpRevision,anglingPlayerProfile.id,anglingPlayerProfile.name,anglingPresenceNamed]);
+    if(before===after){
+      if(anglingCloudSyncTimer){clearTimeout(anglingCloudSyncTimer);anglingCloudSyncTimer=null;}
+      return true;
+    }
+  }
+  return false;
+}
+async function aczoSavePrivacy(){
+  if(aczoAccountBusy||!aczoAccount)return;
+  if(aczoCloudSyncBusyWithFish()){aczoStatus('Bitte zuerst den laufenden Fang beenden.');return;}
+  const shareRecords=!!anglingMainHighscorePublic.checked,presenceNamed=!!anglingMainPresenceNamed.checked;
+  aczoAccountBusy=true;aczoAuthGeneration++;
+  const button=aczoEl('aczoSavePrivacy');button.disabled=true;aczoStatus('Privatsphäre wird gespeichert …');
+  try{
+    if(anglingCloudPlayerLoadPromise)await anglingCloudPlayerLoadPromise;
+    if(anglingCloudSyncPromise)await anglingCloudSyncPromise;
+    anglingPlayerProfile.shareRecords=shareRecords;anglingPresenceNamed=presenceNamed;
+    saveAnglingPlayerProfile();
+    try{localStorage.setItem(ANGLING_PRESENCE_NAMED_KEY,presenceNamed?'1':'0');}catch(err){}
+    aczoInvalidatePublicData();
+    if(!await aczoSaveStableCloud())throw new Error('Lokal gespeichert; die Cloud hat die Freigabe noch nicht bestätigt. Bitte erneut speichern.');
+    aczoInvalidatePublicData();updateAnglingMainMenuUi();
+    if(shareRecords)syncAnglingExistingPersonalBests();
+    aczoStatus('Namensfreigabe in der Cloud gespeichert. Rekordfreigabe auf diesem Gerät gespeichert; veröffentlichte Rekorde bleiben öffentlich.');
+  }catch(err){aczoStatus(err?.message||'Privatsphäre konnte nicht bestätigt werden. Bitte erneut speichern.');}
+  finally{button.disabled=false;aczoAccountBusy=false;}
+}
+async function aczoLogout(){
+  const button=aczoEl('aczoLogout');if(button.disabled||aczoAccountBusy)return;
+  if(!window.confirm('Dein Cloud-Spielstand bleibt vollständig erhalten. Auf diesem Gerät wirst du lediglich abgemeldet.'))return;
+  button.disabled=true;aczoAccountBusy=true;aczoAuthGeneration++;
+  try{
+  if(!await aczoSaveStableCloud()){aczoStatus('Abmelden wartet auf die Cloud-Sicherung. Bitte den laufenden Fang beenden oder die Verbindung prüfen.');return;}
   try{aczoArchiveLocalPlayer();}catch(err){aczoStatus(err.message);return;}
   try{await aczoApi('logoutAccount',{sessionToken:aczoSessionToken});}catch(err){aczoStatus('Abmelden nicht bestätigt. Bitte Verbindung prüfen.');return;}
   stopAnglingPresence();if(anglingCloudSyncTimer)clearTimeout(anglingCloudSyncTimer);
-  aczoSessionToken='';aczoAccount=null;anglingSetupComplete=false;
+  aczoSessionToken='';aczoAccount=null;anglingSetupComplete=false;aczoInvalidatePublicData();
   try{localStorage.removeItem(ACZO_SESSION_KEY);localStorage.removeItem(ANGLING_SETUP_COMPLETE_KEY);}catch(err){}
   if(anglingMode)finishLeaveAngling();
   anglingUi.style.display='';openAnglingMainMenu();
   aczoSetAccountMode('login');updateAnglingMainMenuUi();aczoMainNavigate('profile');aczoStatus('Abgemeldet. Dein Cloud-Spielstand bleibt erhalten.');
-  }finally{button.disabled=false;}
+  }finally{button.disabled=false;aczoAccountBusy=false;}
 }
 async function aczoResumeSession(){
-  if(!aczoSessionToken)return;
-  try{const data=await aczoApi('sessionAccount',{sessionToken:aczoSessionToken});aczoAccount=data.account;
-    if(anglingPlayerProfile.id!==data.account.playerId||!anglingSetupComplete)await aczoFinishAccountLogin(data);
-    else await aczoFinishAccountLogin(data);
-    aczoRenderAccount();
+  if(!aczoSessionToken||aczoAccountBusy)return;
+  const token=aczoSessionToken,generation=aczoAuthGeneration;
+  const current=()=>token===aczoSessionToken&&generation===aczoAuthGeneration;
+  try{
+    const data=await aczoApi('sessionAccount',{sessionToken:token});
+    if(!current())return;
+    if(await aczoFinishAccountLogin(data,generation))aczoRenderAccount();
   }catch(err){
+    if(!current())return;
     if(['Sitzung abgelaufen.','Spielerkonto nicht gefunden.','Spieler nicht gefunden.'].includes(err?.message)){
+      aczoAuthGeneration++;aczoInvalidatePublicData();
       aczoSessionToken='';aczoAccount=null;anglingSetupComplete=false;
       try{localStorage.removeItem(ACZO_SESSION_KEY);localStorage.removeItem(ANGLING_SETUP_COMPLETE_KEY);}catch(e){}
       aczoSetAccountMode('login');aczoStatus('Bitte erneut anmelden. Dein Spielstand bleibt erhalten.');
@@ -41958,19 +42008,25 @@ async function aczoLoadAnglers(reset=false){
 }
 aczoEl('aczoLoadMore').addEventListener('click',()=>aczoLoadAnglers(false));
 aczoEl('aczoCommunitySearch').addEventListener('input',()=>{clearTimeout(aczoCommunityTimer);aczoCommunityTimer=setTimeout(()=>aczoLoadAnglers(true),350);});
+function aczoInvalidatePublicData(){
+  aczoPublicRevision++;aczoPublicCache=null;aczoPublicLastAttempt=0;aczoPublicLoadPromise=null;
+  aczoCardCache.clear();aczoCardLoads.clear();aczoDirectoryGeneration++;
+  if(!aczoEl('aczoAnglerCard').hidden)aczoCloseAnglerCard();
+}
 async function aczoPreloadPublicData(){
   if(!ANGLING_LEADERBOARD_ENDPOINT||aczoNetworkBusyWithFish())return null;
   const exclude=String(anglingPlayerProfile.id||'');
   if(aczoPublicCache?.exclude===exclude&&Date.now()-aczoPublicCache.savedAt<15000)return aczoPublicCache.data;
-  if(aczoPublicLoadPromise){await aczoPublicLoadPromise;return aczoPublicCache?.exclude===exclude?aczoPublicCache.data:null;}
+  if(aczoPublicLoadPromise){await aczoPublicLoadPromise;return aczoPublicCache?.exclude===exclude&&Date.now()-aczoPublicCache.savedAt<15000?aczoPublicCache.data:null;}
   if(Date.now()-aczoPublicLastAttempt<15000&&!aczoPublicCache)return null;
   aczoPublicLastAttempt=Date.now();
-  const revision=anglingHallOfFameCacheRevision;
+  const revision=anglingHallOfFameCacheRevision,publicRevision=aczoPublicRevision;
   const base=ANGLING_LEADERBOARD_ENDPOINT+(ANGLING_LEADERBOARD_ENDPOINT.includes('?')?'&':'?');
   const task=(async()=>{
     try{
       const data=await anglingLeaderboardJson(base+'action=communityBootstrap&exclude='+encodeURIComponent(exclude),{method:'GET',cache:'no-store'},30000);
       if(!data?.community||!Array.isArray(data.directory?.players)||!Array.isArray(data.hallOfFame?.overall))return null;
+      if(publicRevision!==aczoPublicRevision||exclude!==String(anglingPlayerProfile.id||''))return null;
       aczoPublicCache={exclude,savedAt:Date.now(),data};
       for(const p of data.cards||[])if(p.publicId)aczoCardCache.set(p.publicId,{savedAt:Date.now(),angler:p});
       if(revision===anglingHallOfFameCacheRevision)anglingLeaderboardCache.set('hallOfFame',{revision,savedAt:Date.now(),data:{ranking:data.hallOfFame,rows:data.hallOfFame.entries||[]}});
@@ -41984,7 +42040,7 @@ async function aczoPreloadPublicData(){
   if(!anglingLeaderboardLoads.has('hallOfFame'))anglingLeaderboardLoads.set('hallOfFame',{revision,task:hofTask});
   try{return await task;}
   finally{
-    aczoPublicLoadPromise=null;
+    if(aczoPublicLoadPromise===task)aczoPublicLoadPromise=null;
     if(anglingLeaderboardLoads.get('hallOfFame')?.task===hofTask)anglingLeaderboardLoads.delete('hallOfFame');
   }
 }
@@ -42016,22 +42072,24 @@ let aczoCardGeneration=0,aczoCardReturnFocus=null;
 function aczoCloseAnglerCard(){aczoCardGeneration++;aczoEl('aczoAnglerCard').hidden=true;aczoEl('aczoCardBackdrop').hidden=true;aczoCardReturnFocus?.focus?.();}
 async function aczoOpenCard(publicId){
   if(!publicId)return;
-  const generation=++aczoCardGeneration;
+  const generation=++aczoCardGeneration,publicRevision=aczoPublicRevision;
   const card=aczoEl('aczoAnglerCard'),body=aczoEl('aczoAnglerCardBody');if(card.hidden)aczoCardReturnFocus=document.activeElement;
   card.hidden=false;aczoEl('aczoCardBackdrop').hidden=false;aczoEl('aczoCloseCard').focus();
   const cached=aczoCardCache.get(publicId);
   if(cached&&Date.now()-cached.savedAt<15000){aczoRenderAnglerCard(cached.angler);return;}
   body.replaceChildren(aczoTextNode('div','aczo-card-loading','Anglerprofil wird geladen …'));
+  let task;
   try{
     const base=ANGLING_LEADERBOARD_ENDPOINT+(ANGLING_LEADERBOARD_ENDPOINT.includes('?')?'&':'?');
-    let task=aczoCardLoads.get(publicId);
-    if(!task){task=anglingLeaderboardJson(base+'action=anglerCard&publicId='+encodeURIComponent(publicId),{method:'GET',cache:'no-store'},30000);aczoCardLoads.set(publicId,task);}
+    task=aczoCardLoads.get(publicId);
+    if(!task){task=anglingLeaderboardJsonRetry(base+'action=anglerCard&publicId='+encodeURIComponent(publicId),{method:'GET',cache:'no-store'},[18000,30000]);aczoCardLoads.set(publicId,task);}
     const data=await task;
     if(!data.angler)throw new Error('Anglerkarte nicht verfügbar.');
+    if(publicRevision!==aczoPublicRevision)return;
     aczoCardCache.set(publicId,{savedAt:Date.now(),angler:data.angler});
     if(generation===aczoCardGeneration&&!card.hidden)aczoRenderAnglerCard(data.angler);
   }catch(err){if(generation===aczoCardGeneration&&!card.hidden){body.replaceChildren(aczoTextNode('p','','Dieses Profil konnte gerade nicht geladen werden.'));const retry=aczoTextNode('button','angling-main-btn','Erneut laden');retry.type='button';retry.addEventListener('click',()=>aczoOpenCard(publicId));body.append(retry);}}
-  finally{aczoCardLoads.delete(publicId);}
+  finally{if(aczoCardLoads.get(publicId)===task)aczoCardLoads.delete(publicId);}
 }
 document.body.appendChild(aczoEl('aczoCardBackdrop'));document.body.appendChild(aczoEl('aczoAnglerCard'));
 for(const type of ['pointerdown','pointermove','pointerup','click'])aczoEl('aczoCardBackdrop').addEventListener(type,event=>event.stopPropagation());
