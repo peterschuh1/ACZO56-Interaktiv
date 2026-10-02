@@ -4726,6 +4726,16 @@ body.aczo-share-preview-open{overflow:hidden!important}
   min-height:128px!important;
   max-height:128px!important;
 }
+/* Both deployed bank rigs need only a small selector while waiting. */
+.angling-ui.bank-waiting-compact .angling-setup{display:none!important}
+.angling-bank-compact{position:absolute;top:8px;left:50%;transform:translateX(-50%);display:flex;gap:5px;width:min(280px,calc(100% - 132px));pointer-events:auto;z-index:12}
+.angling-bank-compact[hidden]{display:none!important}
+.angling-bank-compact button{flex:1;min-width:0;min-height:40px;padding:5px 7px;border:1px solid #91bba3;border-radius:9px;background:rgba(8,42,32,.94);color:#eef6ec;font:800 11px/1.15 system-ui;cursor:pointer}
+.angling-bank-compact button[aria-pressed=true]{border-color:#e8ce70;background:rgba(78,81,34,.96);color:#fff0a7}
+.angling-ui.game-panel-open .angling-bank-compact{pointer-events:none;opacity:.45}
+
+.angling-ui.time-shifting .angling-bank-compact{pointer-events:none;opacity:.45}
+
 </style>
 
 
@@ -5415,7 +5425,7 @@ function aczoSetIconText(element,value){
          <section><h3>🔊 Spieltöne</h3><p>Die Spieltöne sind standardmäßig eingeschaltet und können unter „Einstellungen & Zurücksetzen“ jederzeit deaktiviert werden. Geräusche folgen den echten Spielzuständen: Schnurabzug läuft nur während einer tatsächlichen Flucht und stoppt sofort, wenn die Flucht endet; Bremsverstellung und Schnurwarnung besitzen eigene parallele Tonspuren. Der Biss-Splash startet erst mit dem sichtbaren Abtauchen der Pose. Während des Anhieb-QTE läuft ein dezenter Spannungspuls; normaler Treffer und goldener Perfektbereich haben eigene kurze Bestätigungen. Im Drill läuft leise Hintergrundmusik unter den Spielgeräuschen. Beim Zeitraffer erklingt die Kescher-Musik; Fischsprung-Geräusche bleiben dabei stumm. Die Kescher-Sequenz erhält einen dunklen Spannungs-Puls und endet akustisch sofort mit Fang, Fehlschlag oder Abbruch. Ködermontage erhält einen kurzen Klick, Lockfutter beim Wasserkontakt einen Splash. Auch Kescherzug und ein entkommener Fisch haben kurze Wassergeräusche; beim tatsächlichen Kunstköderbiss gibt es einen dumpfen Impuls. Allgemeine Hinweise wie aktive Mitangler, gespeicherte Rekorde oder Statusmeldungen bekommen nur einen sehr dezenten Hinweiston. Der bekannte EP-Ton bleibt ausschließlich für die hochfliegenden EP. Fliegt tatsächlich ein Vogel über die 3D-Szene, kann bei ruhigem Spiel gelegentlich ein echter Vogelruf ertönen.</p></section>
          <section><h3>🥅 Keschern</h3><p>Bewege den Kescher mit Maus oder Finger nach links/rechts unter den Fisch und keschere im passenden Moment. Der Standardkescher gehört zur Startausrüstung. Der größere Pro Kescher kann im Shop gekauft werden und vergrößert die reale Fangzone um rund 18 %. Der erste knappe Fehlversuch wird weiterhin verziehen.</p></section>
          <section><h3>📤 Fang teilen</h3><p>Nach einem gelandeten Fisch steht auf der Fangkarte ein kleiner Kamera-Button bereit. Er öffnet zunächst eine animierte Vorschau der lokal erzeugten PNG-Fangkarte. Erst dort kann über „Per WhatsApp teilen“ der native Teilen-Dialog geöffnet werden. Fischart, Länge und Gewicht stehen direkt im Bild; je nach Fang wird zusätzlich „Persönlicher Rekord“, „Neue Art“, „Kapitaler Fang“, „Perfekter Anhieb“ oder „Sicher gelandet“ eingeblendet. Der Begleittext bleibt bewusst kurz. Wird Datei-Sharing vom Browser nicht unterstützt, wird die PNG-Fangkarte stattdessen als Bild bereitgestellt.</p></section>
-         <section><h3>🎣 Karpfen- und Welsangelset</h3><p>Kaufe das gewünschte Set im Tackle-Shop unter „Ruten“ und rüste es in der Tacklebox aus. Wähle linke oder rechte Rute, montiere einen freigegebenen Köder und wirf beide Ruten einzeln über das Zielkreuz aus. Eine Tiefeneinstellung ist nicht nötig. Die Sets benötigen festen Uferboden. Vor einem Methoden- oder Platzwechsel beide Ruten einholen. Beim Biss das Aufnahmefeld neben der jeweiligen Rutenspitze antippen, sobald die Ringe zusammenpassen. Anschließend wie gewohnt drillen und keschern.</p><p>Beim Karpfen- und Welsangeln kann die aufgestellte Ausrüstung den Kescherweg begrenzen. Führe den Fisch gegebenenfalls in den freien Kescherbereich.</p></section><section><h3>🟡 Boilies und Anfüttern</h3><p>Nach dem Kauf des Karpfensets sind Boilies und Pop-Ups unter „Köder“ verfügbar. Wähle die gewünschte Variante aus dem gemeinsamen Vorrat. Eine Boilie-Tüte enthält 60 Stück, eine Pop-Up-Dose 10 Stück. Mit „Handvoll füttern“ wirfst du zehn sinkende Boilies an den gewählten Platz. Pop-Ups werden nicht angefüttert.</p></section><section><h3>🔔 Welsruten</h3><p>Beim Welsset stehen Köderfisch und Wurmbündel zur Wahl. Ein Wurmbündel wird aus zwölf Tauwürmern vorbereitet. Glocken und nachts leuchtende Knicklichter zeigen den Biss an. Nimm die betreffende Rute über das Aufnahmefeld auf und führe den Fisch anschließend durch Drill und Kescher.</p></section>
+         <section><h3>🎣 Karpfen- und Welsangelset</h3><p>Kaufe das gewünschte Set im Tackle-Shop unter „Ruten“ und rüste es in der Tacklebox aus. Wähle linke oder rechte Rute, montiere einen freigegebenen Köder und wirf beide Ruten einzeln über das Zielkreuz aus. Eine Tiefeneinstellung ist nicht nötig. Die Sets benötigen festen Uferboden. Vor einem Methoden- oder Platzwechsel beide Ruten einholen. Liegen beide Ruten im Wasser, wird das große HUD durch eine kleine Rutenauswahl ersetzt. Sobald eine Rute neu vorbereitet werden muss, erscheint es wieder. Beim Biss das Aufnahmefeld neben der jeweiligen Rutenspitze antippen, sobald die Ringe zusammenpassen. Anschließend wie gewohnt drillen und keschern.</p><p>Beim Karpfen- und Welsangeln kann die aufgestellte Ausrüstung den Kescherweg begrenzen. Führe den Fisch gegebenenfalls in den freien Kescherbereich.</p></section><section><h3>🟡 Boilies und Anfüttern</h3><p>Nach dem Kauf des Karpfensets sind Boilies und Pop-Ups unter „Köder“ verfügbar. Wähle die gewünschte Variante aus dem gemeinsamen Vorrat. Eine Boilie-Tüte enthält 60 Stück, eine Pop-Up-Dose 10 Stück. Mit „Handvoll füttern“ wirfst du zehn sinkende Boilies an den gewählten Platz. Pop-Ups werden nicht angefüttert.</p></section><section><h3>🔔 Welsruten</h3><p>Beim Welsset stehen Köderfisch und Wurmbündel zur Wahl. Ein Wurmbündel wird aus zwölf Tauwürmern vorbereitet. Glocken und nachts leuchtende Knicklichter zeigen den Biss an. Nimm die betreffende Rute über das Aufnahmefeld auf und führe den Fisch anschließend durch Drill und Kescher.</p></section>
          <section><h3>⏱️ Zeitwechsel</h3><p>Der Zeitwechsel steht ausschließlich in der Ufer-Angelperspektive bereit, solange die Angel noch nicht ausgeworfen wurde und du den Auswurfpunkt wählen kannst. In Stellenauswahl, Unterwasseransicht, nach dem Auswurf, bei Biss, Drill und Keschern ist die Funktion ausgeblendet. Du kannst die Spielzeit in 1-Stunden-Schritten bis maximal 24 Stunden vor- oder zurückspulen. Jede Stunde kostet 1 EP und läuft in 0,65 Sekunden ab. Einsteiger besitzen pro Sitzung einen Vorwärts- und einen Rückwärtswechsel; höhere Anglerstufen erhalten zusätzliche Wechsel. Bei eingeschaltetem Ton begleitet die leise Kescher-Musik den Zeitraffer. Fischsprünge bleiben sichtbar, ihre Geräusche sind während des Spulens stumm.</p></section>
          <section><h3>🌗 Aktivitätszeiten</h3><p>Die Fischaktivität verändert sich mit der Tageszeit. Hecht und Barsch profitieren vor allem von Morgen- und Abendphasen. Zander wird besonders in Dämmerung, Nacht und bei Bewölkung aktiv; Aal und Wels bevorzugen überwiegend Abend und Nacht. Zwischen ungefähr 13 und 15 Uhr tritt eine allgemeine, leicht schwankende Mittags-Beißflaute auf. Sie reduziert die Bisschance deutlich, aber niemals auf null.</p></section>
          <section><h3>📏 Fischgrößen &amp; Gewichte</h3><p>Fischgrößen und Gewichte werden artspezifisch berechnet. Besonders große Exemplare bleiben selten und können sich im Drill deutlich von durchschnittlichen Fischen unterscheiden. Persönliche Rekorde, Highscore und Online-Bestenliste verwenden dieselbe Bewertung.</p></section>
@@ -29391,7 +29401,52 @@ window.addEventListener('orientationchange',()=>setTimeout(scheduleAczoPhoneTypo
 // identisch. Nur der mobile Projektionszoom wird weiter geöffnet, damit Rute,
 // Rolle und Geschehen trotz des schmalen Hochformats vollständig im Bild liegen.
 var anglingBankCameraReady=false;
+// Mobile framing is based on the real set and the space below its menu.
+function anglingBankMobileCamera(){
+ if(!anglingBankCameraReady||!anglingUsesBankSet()||!anglingSelection||!anglingPhoneLayoutActive()||!['ready','bank-waiting','bank-bite','bank-pickup','bank-casting','shore-flight'].includes(anglingState))return null;
+ const rt=anglingBankRuntime,w=renderer.domElement.clientWidth,h=renderer.domElement.clientHeight;
+ if(!rt.group||!w||!h)return null;
+ const now=performance.now(),view=anglingCurrentViewDirection(new THREE.Vector2());
+ let top=rt.mobileMenuTop;
+ if(!rt.mobileMenuAt||now-rt.mobileMenuAt>300||rt.mobileMenuW!==w||rt.mobileMenuH!==h){
+  const panel=rt.waitingHudCompact?rt.compactUi:anglingSetupHint.parentElement,rect=panel?.getBoundingClientRect?.(),canvas=renderer.domElement.getBoundingClientRect?.();
+  if(rect&&rect.height>0&&rect.bottom>(canvas?.top||0))top=(rect.bottom-(canvas?.top||0)+14)/h;
+  else if(top==null||rt.mobileMenuW!==w||rt.mobileMenuH!==h)top=rt.waitingHudCompact?.10:h>w?.23:.30;
+  top=THREE.MathUtils.clamp(top,.12,.48);rt.mobileMenuTop=top;rt.mobileMenuAt=now;rt.mobileMenuW=w;rt.mobileMenuH=h;
+ }
+ const key=[w,h,anglingProgress.selectedEquipment,view.x.toFixed(4),view.y.toFixed(4),top.toFixed(4)].join(':');
+ if(rt.mobileFrame?.key===key&&rt.mobileFrame.selection===anglingSelection)return rt.mobileFrame;
+ // Use the resting shape, not the animated tip, so the camera never follows a bite.
+ if(!rt.mobileShape||rt.mobileShape.group!==rt.group){
+  const shapes={};for(const [method,pod] of Object.entries(rt.pods)){
+   pod.updateWorldMatrix(true,true);const points=[];
+   pod.traverse(o=>{if(!o.isMesh||!anglingBankLandingMeshSolid(o))return;o.geometry.computeBoundingBox();const b=o.geometry.boundingBox;
+    for(const x of [b.min.x,b.max.x])for(const y of [b.min.y,b.max.y])for(const z of [b.min.z,b.max.z])points.push(pod.worldToLocal(new THREE.Vector3(x,y,z).applyMatrix4(o.matrixWorld)));
+   });shapes[method]=points;
+  }rt.mobileShape={group:rt.group,shapes};
+ }
+ const pod=rt.pods[anglingProgress.selectedEquipment];pod.updateWorldMatrix(true,true);
+ const points=rt.mobileShape.shapes[anglingProgress.selectedEquipment].map(p=>pod.localToWorld(p.clone()));
+ const pos=anglingSelection.cameraPos.clone().addScaledVector(anglingSelection.inward,.55);
+ const centerWorld=new THREE.Box3().setFromPoints(points).getCenter(new THREE.Vector3()),right=new THREE.Vector3(view.y,-view.x,0);
+ pos.addScaledVector(right,centerWorld.clone().sub(pos).dot(right));
+ const nearest=Math.min(...points.map(p=>(p.x-pos.x)*view.x+(p.y-pos.y)*view.y));
+ if(nearest<.85)pos.addScaledVector(new THREE.Vector3(view.x,view.y,0),nearest-.85);
+ const fit=new THREE.PerspectiveCamera(46,w/h,camera.near,camera.far);fit.up.copy(anglingUp);fit.position.copy(pos);
+ const upper=1-2*top,lower=-.72,center=(upper+lower)/2;let pitch=anglingProgress.selectedEquipment==='catfish_set'?0:19;
+ for(let i=0;i<14;i++){
+  fit.lookAt(pos.x+view.x*10,pos.y+view.y*10,pos.z-Math.tan(THREE.MathUtils.degToRad(pitch))*10);fit.updateMatrixWorld(true);fit.updateProjectionMatrix();
+  const p=points.map(p=>p.clone().project(fit)),min=Math.min(...p.map(p=>p.y)),max=Math.max(...p.map(p=>p.y)),wide=Math.max(...p.map(p=>Math.abs(p.x)));
+  const factor=Math.min((upper-lower)/Math.max(.001,max-min),.64/Math.max(.001,wide));
+  fit.zoom=THREE.MathUtils.clamp(fit.zoom*factor,.10,2.5);fit.updateProjectionMatrix();
+  const mid=(min+max)*.5*factor;
+  pitch-=THREE.MathUtils.radToDeg(Math.atan((mid-center)*Math.tan(THREE.MathUtils.degToRad(23))/fit.zoom));
+ }
+ rt.mobileFrame={key,selection:anglingSelection,position:pos,zoom:fit.zoom,pitch,upper,lower};return rt.mobileFrame;
+}
+
 function anglingShoreFieldOfView(){
+  if(anglingBankMobileCamera())return 46;
   if(anglingBankCameraReady&&anglingUsesBankSet()&&(anglingBankRuntime.active<0||['bank-bite','bank-pickup'].includes(anglingState)))return anglingProgress.selectedEquipment==='catfish_set'?100:76;
   return anglingPhoneLayoutActive()?ANGLING_PHONE_SHORE_FOV:ANGLING_SHORE_FOV;
 }
@@ -29578,6 +29633,7 @@ function anglingBankEquipMethod(id){
  if(id==='catfish_set'&&!anglingUsesBankSet()&&anglingSelectedBait==='worm_bundle'){
   anglingProgress.naturalInventory.bank_worm_bundle=anglingBankStock('worm_bundle')+1;anglingProgress.selectedBait='dew_worm';
  }
+ if(!id&&anglingUsesBankSet()){camera.zoom=anglingGameCameraZoom();camera.updateProjectionMatrix();}
  anglingProgress.selectedEquipment=id||'';
  if(id){anglingBankRuntime.selected=0;anglingSelectedBait=anglingBankChoices()[0].bait;}
  else anglingSelectedBait=anglingProgress.selectedBait||'worm';
@@ -29769,6 +29825,9 @@ function anglingBankInstallUi(){
  const retrieve=document.createElement('button');retrieve.type='button';retrieve.dataset.retrieve='';retrieve.hidden=true;retrieve.textContent='Ruten einholen';retrieve.addEventListener('click',()=>anglingBankRetrieve());ui.append(retrieve);
  const feed=document.createElement('button');feed.type='button';feed.dataset.feed='';feed.textContent='Füttern · 10';feed.addEventListener('click',()=>anglingBankFeed());ui.append(feed);
  anglingSetupHint.parentElement.append(ui);rt.ui=ui;
+ const compact=document.createElement('div');compact.className='angling-bank-compact';compact.hidden=true;compact.setAttribute('role','group');compact.setAttribute('aria-label','Rute zum Einholen auswählen');
+ for(let i=0;i<2;i++){const b=document.createElement('button');b.type='button';b.dataset.rod=i;b.textContent=i?'Rechte Rute':'Linke Rute';b.setAttribute('aria-label',(i?'Rechte':'Linke')+' Rute zum Einholen auswählen');b.addEventListener('click',()=>anglingBankSelectRod(i));compact.append(b);}
+ compact.addEventListener('pointerdown',e=>e.stopPropagation());anglingUi.append(compact);rt.compactUi=compact;
  const pick=document.createElement('button');pick.type='button';pick.className='angling-bank-pick';pick.hidden=true;pick.setAttribute('aria-label','Rute aufnehmen, wenn die Ringe passen');pick.innerHTML='<span class="bank-inner-ring"></span><span class="bank-outer-ring"></span><strong>Aufnehmen</strong>';
  pick.addEventListener('pointerdown',e=>{e.preventDefault();e.stopPropagation();anglingBankAttemptPickup();});pick.addEventListener('click',e=>{e.stopPropagation();if(e.detail===0)anglingBankAttemptPickup();});pick.addEventListener('keydown',e=>{if(e.key===' '||e.key==='Enter'){e.preventDefault();anglingBankAttemptPickup();}});
  anglingUi.append(pick);rt.pickButton=pick;ui.addEventListener('pointerdown',e=>e.stopPropagation());
@@ -29781,9 +29840,21 @@ function updateAnglingAimReticleVisibility(){
  if(!bankMode)anglingUi.classList.remove('bank-aiming');
  anglingAimReticle.style.display=bankMode?(bankAiming?'block':'none'):'';
 }
+function anglingBankSyncWaitingHud(){
+ const rt=anglingBankRuntime;
+ const atShore=anglingMode&&anglingUsesBankSet()&&anglingSelection&&anglingBankShoreAllowed()&&!['selecting','overview-flight','shore-flight','exit-flight'].includes(anglingState);
+ const both=!!(atShore&&rt.casting<0&&rt.rigs.length===2&&rt.rigs.every(r=>r&&r.point&&anglingBankAllowed(r.bait)));
+ const compact=both&&['ready','bank-waiting','bank-bite','bank-pickup'].includes(anglingState),controlsVisible=compact&&['ready','bank-waiting'].includes(anglingState)&&rt.active<0;
+ const key=[compact,controlsVisible,rt.selected,anglingMenusLocked()].join(':');
+ if(rt.waitingHudKey===key)return;rt.waitingHudKey=key;
+ if(rt.waitingHudCompact!==compact){rt.waitingHudCompact=compact;rt.mobileMenuAt=0;rt.mobileFrame=null;rt.mobileMenuTop=null;}
+ anglingUi.classList.toggle('bank-waiting-compact',compact);
+ if(rt.compactUi){rt.compactUi.hidden=!controlsVisible;rt.compactUi.querySelectorAll('[data-rod]').forEach(b=>{const i=Number(b.dataset.rod);b.setAttribute('aria-pressed',String(i===rt.selected));b.disabled=anglingMenusLocked();});}
+}
+
 function anglingBankRefreshUi(){
  const rt=anglingBankRuntime;if(!rt.ui)return;const enabled=anglingMode&&anglingUsesBankSet();rt.ui.hidden=!enabled;
- anglingUi.classList.toggle('bank-set-active',enabled);
+ anglingUi.classList.toggle('bank-set-active',enabled);anglingBankSyncWaitingHud();
  updateAnglingAimReticleVisibility();
  if(!enabled)return;
  const choices=anglingBankChoices(),busy=anglingMenusLocked()||rt.casting>=0;
@@ -29891,7 +29962,7 @@ function anglingBankStartBite(i){
  anglingPendingCatch={species,cm,baitConsumed:false,temperament:temperament.name};anglingFishTemperament=temperament.name;anglingFishTemperamentFactor=temperament.run;anglingStrikeQuality='normal';
  if(rig.bait==='baitfish'){anglingBankConsume(rig,'bite');anglingPendingCatch.baitConsumed=true;}
  closeAnglingAllMenusForAction();anglingState='bank-bite';anglingStateTime=0;anglingUi.classList.add('line-active');anglingActionBtn.disabled=true;anglingExitBtn.disabled=true;
- rt.biteCameraStart=camera.quaternion.clone();rt.biteTargetStart=controls.target.clone();anglingViewYawOffset=0;rt.biteCameraEnd=anglingCanonicalShoreQuaternion(anglingSelection.inward,new THREE.Quaternion());rt.biteTargetEnd=anglingStraightLookTarget(camera.position,anglingSelection.inward,new THREE.Vector3());
+ rt.bitePositionStart=camera.position.clone();rt.biteZoomStart=camera.zoom;rt.biteCameraStart=camera.quaternion.clone();rt.biteTargetStart=controls.target.clone();anglingViewYawOffset=0;rt.biteCameraEnd=anglingCanonicalShoreQuaternion(anglingSelection.inward,new THREE.Quaternion());rt.biteTargetEnd=anglingStraightLookTarget(camera.position,anglingSelection.inward,new THREE.Vector3());
  setAnglingStatus((i?'Rechte':'Linke')+' Rute läuft!','Der Fisch ist selbst gehakt. Gleich die Rute aufnehmen.');anglingBankRefreshUi();
 }
 function anglingBankAttemptPickup(){
@@ -29900,7 +29971,7 @@ function anglingBankAttemptPickup(){
  if(phase>=.54&&phase<=.96){
   rt.pickButton.hidden=true;aczoSoundStop('catfishBells');aczoSoundStop('predatorAlarm');anglingStrikeQuality=phase>=.69&&phase<=.81?'perfect':'normal';
   const rig=rt.rigs[rt.active];if(!['boilie','popup'].includes(rig.bait))anglingBankConsume(rig,'pickup');
-  rt.rods[rt.active].visible=false;rt.lines[rt.active].visible=false;rt.pickTime=0;anglingState='bank-lifting';rt.pickFovStart=camera.fov;rt.pickCameraStart=camera.quaternion.clone();rt.pickTargetStart=controls.target.clone();const view=anglingCurrentViewDirection(new THREE.Vector2());rt.pickCameraEnd=anglingCanonicalShoreQuaternion(view,new THREE.Quaternion());rt.pickTargetEnd=anglingStraightLookTarget(camera.position,view,new THREE.Vector3());anglingState='bank-lifting';anglingStateTime=0;
+  rt.rods[rt.active].visible=false;rt.lines[rt.active].visible=false;rt.pickTime=0;anglingState='bank-lifting';rt.pickFovStart=camera.fov;rt.pickPositionStart=camera.position.clone();rt.pickZoomStart=camera.zoom;rt.pickCameraStart=camera.quaternion.clone();rt.pickTargetStart=controls.target.clone();const view=anglingCurrentViewDirection(new THREE.Vector2());rt.pickCameraEnd=anglingCanonicalShoreQuaternion(view,new THREE.Quaternion());rt.pickTargetEnd=anglingStraightLookTarget(camera.position,view,new THREE.Vector3());anglingState='bank-lifting';anglingStateTime=0;
   anglingRodGroup.visible=true;anglingRodGroup.scale.setScalar(.82);setAnglingStatus('Rute aufgenommen','Drill beginnt …');aczoSoundPlay('mountClick',{minGap:120});
  }else{rt.qteLap++;rt.qteTime=0;if(rt.qteLap>=2)anglingBankMissPickup();else setAnglingStatus('Noch einmal','Tippen, wenn der äußere Ring grün wird.');}
 }
@@ -29912,7 +29983,7 @@ function anglingBankMissPickup(){
  anglingState=rt.rigs[rt.selected]?'bank-waiting':'ready';anglingStateTime=0;anglingExitBtn.disabled=false;anglingBankRefreshUi();showAnglingToast('Fisch ausgestiegen · '+(rig.consumed?'Köder verloren.':'Köder bleibt montiert.'),1700);
 }
 function anglingBankBeforeReset(){
- anglingBankResetLandingView();const rt=anglingBankRuntime;rt.landingLimits=null;rt.beforeLandingCamera=null;if(rt.active>=0){rt.rigs[rt.active]=null;rt.active=-1;}
+ anglingBankResetLandingView();const rt=anglingBankRuntime;rt.waitingHudKey=null;rt.waitingHudCompact=false;if(rt.compactUi)rt.compactUi.hidden=true;anglingUi.classList.remove('bank-waiting-compact');rt.landingLimits=null;rt.beforeLandingCamera=null;if(rt.active>=0){rt.rigs[rt.active]=null;rt.active=-1;}
  rt.casting=-1;if(rt.castBall)rt.castBall.visible=false;if(rt.pickButton)rt.pickButton.hidden=true;aczoSoundStop('catfishBells');anglingRodGroup.scale.setScalar(1);
 }
 function anglingBankAfterReset(){
@@ -29920,7 +29991,7 @@ function anglingBankAfterReset(){
  rt.selected=rt.rigs[0]?1:0;anglingSelectedBait=anglingBankChoices()[rt.selected].bait;anglingState=rt.rigs[rt.selected]?'bank-waiting':'ready';anglingExitBtn.disabled=false;anglingBankRefreshUi();
 }
 function anglingBankClearRuntime(){
- anglingBankResetLandingView();const rt=anglingBankRuntime;rt.landingLimits=null;rt.beforeLandingCamera=null;rt.rigs=[null,null];rt.active=rt.casting=-1;rt.placedFor=null;rt.feedSpots=[];rt.lines.forEach(l=>l.visible=false);rt.markers.forEach(m=>m.hidden=true);rt.feedBalls.forEach(b=>{b.done=true;b.splashed=false;b.mesh.visible=false;});
+ anglingBankResetLandingView();const rt=anglingBankRuntime;rt.waitingHudKey=null;rt.waitingHudCompact=false;if(rt.compactUi)rt.compactUi.hidden=true;anglingUi.classList.remove('bank-waiting-compact');rt.landingLimits=null;rt.beforeLandingCamera=null;rt.rigs=[null,null];rt.active=rt.casting=-1;rt.placedFor=null;rt.feedSpots=[];rt.lines.forEach(l=>l.visible=false);rt.markers.forEach(m=>m.hidden=true);rt.feedBalls.forEach(b=>{b.done=true;b.splashed=false;b.mesh.visible=false;});
  if(rt.group)rt.group.visible=false;if(rt.castBall)rt.castBall.visible=false;if(rt.pickButton)rt.pickButton.hidden=true;if(rt.ui)rt.ui.hidden=true;anglingRodGroup.scale.setScalar(1);anglingUi.classList.remove('bank-set-active','bank-aiming');anglingBankShoreDepth(false);aczoSoundStop('catfishBells');
 }
 function anglingBankShoreDepth(enabled){
@@ -30014,54 +30085,111 @@ function anglingBankLandingIntervals(boxes){
  if(edge<ANGLING_LANDING_NET_MAX_OFFSET-.02)free.push([edge,ANGLING_LANDING_NET_MAX_OFFSET]);
  return free.sort((a,b)=>Math.abs(THREE.MathUtils.clamp(0,a[0],a[1]))-Math.abs(THREE.MathUtils.clamp(0,b[0],b[1])));
 }
+function anglingBankLandingSurfaceParts(root){
+ const parts=[];root.updateWorldMatrix(true,true);root.traverse(o=>{
+  if(!o.isMesh||!anglingBankLandingMeshVisible(o,root)||!anglingBankLandingMeshSolid(o))return;
+  if(!o.geometry.boundingBox)o.geometry.computeBoundingBox();const b=o.geometry.boundingBox,bounds=[];
+  for(const x of [b.min.x,b.max.x])for(const y of [b.min.y,b.max.y])for(const z of [b.min.z,b.max.z])bounds.push(new THREE.Vector3(x,y,z).applyMatrix4(o.matrixWorld));
+  const a=o.geometry.attributes.position,points=[];for(let i=0;i<a.count;i++)points.push(new THREE.Vector3().fromBufferAttribute(a,i).applyMatrix4(o.matrixWorld));
+  parts.push({bounds,points,index:o.geometry.index?.array||null});
+ });return parts;
+}
+function anglingBankSurfaceExtent(parts,view,band){
+ const e={minX:Infinity,maxX:-Infinity,minY:Infinity,maxY:-Infinity};view.updateMatrixWorld(true);
+ const add=p=>{if(p.z< -1||p.z>1)return;e.minX=Math.min(e.minX,p.x);e.maxX=Math.max(e.maxX,p.x);e.minY=Math.min(e.minY,p.y);e.maxY=Math.max(e.maxY,p.y);};
+ for(const part of parts){
+  const bounds=part.bounds.map(v=>v.clone().project(view));if(Math.max(...bounds.map(p=>p.y))<band[0]||Math.min(...bounds.map(p=>p.y))>band[1])continue;
+  const p=part.points.map(v=>v.clone().project(view)),index=part.index,count=index?index.length:p.length;
+  for(const v of p)if(v.y>=band[0]&&v.y<=band[1])add(v);
+  // Clip every triangle edge against the net's vertical band. A diagonal blank
+  // above the net must not push the entire rod pod outside the screen.
+  for(let i=0;i<count;i+=3)for(let j=0;j<3;j++){
+   const a=p[index?index[i+j]:i+j],b=p[index?index[i+(j+1)%3]:i+(j+1)%3];
+   for(const y of band)if((a.y<y&&b.y>y)||(b.y<y&&a.y>y)){const t=(y-a.y)/(b.y-a.y);add(new THREE.Vector3(THREE.MathUtils.lerp(a.x,b.x,t),y,THREE.MathUtils.lerp(a.z,b.z,t)));}
+  }
+ }return e;
+}
+
+function anglingBankProjectedExtent(root,view,excludeGuide=false,verticalBand=null){
+ if(verticalBand)return anglingBankSurfaceExtent(anglingBankLandingSurfaceParts(root),view,verticalBand);
+ const extent={minX:Infinity,maxX:-Infinity,minY:Infinity,maxY:-Infinity};root.updateWorldMatrix(true,true);view.updateMatrixWorld(true);
+ root.traverse(o=>{
+  if(!o.isMesh||!anglingBankLandingMeshVisible(o,root)||(excludeGuide&&o===anglingNetGuide)||(!excludeGuide&&!anglingBankLandingMeshSolid(o)))return;
+  if(!o.geometry.boundingBox)o.geometry.computeBoundingBox();const b=o.geometry.boundingBox,points=[];
+  for(const x of [b.min.x,b.max.x])for(const y of [b.min.y,b.max.y])for(const z of [b.min.z,b.max.z]){const p=new THREE.Vector3(x,y,z).applyMatrix4(o.matrixWorld).project(view);if(p.z>=-1&&p.z<=1)points.push(p);}
+  if(verticalBand&&(Math.max(...points.map(p=>p.y))<verticalBand[0]||Math.min(...points.map(p=>p.y))>verticalBand[1]))return;
+  for(const p of points){extent.minX=Math.min(extent.minX,p.x);extent.maxX=Math.max(extent.maxX,p.x);extent.minY=Math.min(extent.minY,p.y);extent.maxY=Math.max(extent.maxY,p.y);}
+ });return extent;
+}
 function anglingBankPrepareLanding(){
- const rt=anglingBankRuntime;rt.landingLimits=null;
+ const rt=anglingBankRuntime;rt.landingLimits=null;rt.landingCamera=null;
  if(!anglingUsesBankSet()||!anglingSelection)return;
  rt.beforeLandingCamera={position:camera.position.clone(),target:controls.target.clone(),fov:camera.fov,zoom:camera.zoom};
  if(rt.landingZoomBefore==null)rt.landingZoomBefore=camera.zoom;
- anglingBankPosition();const boxes=anglingBankLandingBounds(),side=anglingCurrentDirection(new THREE.Vector3()).applyAxisAngle(anglingUp,Math.PI/2);
- const original=anglingLandingNetBase.clone();let free=[];
- // A narrow or blocked starting lane is moved towards open water, not through the set.
- for(let i=0;i<=8;i++){
-  anglingLandingNetBase.copy(original).addScaledVector(side,-i*.25);
+ anglingBankPosition();rt.landingKitParts=anglingBankLandingSurfaceParts(rt.pods[anglingProgress.selectedEquipment]);const boxes=anglingBankLandingBounds(),dir=anglingCurrentDirection(new THREE.Vector3()),side=dir.clone().applyAxisAngle(anglingUp,Math.PI/2);
+ const inward=anglingSelection.inward.clone().setZ(0).normalize(),right=inward.clone().applyAxisAngle(anglingUp,-Math.PI/2);
+ const original=anglingLandingNetBase.clone(),fit=camera.clone();fit.fov=46;fit.zoom=1;fit.up.copy(anglingUp);fit.updateProjectionMatrix();
+ const initialTarget=original.clone().addScaledVector(side,1.40),initialPosition=anglingSelection.shore.clone().addScaledVector(inward,-2.60).addScaledVector(right,.90);
+ const laneRight=initialTarget.sub(initialPosition).setZ(0).normalize().applyAxisAngle(anglingUp,-Math.PI/2);
+ let position,target,limits;
+ // Move camera and net together into the clear water to the RIGHT of the fixed set.
+ // Test the whole visible shaft as well as the hoop, not only 3D intersections.
+ for(let step=0;step<50;step++){
+  const shift=step*.18;
+  anglingLandingNetBase.copy(original).addScaledVector(laneRight,shift);
   anglingLandingNetBase.z=anglingSurfaceZ(anglingLandingNetBase.x,anglingLandingNetBase.y)+.045;
   anglingNetGroup.position.copy(anglingLandingNetBase);
-  free=anglingBankLandingIntervals(boxes).filter(r=>r[1]-r[0]>=.45);
-  if(free.length)break;
+  const free=anglingBankLandingIntervals(boxes).map(r=>[Math.max(-.75,r[0]),Math.min(.75,r[1])]).filter(r=>r[1]-r[0]>=.45);
+  if(!free.length)continue;limits=free[0];
+  target=anglingLandingNetBase.clone().addScaledVector(side,1.40);target.z=anglingSurfaceZ(target.x,target.y)-.12;
+  position=anglingSelection.shore.clone().addScaledVector(inward,-2.60).addScaledVector(right,.90).addScaledVector(laneRight,shift);position.z=anglingSurfaceZ(position.x,position.y)+1.05;
+  fit.position.copy(position);fit.lookAt(target);fit.updateMatrixWorld(true);fit.zoom=1;fit.updateProjectionMatrix();
+  for(let i=0;i<50;i++){
+   const anchor=rt.group.position.clone().project(fit);let visible=anchor.x>=-.96&&anchor.y>=-.86&&anchor.y<=.86;
+   for(const offset of limits){anglingNetGroup.position.copy(anglingLandingNetBase).addScaledVector(side,offset);const e=anglingBankProjectedExtent(anglingNetGroup,fit,true);if(e.minX<-.90||e.maxX>.92||e.minY<-.86||e.maxY>.86)visible=false;}
+   if(visible)break;fit.zoom*=.96;fit.updateProjectionMatrix();
+  }
+  let netLeft=Infinity,minY=Infinity,maxY=-Infinity;for(const offset of limits){anglingNetGroup.position.copy(anglingLandingNetBase).addScaledVector(side,offset);const e=anglingBankProjectedExtent(anglingNetGroup,fit,true);netLeft=Math.min(netLeft,e.minX);minY=Math.min(minY,e.minY);maxY=Math.max(maxY,e.maxY);}
+  const equipment=anglingBankSurfaceExtent(rt.landingKitParts,fit,[minY-.035,maxY+.035]);
+  const anchor=rt.group.position.clone().project(fit);
+  if(anchor.x<=-.72&&netLeft>=equipment.maxX+.08)break;
  }
- if(!free.length)for(let forward=.5;forward<=4;forward+=.5){
-  // The complete set is on land; further towards the water provides a clear lane.
-  anglingLandingNetBase.copy(original).addScaledVector(anglingSelection.inward,forward);
-  anglingLandingNetBase.z=anglingSurfaceZ(anglingLandingNetBase.x,anglingLandingNetBase.y)+.045;
-  anglingNetGroup.position.copy(anglingLandingNetBase);free=anglingBankLandingIntervals(boxes).filter(r=>r[1]-r[0]>=.45);
-  if(free.length)break;
- }
- rt.landingLimits=free[0]||[0,0];
+ rt.landingLimits=limits||[0,0];rt.landingScreenEdge=null;rt.landingScreenKey=null;
+ rt.landingNetPoints=[];rt.landingKitPoints=[];
+ anglingNetGroup.position.copy(anglingLandingNetBase);anglingNetGroup.updateWorldMatrix(true,true);
+ for(const [root,points] of [[anglingNetGroup,rt.landingNetPoints],[rt.pods[anglingProgress.selectedEquipment],rt.landingKitPoints]]){root.updateWorldMatrix(true,true);root.traverse(o=>{
+  if(!o.isMesh||!anglingBankLandingMeshVisible(o,root)||o===anglingNetGuide||(root!==anglingNetGroup&&!anglingBankLandingMeshSolid(o)))return;
+  const part=[],b=o.geometry.boundingBox;for(const x of [b.min.x,b.max.x])for(const y of [b.min.y,b.max.y])for(const z of [b.min.z,b.max.z])part.push(new THREE.Vector3(x,y,z).applyMatrix4(o.matrixWorld));points.push(...part);
+ });}
  anglingLandingNetOffset=anglingBankClampLandingOffset(0);anglingLandingNetTarget=anglingLandingNetOffset;
  anglingNetGroup.position.copy(anglingLandingNetBase).addScaledVector(side,anglingLandingNetOffset);
- const inward=anglingSelection.inward.clone().setZ(0).normalize(),right=inward.clone().applyAxisAngle(anglingUp,-Math.PI/2);
- const target=anglingLandingNetBase.clone().addScaledVector(right,.12);target.z=anglingSurfaceZ(target.x,target.y)-.12;
- const pos=anglingSelection.shore.clone().addScaledVector(inward,-1.20).addScaledVector(right,.42);
- pos.z=anglingSurfaceZ(pos.x,pos.y)+1.05;
- // Retain the existing FOV/phone zoom, but leave the whole usable net lane in view.
- const fit=camera.clone();fit.fov=46;fit.up.copy(anglingUp);fit.updateProjectionMatrix();
- const points=[];anglingNetGroup.updateWorldMatrix(true,true);
- anglingNetGroup.traverse(o=>{
-  if(!o.isMesh)return;if(!o.geometry.boundingBox)o.geometry.computeBoundingBox();const box=o.geometry.boundingBox;
-  for(const offset of rt.landingLimits)for(const x of [box.min.x,box.max.x])for(const y of [box.min.y,box.max.y])for(const z of [box.min.z,box.max.z])points.push(new THREE.Vector3(x,y,z).applyMatrix4(o.matrixWorld).addScaledVector(side,offset-anglingLandingNetOffset));
- });
- for(let i=0;i<30;i++){
-  fit.position.copy(pos);fit.lookAt(target);fit.updateMatrixWorld(true);
-  if(points.every(p=>{const v=p.clone().project(fit);return v.z>=-1&&v.z<=1&&Math.abs(v.x)<=.94&&Math.abs(v.y)<=.90;}))break;
-  if(i<8)pos.addScaledVector(inward,-.15);
-  else{fit.zoom*=.96;fit.updateProjectionMatrix();}
- }
- // The models remain fixed; approaching on their right leaves them at the left edge.
- beginAnglingCamera(pos,target,46,.70,null,null,fit.zoom);
+ rt.landingCamera={position:position.clone(),target:target.clone(),fov:46,zoom:fit.zoom};
+ beginAnglingCamera(position,target,46,.70,null,null,fit.zoom);
 }
+
 function anglingBankClampLandingOffset(offset){
- const limits=anglingBankRuntime.landingLimits;
- return anglingUsesBankSet()&&anglingState==='landing'&&limits?THREE.MathUtils.clamp(offset,limits[0],limits[1]):offset;
+ const rt=anglingBankRuntime,limits=rt.landingLimits;
+ if(!anglingUsesBankSet()||anglingState!=='landing'||!limits)return offset;
+ if(anglingCameraTransition||!rt.landingNetPoints)return THREE.MathUtils.clamp(offset,limits[0],limits[1]);
+ camera.updateMatrixWorld(true);
+ const key=camera.matrixWorld.elements.concat(camera.projectionMatrix.elements).join(',');
+ if(rt.landingScreenKey!==key){
+  const m=new THREE.Matrix4().multiplyMatrices(camera.projectionMatrix,camera.matrixWorldInverse);
+  const sweepSide=anglingCurrentDirection(new THREE.Vector3()).applyAxisAngle(anglingUp,Math.PI/2);let minY=Infinity,maxY=-Infinity;
+  for(const point of rt.landingNetPoints)for(const offset of limits){const p=new THREE.Vector4(point.x+sweepSide.x*offset,point.y+sweepSide.y*offset,point.z,1).applyMatrix4(m);if(p.w>0){minY=Math.min(minY,p.y/p.w);maxY=Math.max(maxY,p.y/p.w);}}
+  const edge=anglingBankSurfaceExtent(rt.landingKitParts,camera,[minY-.035,maxY+.035]).maxX;
+  const side=anglingCurrentDirection(new THREE.Vector3()).applyAxisAngle(anglingUp,Math.PI/2),d=new THREE.Vector4(side.x,side.y,0,0).applyMatrix4(m);
+  let lo=limits[0],hi=limits[1];
+  // Each projected point must stay to the right of the equipment silhouette.
+  // Clip-space inequalities give the exact stopping offset without frame sampling.
+  for(const point of rt.landingNetPoints){
+   const p=new THREE.Vector4(point.x,point.y,point.z,1).applyMatrix4(m),a=p.x-(edge+.045)*p.w,b=d.x-(edge+.045)*d.w;
+   if(Math.abs(b)<1e-9){if(a<0){hi=lo-1;break;}}
+   else if(b>0)lo=Math.max(lo,-a/b);else hi=Math.min(hi,-a/b);
+  }
+  rt.landingScreenLimits=lo<=hi?[lo,hi]:limits.slice();rt.landingScreenKey=key;
+ }
+ const screen=rt.landingScreenLimits;return THREE.MathUtils.clamp(offset,screen[0],screen[1]);
 }
 function anglingBankRestoreLandingCamera(){
  const saved=anglingBankRuntime.beforeLandingCamera;
@@ -30108,7 +30236,7 @@ function anglingBankRenderLanding(){
 }
 
 function updateAnglingBankSet(dt){
- const rt=anglingBankRuntime;const enabled=anglingUsesBankSet()&&anglingMode;anglingBankShoreDepth(enabled);anglingBankNetHandle(enabled);
+ anglingBankSyncWaitingHud();const rt=anglingBankRuntime;const enabled=anglingUsesBankSet()&&anglingMode;anglingBankShoreDepth(enabled);anglingBankNetHandle(enabled);
  if(!enabled){if(rt.group)rt.group.visible=false;rt.markers.forEach(m=>m.hidden=true);rt.lines.forEach(l=>l.visible=false);if(rt.ui)rt.ui.hidden=true;anglingUi.classList.remove('bank-set-active');return;}
  if(!anglingBankShoreAllowed()){
   if(rt.group)rt.group.visible=false;rt.lines.forEach(l=>l.visible=false);rt.markers.forEach(m=>m.hidden=true);if(rt.ui)rt.ui.hidden=true;anglingBankShoreDepth(false);
@@ -30120,9 +30248,10 @@ function updateAnglingBankSet(dt){
  rt.invalidSpot=null;
  anglingBankInstallUi();anglingBankBuildModels();anglingBankPosition();const atShore=!!anglingSelection&&!['selecting','overview-flight','shore-flight','exit-flight'].includes(anglingState);
  rt.group.visible=atShore;rt.ui.hidden=!atShore||!['ready','bank-waiting'].includes(anglingState);if(!atShore){rt.markers.forEach(m=>m.hidden=true);return;}
+ if(!anglingCameraTransition&&['ready','bank-waiting'].includes(anglingState)&&anglingBankMobileCamera())applyAnglingStraightShoreCamera(true);
  const fighting=['drilling','landing','caught','bank-lifting','missed','shore-return'].includes(anglingState)||anglingUi.classList.contains('is-catch-sequence')||anglingUi.classList.contains('is-caught');
  const paused=anglingGamePanelOpen()||anglingTimeShiftActive||anglingHallOfFameActive;
- if(anglingState==='bank-bite'){const cameraT=THREE.MathUtils.smoothstep(anglingStateTime,0,1.1);camera.quaternion.slerpQuaternions(rt.biteCameraStart,rt.biteCameraEnd,cameraT);controls.target.lerpVectors(rt.biteTargetStart,rt.biteTargetEnd,cameraT);camera.updateMatrixWorld(true);}
+ if(anglingState==='bank-bite'){const cameraT=THREE.MathUtils.smoothstep(anglingStateTime,0,1.1);const mobile=anglingBankMobileCamera();if(mobile){camera.position.lerpVectors(rt.bitePositionStart,mobile.position,cameraT);camera.zoom=THREE.MathUtils.lerp(rt.biteZoomStart,mobile.zoom,cameraT);camera.fov=46;camera.updateProjectionMatrix();}camera.quaternion.slerpQuaternions(rt.biteCameraStart,rt.biteCameraEnd,cameraT);controls.target.lerpVectors(rt.biteTargetStart,rt.biteTargetEnd,cameraT);camera.updateMatrixWorld(true);}
  const catfish=anglingProgress.selectedEquipment==='catfish_set',inBite=rt.active>=0&&['bank-bite','bank-pickup'].includes(anglingState);
  let catMotion=null;
  if(inBite&&!paused){
@@ -30166,7 +30295,7 @@ function updateAnglingBankSet(dt){
   const phase=rt.qteTime/2.6;rt.pickButton.style.setProperty('--bank-ring-scale',String(2.45-1.9*phase));rt.pickButton.classList.toggle('now',phase>=.54&&phase<=.96);
   anglingBankPositionPickup();
  }else if(anglingState==='bank-lifting'){
-  rt.pickTime+=dt;const t=THREE.MathUtils.smoothstep(rt.pickTime,0,.42);anglingRodGroup.scale.setScalar(.82+.18*t);camera.fov=THREE.MathUtils.lerp(rt.pickFovStart,46,t);camera.quaternion.slerpQuaternions(rt.pickCameraStart,rt.pickCameraEnd,t);controls.target.lerpVectors(rt.pickTargetStart,rt.pickTargetEnd,t);camera.updateProjectionMatrix();if(rt.pickTime>=.42){anglingRodGroup.scale.setScalar(1);beginAnglingDrill();}
+  rt.pickTime+=dt;const t=THREE.MathUtils.smoothstep(rt.pickTime,0,.42);if(anglingPhoneLayoutActive()){camera.position.lerpVectors(rt.pickPositionStart,anglingSelection.cameraPos,t);camera.zoom=THREE.MathUtils.lerp(rt.pickZoomStart,anglingGameCameraZoom(),t);}anglingRodGroup.scale.setScalar(.82+.18*t);camera.fov=THREE.MathUtils.lerp(rt.pickFovStart,46,t);camera.quaternion.slerpQuaternions(rt.pickCameraStart,rt.pickCameraEnd,t);controls.target.lerpVectors(rt.pickTargetStart,rt.pickTargetEnd,t);camera.updateProjectionMatrix();if(rt.pickTime>=.42){anglingRodGroup.scale.setScalar(1);beginAnglingDrill();}
  }
  for(const b of rt.feedBalls)if(!b.done&&!paused){b.time+=dt;const elapsed=b.time-b.delay;if(elapsed<0)continue;const t=Math.min(1,elapsed/.8),one=1-t;b.mesh.visible=true;
   if(elapsed<=.8)b.mesh.position.copy(b.start).multiplyScalar(one*one).addScaledVector(b.control,2*one*t).addScaledVector(b.end,t*t);
@@ -35589,7 +35718,8 @@ function anglingStraightLookTarget(cameraPos,inward,out=new THREE.Vector3()){
   // V7.02: kompatibler Controls-Zielpunkt mit derselben leicht nach unten gerichteten
   // Kameraachse. Die XY-Richtung bleibt unverändert parallel zum Auswahlpfeil.
   const shoreLookDistance=10;
-  const bankPitch=anglingBankCameraReady&&anglingUsesBankSet()&&(anglingBankRuntime.active<0||['bank-bite','bank-pickup'].includes(anglingState))?(anglingProgress.selectedEquipment==='catfish_set'?0:19):null;
+  const mobile=anglingBankMobileCamera();
+  const bankPitch=mobile?mobile.pitch:anglingBankCameraReady&&anglingUsesBankSet()&&(anglingBankRuntime.active<0||['bank-bite','bank-pickup'].includes(anglingState))?(anglingProgress.selectedEquipment==='catfish_set'?0:19):null;
   return out.set(cameraPos.x+dx*shoreLookDistance,cameraPos.y+dy*shoreLookDistance,bankPitch===null?.34:cameraPos.z-Math.tan(THREE.MathUtils.degToRad(bankPitch))*shoreLookDistance);
 }
 
@@ -35613,7 +35743,8 @@ function anglingCanonicalShoreQuaternion(inward,out=new THREE.Quaternion()){
   // V7.02: Yaw bleibt exakt die lokale 90°-Ufernormale des gelben Pfeils.
   // Nur die Neigung wird wieder etwas nach unten gesetzt, damit am unteren Bildrand
   // ein schmaler echter Uferstreifen sichtbar bleibt und der Angler nicht im Wasser steht.
-  const bankPitch=anglingBankCameraReady&&anglingUsesBankSet()&&(anglingBankRuntime.active<0||['bank-bite','bank-pickup'].includes(anglingState))?(anglingProgress.selectedEquipment==='catfish_set'?0:19):null;
+  const mobile=anglingBankMobileCamera();
+  const bankPitch=mobile?mobile.pitch:anglingBankCameraReady&&anglingUsesBankSet()&&(anglingBankRuntime.active<0||['bank-bite','bank-pickup'].includes(anglingState))?(anglingProgress.selectedEquipment==='catfish_set'?0:19):null;
   anglingCanonicalCameraHelper.lookAt(dx/len*10,dy/len*10,bankPitch===null?.34:1.72-Math.tan(THREE.MathUtils.degToRad(bankPitch))*10);
   anglingCanonicalCameraHelper.updateMatrixWorld(true);
   return out.copy(anglingCanonicalCameraHelper.quaternion);
@@ -35621,7 +35752,9 @@ function anglingCanonicalShoreQuaternion(inward,out=new THREE.Quaternion()){
 
 function applyAnglingStraightShoreCamera(forcePosition=false){
   if(!anglingSelection)return;
-  if(forcePosition&&anglingSelection.cameraPos)camera.position.copy(anglingSelection.cameraPos);
+  const mobile=anglingBankMobileCamera();
+  if(mobile){camera.position.copy(mobile.position);camera.zoom=mobile.zoom;camera.fov=46;camera.updateProjectionMatrix();}
+  else if(forcePosition&&anglingSelection.cameraPos)camera.position.copy(anglingSelection.cameraPos);
 
   // V2.3.3: Die Grundachse bleibt exakt 90° zur lokalen Uferkante.
   // Beim Zielsetzen kommt lediglich der kontrollierte seitliche Blickversatz hinzu.
@@ -39575,7 +39708,8 @@ function finishAnglingCatch(){
   const side=anglingTmpB.copy(dir).applyAxisAngle(anglingUp,Math.PI/2);
   const target=anglingNetGroup.position.clone();target.z+=.02;
   const camPos=target.clone().addScaledVector(dir,-3.7).addScaledVector(side,1.05);camPos.z+=1.35;
-  beginAnglingCamera(camPos,target,38,.82);
+  if(anglingUsesBankSet()&&anglingBankRuntime.landingCamera){const v=anglingBankRuntime.landingCamera;beginAnglingCamera(v.position,v.target,v.fov,.82,null,null,v.zoom);}
+  else beginAnglingCamera(camPos,target,38,.82);
   setAnglingStatus('Sicher gelandet','');
   anglingActionBtn.disabled=true;anglingActionBtn.textContent='Gefangen';
 }
