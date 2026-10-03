@@ -30993,7 +30993,7 @@ function anglingBankPrepareLanding(){
  anglingBankPosition();rt.landingKitParts=anglingBankLandingSurfaceParts(rt.pods[anglingProgress.selectedEquipment]);const boxes=anglingBankLandingBounds(),dir=anglingCurrentDirection(new THREE.Vector3()),side=dir.clone().applyAxisAngle(anglingUp,Math.PI/2);
  const inward=anglingSelection.inward.clone().setZ(0).normalize(),right=inward.clone().applyAxisAngle(anglingUp,-Math.PI/2);
  const original=anglingLandingNetBase.clone(),fit=camera.clone();fit.fov=46;fit.zoom=1;fit.up.copy(anglingUp);fit.updateProjectionMatrix();
- const initialTarget=original.clone().addScaledVector(side,1.40),initialPosition=anglingSelection.shore.clone().addScaledVector(inward,-2.60).addScaledVector(right,.90);
+ const initialTarget=original.clone().addScaledVector(side,1.40),initialPosition=anglingSelection.shore.clone().addScaledVector(inward,-2.10).addScaledVector(right,.90);
  const laneRight=initialTarget.sub(initialPosition).setZ(0).normalize().applyAxisAngle(anglingUp,-Math.PI/2);
  let position,target,limits;
  // Move camera and net together into the clear water to the RIGHT of the fixed set.
@@ -31005,14 +31005,22 @@ function anglingBankPrepareLanding(){
   anglingNetGroup.position.copy(anglingLandingNetBase);
   const free=anglingBankLandingIntervals(boxes).map(r=>[Math.max(-.75,r[0]),Math.min(.75,r[1])]).filter(r=>r[1]-r[0]>=.45);
   if(!free.length)continue;limits=free[0];
-  target=anglingLandingNetBase.clone().addScaledVector(side,1.40);target.z=anglingSurfaceZ(target.x,target.y)-.12;
-  position=anglingSelection.shore.clone().addScaledVector(inward,-2.60).addScaledVector(right,.90).addScaledVector(laneRight,shift);position.z=anglingSurfaceZ(position.x,position.y)+1.05;
+  target=anglingLandingNetBase.clone().addScaledVector(side,1.40);target.z=anglingSurfaceZ(target.x,target.y)-.65;
+  position=anglingSelection.shore.clone().addScaledVector(inward,-2.10).addScaledVector(right,.90).addScaledVector(laneRight,shift);position.z=anglingSurfaceZ(position.x,position.y)+1.05;
   fit.position.copy(position);fit.lookAt(target);fit.updateMatrixWorld(true);fit.zoom=1;fit.updateProjectionMatrix();
-  for(let i=0;i<50;i++){
-   const anchor=rt.group.position.clone().project(fit);let visible=anchor.x>=-.96&&anchor.y>=-.86&&anchor.y<=.86;
-   for(const offset of limits){anglingNetGroup.position.copy(anglingLandingNetBase).addScaledVector(side,offset);const e=anglingBankProjectedExtent(anglingNetGroup,fit,true);if(e.minX<-.90||e.maxX>.92||e.minY<-.86||e.maxY>.86)visible=false;}
-   if(visible)break;fit.zoom*=.96;fit.updateProjectionMatrix();
+  // Fit the full shaft and sweep once; projected coordinates scale linearly
+  // with zoom. Keep the set at the left edge without widening for its height.
+  let zoom=1;const kitAnchor=rt.group.position.clone().project(fit);
+  if(kitAnchor.x<-1.10)zoom=Math.min(zoom,-1.10/kitAnchor.x);
+  for(const offset of limits){
+   anglingNetGroup.position.copy(anglingLandingNetBase).addScaledVector(side,offset);
+   const e=anglingBankProjectedExtent(anglingNetGroup,fit,true);
+   if(e.minX<-.90)zoom=Math.min(zoom,-.90/e.minX);
+   if(e.maxX>.92)zoom=Math.min(zoom,.92/e.maxX);
+   if(e.minY<-.86)zoom=Math.min(zoom,-.86/e.minY);
+   if(e.maxY>.86)zoom=Math.min(zoom,.86/e.maxY);
   }
+  fit.zoom=zoom*.999;fit.updateProjectionMatrix();
   let netLeft=Infinity,minY=Infinity,maxY=-Infinity;for(const offset of limits){anglingNetGroup.position.copy(anglingLandingNetBase).addScaledVector(side,offset);const e=anglingBankProjectedExtent(anglingNetGroup,fit,true);netLeft=Math.min(netLeft,e.minX);minY=Math.min(minY,e.minY);maxY=Math.max(maxY,e.maxY);}
   const equipment=anglingBankSurfaceExtent(rt.landingKitParts,fit,[minY-.035,maxY+.035]);
   const anchor=rt.group.position.clone().project(fit);
@@ -40541,7 +40549,15 @@ function finishAnglingCatch(){
   const side=anglingTmpB.copy(dir).applyAxisAngle(anglingUp,Math.PI/2);
   const target=anglingNetGroup.position.clone();target.z+=.02;
   const camPos=target.clone().addScaledVector(dir,-3.7).addScaledVector(side,1.05);camPos.z+=1.35;
-  if(anglingUsesBankSet()&&anglingBankRuntime.landingCamera){const v=anglingBankRuntime.landingCamera;beginAnglingCamera(v.position,v.target,v.fov,.82,null,null,v.zoom);}
+  if(anglingUsesBankSet()&&anglingBankRuntime.landingCamera){
+    // Follow the actual net into the catch close-up, preserving the clear lane
+    // to the right of the fixed set instead of reusing the landing wide shot.
+    const v=anglingBankRuntime.landingCamera;
+    const approach=v.position.clone().sub(v.target).setZ(0).normalize();
+    const revealPosition=target.clone().addScaledVector(approach,2.65);revealPosition.z+=2.10;
+    const revealZoom=Math.min(1,Math.max(.35,camera.aspect/.8));
+    beginAnglingCamera(revealPosition,target,38,.82,null,null,revealZoom);
+  }
   else beginAnglingCamera(camPos,target,38,.82);
   setAnglingStatus('Sicher gelandet','');
   anglingActionBtn.disabled=true;anglingActionBtn.textContent='Gefangen';
