@@ -5035,10 +5035,11 @@ function aczoSetIconText(element,value){
   let satelliteSettled=false;
   let weatherPrepared=false;
   let underwaterPrepared=false;
+  let anglingPrepared=false;
   let finished=false;
 
   function tryFinish(){
-    if(finished||!firstFrameReady||!satelliteSettled||!weatherPrepared||!underwaterPrepared)return;
+    if(finished||!firstFrameReady||!satelliteSettled||!weatherPrepared||!underwaterPrepared||!anglingPrepared)return;
     const wait=Math.max(0,minimumVisibleMs-(performance.now()-startedAt));
     window.setTimeout(()=>finish(false),wait);
   }
@@ -5081,10 +5082,16 @@ function aczoSetIconText(element,value){
   };
   window.__markMapStartupWeatherPrepared=()=>{
     weatherPrepared=true;
+    window.__aczoMapWeatherPrepared=true;
     tryFinish();
   };
   window.__markMapStartupUnderwaterPrepared=()=>{
     underwaterPrepared=true;
+    tryFinish();
+  };
+
+  window.__markMapStartupAnglingPrepared=()=>{
+    anglingPrepared=true;
     tryFinish();
   };
 
@@ -6146,6 +6153,7 @@ function applyAczoGraphicsMode(mode,{persist=true}={}){
   }
   aczoSyncUltraSceneQuality();
   syncAczoGraphicsButtons();
+  window.__aczoScheduleAnglingWarmup?.();
 }
 const ACZO_MOBILE_PERF=ACZO_PERF8_MOBILE_BOOT;
 const ACZO_BASE_PIXEL_RATIO=aczoGraphicsTargetPixelRatio();
@@ -28374,6 +28382,7 @@ function aczoFinishStartupUnderwaterPrewarm(){
   if(aczoStartupUwPrewarmFinished)return;
   aczoStartupUwPrewarmFinished=true;
   window.__markMapStartupUnderwaterPrepared?.();
+  window.__aczoScheduleAnglingWarmup?.();
 }
 function aczoScheduleStartupUnderwaterPrewarm(delay=0){
   if(aczoStartupUwPrewarmScheduled||aczoStartupUwPrewarmFinished)return;
@@ -30412,7 +30421,7 @@ function anglingBankBuildModels(){
 }
 function anglingBankPrewarm(){
  const rt=anglingBankRuntime;if(rt.prewarmScheduled)return;rt.prewarmScheduled=true;
- const run=()=>{if(!rt.group)anglingBankBuildModels();};if('requestIdleCallback' in window)requestIdleCallback(run,{timeout:1800});else setTimeout(run,80);
+ const run=()=>{try{if(!rt.group)anglingBankBuildModels();}catch(error){console.warn("Ansitz-Vorbereitung:",error);}aczoScheduleAnglingWarmup();};if('requestIdleCallback' in window)requestIdleCallback(run,{timeout:1800});else setTimeout(run,80);
 }
 function anglingBankPosition(){
  const rt=anglingBankRuntime;if(!anglingSelection||!anglingUsesBankSet())return;
@@ -30989,19 +30998,8 @@ function anglingBankSyncNetLayer(enabled){
 function anglingBankRenderLanding(){
  const rt=anglingBankRuntime;
  if(!rt.netLayerEnabled||!anglingMode||!anglingUsesBankSet()||!anglingNetGroup.visible||!anglingScene.visible)return;
- if(!rt.netPass){
-  const netScene=new THREE.Scene(),depthScene=new THREE.Scene(),net=anglingNetGroup.clone(true),pairs=[];
-  const source=[];anglingNetGroup.traverse(o=>source.push(o));let index=0;net.traverse(o=>{pairs.push([source[index++],o]);o.layers.set(0);});
-  netScene.add(net);
-  const hemiLight=new THREE.HemisphereLight(),sunLight=new THREE.DirectionalLight(),moon=new THREE.DirectionalLight();
-  netScene.add(hemiLight,sunLight,sunLight.target,moon,moon.target);
-  const depthMaterial=new THREE.MeshBasicMaterial({colorWrite:false,depthTest:true,depthWrite:true,side:THREE.DoubleSide});
-  const blockers=[];for(const pod of Object.values(rt.pods))pod.traverse(o=>{
-   if(!o.isMesh)return;const proxy=new THREE.Mesh(o.geometry,depthMaterial);proxy.matrixAutoUpdate=false;depthScene.add(proxy);blockers.push([o,proxy]);
-  });
-  rt.netPass={netScene,depthScene,pairs,blockers,hemiLight,sunLight,moon};
- }
- const pass=rt.netPass;rt.group.updateWorldMatrix(true,true);anglingNetGroup.updateWorldMatrix(true,true);
+
+ const pass=anglingBankEnsureLandingPass();rt.group.updateWorldMatrix(true,true);anglingNetGroup.updateWorldMatrix(true,true);
  for(const [o,proxy] of pass.blockers){proxy.visible=anglingBankLandingMeshVisible(o,rt.group)&&anglingBankLandingMeshSolid(o);proxy.matrix.copy(o.matrixWorld);}
  for(const [o,copy] of pass.pairs){copy.visible=o.visible;copy.position.copy(o.position);copy.quaternion.copy(o.quaternion);copy.scale.copy(o.scale);}
  pass.hemiLight.color.copy(hemi.color);pass.hemiLight.groundColor.copy(hemi.groundColor);pass.hemiLight.intensity=hemi.intensity;pass.hemiLight.visible=hemi.visible;pass.hemiLight.position.copy(hemi.position);
@@ -38601,11 +38599,7 @@ function resetAnglingUnderwaterState(restoreMap=false){
     const mats=Array.isArray(o.material)?o.material:[o.material];
     mats.forEach(m=>{
       if(m.userData&&m.userData.anglingOrigTransparent!==undefined){
-        m.transparent=m.userData.anglingOrigTransparent;
-        m.opacity=m.userData.anglingOrigOpacity;
-        m.depthTest=m.userData.anglingOrigDepthTest;
-        m.depthWrite=m.userData.anglingOrigDepthWrite;
-        m.needsUpdate=true;
+        aczoSetLureRenderState(m,m.userData.anglingOrigTransparent,m.userData.anglingOrigOpacity,m.userData.anglingOrigDepthTest,m.userData.anglingOrigDepthWrite);
       }
     });
     o.renderOrder=0;
@@ -38872,19 +38866,8 @@ function updateAnglingUpperLayerLureVisibility(){
         m.userData.anglingOrigDepthTest=m.depthTest!==false;
         m.userData.anglingOrigDepthWrite=m.depthWrite!==false;
       }
-      if(protect){
-        m.transparent=true;
-        m.opacity=1;
-        m.depthTest=false;
-        m.depthWrite=false;
-        m.needsUpdate=true;
-      }else{
-        m.transparent=m.userData.anglingOrigTransparent;
-        m.opacity=m.userData.anglingOrigOpacity;
-        m.depthTest=m.userData.anglingOrigDepthTest;
-        m.depthWrite=m.userData.anglingOrigDepthWrite;
-        m.needsUpdate=true;
-      }
+      if(protect)aczoSetLureRenderState(m,true,1,false,false);
+      else aczoSetLureRenderState(m,m.userData.anglingOrigTransparent,m.userData.anglingOrigOpacity,m.userData.anglingOrigDepthTest,m.userData.anglingOrigDepthWrite);
     });
     o.renderOrder=protect?40:0;
   });
@@ -44690,6 +44673,264 @@ document.addEventListener('visibilitychange',()=>{
 
 anglingBankCameraReady=true;
 anglingBankInstallUi();
+function anglingBankEnsureLandingPass(){
+ const rt=anglingBankRuntime;
+ if(!rt.netPass){
+  const netScene=new THREE.Scene(),depthScene=new THREE.Scene(),net=anglingNetGroup.clone(true),pairs=[];
+  const source=[];anglingNetGroup.traverse(o=>source.push(o));let index=0;net.traverse(o=>{pairs.push([source[index++],o]);o.layers.set(0);});
+  netScene.add(net);
+  const hemiLight=new THREE.HemisphereLight(),sunLight=new THREE.DirectionalLight(),moon=new THREE.DirectionalLight();
+  netScene.add(hemiLight,sunLight,sunLight.target,moon,moon.target);
+  const depthMaterial=new THREE.MeshBasicMaterial({colorWrite:false,depthTest:true,depthWrite:true,side:THREE.DoubleSide});
+  const blockers=[];for(const pod of Object.values(rt.pods))pod.traverse(o=>{
+   if(!o.isMesh)return;const proxy=new THREE.Mesh(o.geometry,depthMaterial);proxy.matrixAutoUpdate=false;depthScene.add(proxy);blockers.push([o,proxy]);
+  });
+  rt.netPass={netScene,depthScene,pairs,blockers,hemiLight,sunLight,moon};
+ }
+ return rt.netPass;
+}
+// First-use GPU preparation. Render-only jobs never call fishing updates,
+// casts, catches, UI rebuilding or equipment selection.
+const aczoAnglingWarmup={key:'',done:new Set(),attempts:new Map(),scheduled:false,busy:false,contextLost:false,stats:[],target:null,renderCallbacks:[]};
+const aczoAnglingWarmupJobs=[
+ ['models','Angelausrüstung wird vorbereitet …'],
+ ['underwater','Unterwasseransicht wird vorbereitet …'],
+ ['shore','Uferansicht wird vorbereitet …'],
+ ['carp','Karpfenset wird vorbereitet …'],
+ ['catfish','Welsset wird vorbereitet …'],
+ ['return','Rückkehr ans Ufer wird vorbereitet …'],
+ ['landing','Kescher wird vorbereitet …']
+];
+function aczoAnglingWarmupProfile(){
+ return [aczoGraphicsMode,renderer.outputEncoding,renderer.shadowMap.type,renderer.shadowMap.enabled,
+  aczoStructureShadowLight.shadow.mapSize.x,renderer.getPixelRatio()].join('|');
+}
+function aczoAnglingWarmupLoaderActive(){
+ const loader=document.getElementById('mapStartupLoader');
+ return !!loader&&!loader.classList.contains('is-done');
+}
+function aczoScheduleAnglingWarmup(delay=0){
+ const state=aczoAnglingWarmup;
+ if(state.scheduled||state.busy||state.contextLost)return;
+ state.scheduled=true;
+ const queue=()=>requestAnimationFrame(aczoRunAnglingWarmup);
+ if(delay>0)window.setTimeout(queue,delay);else queue();
+}
+function aczoRunAnglingWarmup(){
+ const state=aczoAnglingWarmup;state.scheduled=false;
+ if(state.busy||state.contextLost)return;
+ const loaderActive=aczoAnglingWarmupLoaderActive();
+ // The existing underwater builder and weather preparation finish first.
+ // Outside the loader, no work runs during input, a cast, fight or camera flight.
+ if(document.hidden||!aczoStartupUwPrewarmFinished||
+  (loaderActive&&!window.__aczoMapWeatherPrepared)||!aczoCanPrewarmAnglingView()||
+  (!loaderActive&&viewerInputBusy())){aczoScheduleAnglingWarmup(450);return;}
+ const key=aczoAnglingWarmupProfile();
+ if(state.key!==key){
+  if(state.key)aczoPerf26UwFullWarmReady=false;
+  state.key=key;state.done.clear();state.attempts.clear();
+ }
+ const job=aczoAnglingWarmupJobs.find(([id])=>!state.done.has(id));
+ if(!job){window.__markMapStartupAnglingPrepared?.();return;}
+ const [id,label]=job,attempt=(state.attempts.get(id)||0)+1;
+ state.attempts.set(id,attempt);
+ if(loaderActive){const text=document.getElementById('mapStartupText');if(text)text.textContent=label;}
+ const started=performance.now();state.busy=true;
+ let prepared=false;
+ try{
+  if(id==='models'){
+   anglingBankBuildModels();aczoPrepareHandRodCache();anglingBankEnsureLandingPass();
+   state.renderCallbacks=[];scene.traverse(object=>{if(Object.prototype.hasOwnProperty.call(object,'onBeforeRender'))state.renderCallbacks.push(object);});
+   prepared=true;
+  }
+  else if(id==='underwater'){
+   if(!aczoPerf26UwFullWarmReady)aczoPerf26ForceFullUnderwaterPrewarm();
+   prepared=aczoPerf26UwFullWarmReady;
+  }else prepared=aczoRenderAnglingWarmup(id);
+  if(prepared)state.done.add(id);
+ }catch(error){console.warn('Angelausrüstung konnte noch nicht vorbereitet werden ('+id+'):',error);}
+ finally{
+  state.busy=false;
+  state.stats.push({id,key,prepared,ms:performance.now()-started});
+  if(state.stats.length>40)state.stats.shift();
+ }
+ // A failed draw never becomes "ready". Keep the existing loader watchdog,
+ // then retry quietly rather than blocking gameplay or spinning every frame.
+ aczoScheduleAnglingWarmup(prepared?0:(attempt<3?350:4000));
+}
+function aczoSetLureRenderState(material,transparent,opacity,depthTest,depthWrite){
+ const changed=material.transparent!==transparent||material.depthTest!==depthTest||material.depthWrite!==depthWrite;
+ material.transparent=transparent;material.opacity=opacity;
+ material.depthTest=depthTest;material.depthWrite=depthWrite;
+ if(changed)material.needsUpdate=true;
+}
+function aczoPrepareHandRodCache(){
+ for(const [id,p] of Object.entries(ACZO_ROD_MODELS)){
+  if(aczoRodVisual.cache[id])continue;
+  aczoRodVisual.cache[id]=[
+   aczoHandleGeometry(anglingRodA,anglingRodGripEnd,anglingRodB,p),
+   aczoHandleGeometry(reelMiniGripA,reelMiniGripB,aczoMiniSeatEnd,p,1.15),
+   aczoStraightBlankGeometry(aczoMiniSeatEnd,reelMiniBlankC,.0108*p.thickness*1.15,.0025*p.thickness*1.15)
+  ];
+ }
+}
+function aczoRenderAnglingWarmup(id){
+ if(aczoAnglingWarmup.contextLost)return false;
+ const rt=anglingBankRuntime,state=aczoAnglingWarmup;
+ if(!rt.group)return false;
+ // Reuse the already allocated underwater target: no full-resolution auxiliary
+ // framebuffer and no duplicate world/model cache on mobile.
+ const target=aczoPerf26UwFullTarget||(state.target||(state.target=new THREE.WebGLRenderTarget(128,128,{depthBuffer:true,stencilBuffer:false})));
+ if(target.texture.encoding!==renderer.outputEncoding)target.texture.encoding=renderer.outputEncoding;
+ const oldTarget=renderer.getRenderTarget(),viewport=renderer.getViewport(new THREE.Vector4()),scissor=renderer.getScissor(new THREE.Vector4());
+ const scissorTest=renderer.getScissorTest(),autoClear=renderer.autoClear;
+ const shadowAuto=renderer.shadowMap.autoUpdate,shadowDirty=renderer.shadowMap.needsUpdate;
+ const fog=scene.fog,oldMode=anglingMode,oldView=anglingCinematicView;
+ const oldAngling=waterUniforms.anglingView.value,oldUnderwater=waterUniforms.underwaterView.value;
+ const oldWindowUnderwater=window.__aczoUnderwaterSceneActive;
+ const visibility=new Map(),culling=new Map(),transforms=new Map(),materialStates=new Map(),orders=new Map();
+ const saveVisible=object=>{if(object&&!visibility.has(object))visibility.set(object,object.visible);};
+ const show=(object,value)=>{if(object){saveVisible(object);object.visible=value;}};
+ const saveTransform=object=>{if(object&&!transforms.has(object))transforms.set(object,{position:object.position.clone(),quaternion:object.quaternion.clone(),scale:object.scale.clone(),matrix:object.matrix.clone()});};
+ const include=object=>{
+  if(!object)return;
+  let parent=object;while(parent&&parent!==scene){show(parent,true);parent=parent.parent;}
+  object.traverse(o=>{if(o.isMesh||o.isLine||o.isPoints||o.isSprite){if(!culling.has(o))culling.set(o,o.frustumCulled);o.frustumCulled=false;}});
+ };
+ const cameraState={position:camera.position.clone(),quaternion:camera.quaternion.clone(),up:camera.up.clone(),
+  near:camera.near,far:camera.far,fov:camera.fov,zoom:camera.zoom,aspect:camera.aspect,layers:camera.layers.mask};
+ const waterState={viewportSize:waterUniforms.viewportSize.value.clone(),viewportOrigin:waterUniforms.viewportOrigin.value.clone(),
+  sunScreen:waterUniforms.sunScreen.value.clone(),moonScreen:waterUniforms.moonScreen.value.clone()};
+ let scratch=null;
+ const render=draw=>{
+  const side=128/renderer.getPixelRatio();
+  renderer.setRenderTarget(target);renderer.setViewport(0,0,side,side);renderer.setScissor(0,0,side,side);renderer.setScissorTest(false);renderer.autoClear=true;
+  draw();
+  // At startup, also draw the actual canvas/output encoding at the user's
+  // selected resolution. Once the loader is gone, all preparation is offscreen.
+  if(aczoAnglingWarmupLoaderActive()){
+   const size=renderer.getSize(new THREE.Vector2());
+   renderer.setRenderTarget(null);renderer.setViewport(0,0,size.x,size.y);renderer.setScissorTest(false);renderer.autoClear=true;draw();
+  }
+ };
+ try{
+  // Existing contact-shadow and lure render callbacks update local poses or
+  // material uniforms. Their changes belong to the real frame, not this warmup.
+  for(const object of state.renderCallbacks){
+   saveVisible(object);saveTransform(object);orders.set(object,object.renderOrder);
+   for(const material of (Array.isArray(object.material)?object.material:[object.material])){
+    if(!material||materialStates.has(material))continue;
+    materialStates.set(material,{transparent:material.transparent,opacity:material.opacity,depthTest:material.depthTest,
+     depthWrite:material.depthWrite,envMapIntensity:material.envMapIntensity});
+   }
+  }
+  // Never pollute the real cached shadowmap with temporary equipment poses.
+  renderer.shadowMap.autoUpdate=false;renderer.shadowMap.needsUpdate=false;
+  anglingMode=true;anglingCinematicView='shore';window.__aczoUnderwaterSceneActive=false;
+  waterUniforms.anglingView.value=1;waterUniforms.underwaterView.value=0;
+  scene.fog=anglingSaved?.sceneFog||fog;
+  for(const object of [fishGroup,fishPond,fishBottomDetails,fishBankWall,fishBankStones,fishShoreTalus,fishPlantMesh,fishCaustics,
+   fishLightShafts,fishLightGlow,fishShadows,suspendedWater,bubblePool.points,sedimentPool.points,bloodPool.points,
+   underwaterStones,fishBottomClutterGroup,contourGroup,pond,pondNeutral,pondNightLift,pondCelestialDepthLift])show(object,false);
+  show(ground,true);show(anglingScene,true);
+  anglingScene.children.forEach(child=>show(child,false));show(anglingRodGroup,false);
+  for(const object of [anglingBankGroup,anglingPhotoHorizon,anglingPhotoShadowGroup])include(object);
+  const start=new THREE.Vector3();centralFishStart(start);start.z=anglingSurfaceZ(start.x,start.y);
+  camera.position.copy(start).add(new THREE.Vector3(0,3,1.85));camera.up.set(0,0,1);
+  camera.near=.045;camera.fov=46;camera.zoom=1;camera.lookAt(start.x,start.y-4,start.z+1.0);camera.updateProjectionMatrix();camera.updateMatrixWorld(true);
+  for(const object of [rt.group,anglingRodAnchor,anglingLure,anglingNetGroup])saveTransform(object);
+  if(id==='carp'||id==='catfish'||id==='landing'){
+   const method=id==='catfish'?'catfish_set':'carp_set';
+   rt.group.position.copy(start);rt.group.quaternion.identity();rt.group.scale.setScalar(1);
+   Object.entries(rt.pods).forEach(([name,pod])=>show(pod,name===method));
+   include(rt.group);
+   for(const rod of rt.pods[method].userData.rods)show(rod,true);
+   // Hidden during ordinary waiting, but the first cast and handful use these
+   // exact geometries/materials. Warm them without starting either action.
+   if(id==='carp'){
+    include(rt.castBall);rt.feedBalls.forEach(ball=>include(ball.mesh));rt.lines.forEach(line=>include(line));
+   }
+  }else{
+   include(anglingRodGroup);updateAnglingRodAnchor();
+   include(anglingRodThreadGroup);include(anglingReadyLineGroup);include(anglingMainLineGroup);
+  }
+  if(id==='shore'||id==='return'){
+   include(anglingLure);anglingLure.position.copy(start).add(new THREE.Vector3(0,-1.4,.6));
+   orders.set(anglingLure,anglingLure.renderOrder);anglingLure.renderOrder=0;
+   anglingLure.traverse(object=>{
+    if(!object.isMesh)return;
+    orders.set(object,object.renderOrder);object.renderOrder=0;
+    for(const material of (Array.isArray(object.material)?object.material:[object.material])){
+     if(!material)continue;
+     if(!materialStates.has(material))materialStates.set(material,{transparent:material.transparent,opacity:material.opacity,depthTest:material.depthTest,depthWrite:material.depthWrite});
+     const d=material.userData;
+     if(d.anglingOrigTransparent!==undefined)aczoSetLureRenderState(material,d.anglingOrigTransparent,d.anglingOrigOpacity,d.anglingOrigDepthTest,d.anglingOrigDepthWrite);
+    }
+   });
+   // Upload all already cached hand grips without changing the equipped rod.
+   scratch=new THREE.Group();scene.add(scratch);
+   for(const cache of Object.values(aczoRodVisual.cache))for(let i=0;i<cache.length;i++){
+    const mesh=new THREE.Mesh(cache[i],i===2?aczoBlankMiniMat:[anglingRodCorkMat,aczoBlankMainMat,aczoSeatMainMat]);mesh.frustumCulled=false;scratch.add(mesh);
+   }
+   const blade=anglingSpinnerBlade.visible,soft=anglingSoftBody.visible;
+   saveVisible(anglingSpinnerBlade);saveVisible(anglingSoftBody);
+   show(anglingSpinnerBlade,true);show(anglingSoftBody,false);render(()=>renderer.render(scene,camera));
+   show(anglingSpinnerBlade,false);show(anglingSoftBody,true);
+   // The second family shares the canvas variant; only upload its own geometry.
+   const side=128/renderer.getPixelRatio();renderer.setRenderTarget(target);renderer.setViewport(0,0,side,side);renderer.render(scene,camera);
+   show(anglingSpinnerBlade,blade);show(anglingSoftBody,soft);
+  }else if(id==='landing'){
+   const pass=anglingBankEnsureLandingPass();include(anglingNetGroup);
+   anglingNetGroup.position.copy(start).add(new THREE.Vector3(1.4,-1.6,.045));
+   anglingNetGroup.updateWorldMatrix(true,true);rt.group.updateWorldMatrix(true,true);
+   const passTransforms=[];
+   for(const [source,copy] of pass.pairs){saveTransform(copy);show(copy,source.visible);copy.position.copy(source.position);copy.quaternion.copy(source.quaternion);copy.scale.copy(source.scale);culling.set(copy,copy.frustumCulled);copy.frustumCulled=false;}
+   for(const [source,proxy] of pass.blockers){saveTransform(proxy);show(proxy,true);proxy.matrix.copy(source.matrixWorld);culling.set(proxy,proxy.frustumCulled);proxy.frustumCulled=false;}
+   // The real pass copies these lights immediately before every draw as well.
+   // Store their colours/intensities so preparation itself leaves no light state.
+   for(const light of [pass.hemiLight,pass.sunLight,pass.moon])passTransforms.push({light,color:light.color.clone(),ground:light.groundColor?.clone(),intensity:light.intensity});
+   pass.hemiLight.color.copy(hemi.color);pass.hemiLight.groundColor.copy(hemi.groundColor);pass.hemiLight.intensity=hemi.intensity;show(pass.hemiLight,hemi.visible);saveTransform(pass.hemiLight);pass.hemiLight.position.copy(hemi.position);
+   for(const [source,copy] of [[sun,pass.sunLight],[moonLight,pass.moon]]){copy.color.copy(source.color);copy.intensity=source.intensity;show(copy,source.visible);saveTransform(copy);saveTransform(copy.target);source.getWorldPosition(copy.position);source.target.getWorldPosition(copy.target.position);}
+   for(const saved of passTransforms)materialStates.set(saved.light,{lightState:saved});
+   render(()=>{
+    renderer.render(scene,camera);
+    const clear=renderer.autoClear,mask=camera.layers.mask;renderer.autoClear=false;camera.layers.set(0);
+    try{renderer.clearDepth();renderer.render(pass.depthScene,camera);renderer.render(pass.netScene,camera);}
+    finally{renderer.autoClear=clear;camera.layers.mask=mask;}
+   });
+   // Catfish holders/rods use the same landing pass but different blocker buffers.
+   // Every proxy above has been submitted, including those of the second set.
+  }else render(()=>renderer.render(scene,camera));
+  return !aczoAnglingWarmup.contextLost;
+ }finally{
+  if(scratch)scene.remove(scratch); // Shared geometries/materials stay cached.
+  for(const [material,saved] of materialStates){
+   if(saved.lightState){const light=saved.lightState;material.color.copy(light.color);if(light.ground)material.groundColor.copy(light.ground);material.intensity=light.intensity;}
+   else{aczoSetLureRenderState(material,saved.transparent,saved.opacity,saved.depthTest,saved.depthWrite);if(saved.envMapIntensity!==undefined)material.envMapIntensity=saved.envMapIntensity;}
+  }
+  for(const [object,order] of orders)object.renderOrder=order;
+  for(const [object,saved] of transforms){object.position.copy(saved.position);object.quaternion.copy(saved.quaternion);object.scale.copy(saved.scale);object.matrix.copy(saved.matrix);object.updateWorldMatrix(true,true);}
+  for(const [object,value] of visibility)object.visible=value;
+  for(const [object,value] of culling)object.frustumCulled=value;
+  camera.position.copy(cameraState.position);camera.quaternion.copy(cameraState.quaternion);camera.up.copy(cameraState.up);
+  camera.near=cameraState.near;camera.far=cameraState.far;camera.fov=cameraState.fov;camera.zoom=cameraState.zoom;camera.aspect=cameraState.aspect;camera.layers.mask=cameraState.layers;
+  camera.updateProjectionMatrix();camera.updateMatrixWorld(true);
+  scene.fog=fog;anglingMode=oldMode;anglingCinematicView=oldView;
+  window.__aczoUnderwaterSceneActive=oldWindowUnderwater;
+  waterUniforms.anglingView.value=oldAngling;waterUniforms.underwaterView.value=oldUnderwater;
+  for(const name of Object.keys(waterState))waterUniforms[name].value.copy(waterState[name]);
+  renderer.shadowMap.autoUpdate=shadowAuto;renderer.shadowMap.needsUpdate=shadowDirty;
+  renderer.setRenderTarget(oldTarget);renderer.setViewport(viewport);renderer.setScissor(scissor);renderer.setScissorTest(scissorTest);renderer.autoClear=autoClear;
+ }
+}
+
+window.__aczoScheduleAnglingWarmup=()=>aczoScheduleAnglingWarmup();
+renderer.domElement.addEventListener('webglcontextlost',()=>{aczoAnglingWarmup.contextLost=true;});
+renderer.domElement.addEventListener('webglcontextrestored',()=>{
+ aczoAnglingWarmup.contextLost=false;aczoAnglingWarmup.key='';aczoAnglingWarmup.done.clear();aczoAnglingWarmup.attempts.clear();
+ aczoPerf26UwFullWarmReady=false;
+ aczoScheduleAnglingWarmup();
+});
 anglingBankPrewarm();
 
 (function loop(frameNow=performance.now()){
