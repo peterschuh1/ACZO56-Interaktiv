@@ -30641,7 +30641,7 @@ function anglingBankAttemptPickup(){
  if(cat){
   // Wels: echter Anschlag. Ein falscher Versuch kostet wie bisher eine Runde.
   rt.qteLap++;rt.qteTime=0;
-  if(rt.qteLap>=2)anglingBankMissPickup('Anschlag verpasst · Fisch ausgestiegen.');
+  if(rt.qteLap>=5)anglingBankMissPickup('Anschlag verpasst · Fisch ausgestiegen.');
   else setAnglingStatus('Noch einmal','Goldenen Ring in den grünen Zielbereich laufen lassen.');
   return;
  }
@@ -31084,7 +31084,7 @@ function updateAnglingBankSet(dt){
   rt.qteTime+=dt;
   if(rt.qteTime>2.6){
    rt.qteLap++;rt.qteTime-=2.6;
-   if(catfish&&rt.qteLap>=2){anglingBankMissPickup('Anschlag verpasst · Fisch ausgestiegen.');return;}
+   if(catfish&&rt.qteLap>=5){anglingBankMissPickup('Anschlag verpasst · Fisch ausgestiegen.');return;}
   }
   anglingBankUpdatePickupVisual();
   if(!catfish&&anglingBankUpdateCarpPickupHazard())return;
