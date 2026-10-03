@@ -29844,6 +29844,81 @@ function anglingBankBuildBellEvents(profile,random=Math.random){
  return events;
 }
 
+function anglingBankContinueCatfishBite(profile,random=Math.random){
+ // Continue this individual bite beyond the original short opening. Five
+ // 2.6-second QTE laps start after 1.65 seconds; the curve covers them all.
+ // Sound is still generated from these same pulls by the existing bell sensor.
+ const frames=profile.frames,horizon=16,clamp=THREE.MathUtils.clamp;
+ let time=frames[frames.length-1].time,pull=frames[frames.length-1].pull;
+ const range=(low,high)=>low+(high-low)*random();
+ const move=(seconds,value)=>{
+  if(time>=horizon)return;
+  const step=Math.max(.06,seconds),next=Math.min(horizon,time+step);
+  // A phase cut by the end of the available window stops part-way through its
+  // movement instead of squeezing the whole pull into the last few milliseconds.
+  pull=clamp(THREE.MathUtils.lerp(pull,value,(next-time)/step),0,1);
+  time=next;frames.push({time,pull});
+ };
+ const hold=seconds=>move(seconds,pull);
+ const cat=profile.species==='catfish',pike=profile.species==='pike',zander=profile.species==='zander';
+ while(time<horizon){
+  if(cat&&profile.style==='steady'){
+   // A large steady fish keeps substantial load, eases briefly, then draws
+   // slowly again. It does not turn into a fast, regularly oscillating tip.
+   hold(range(.35,.85));
+   move(range(.75,1.25),clamp(pull-range(.20,.35),.45,.78));
+   hold(range(.12,.40));move(range(.85,1.45),range(.88,.99));
+  }else if(cat&&(profile.style==='followup'||profile.style==='tease_run')){
+   hold(range(.20,.70));move(range(.28,.58),range(.40,.64));
+   hold(range(.15,.50));move(range(.35,.85),range(.84,.99));
+   if(random()<.45){move(range(.15,.32),range(.55,.73));move(range(.18,.38),range(.88,.99));}
+  }else if(cat&&profile.style==='loaded_taps'){
+   move(range(.20,.45),range(.55,.74));hold(range(.20,.60));
+   const base=pull,count=1+Math.floor(random()*3);
+   for(let n=0;n<count&&time<horizon;n++){
+    move(range(.13,.27),clamp(base+range(.17,.28),0,.99));
+    move(range(.14,.32),base+range(-.04,.04));hold(range(.08,.28));
+   }
+   hold(range(.25,.80));
+  }else if(cat){
+   // Violent bites have irregular clusters. Chaotic bites can change to a
+   // slower pull between clusters; no loop is tied to the QTE lap duration.
+   if(profile.style==='chaotic'&&random()<.43){
+    move(range(.45,.85),range(.36,.62));hold(range(.25,.65));
+    move(range(.45,.90),range(.80,.98));hold(range(.15,.45));
+   }else{
+    move(range(.18,.42),range(.10,.28));
+    const base=pull,count=1+Math.floor(random()*4);
+    for(let n=0;n<count&&time<horizon;n++){
+     move(range(.08,.20),range(.65,.99));
+     move(range(.13,.28),base+range(.03,.16));hold(range(.06,.20));
+    }
+    hold(range(.25,.85));
+   }
+  }else if(pike){
+   hold(range(.25,.75));move(range(.16,.34),range(.58,.84));
+   move(range(.30,.65),range(.18,.36));hold(range(.20,.60));
+   if(random()<.48){move(range(.18,.36),range(.52,.78));move(range(.35,.65),range(.23,.40));}
+  }else if(zander){
+   hold(range(.25,.70));move(range(.25,.55),range(.08,.17));
+   const taking=profile.style==='zander_take'||random()<.30;
+   move(taking?range(.45,.85):range(.12,.24),taking?range(.38,.55):range(.22,.35));
+   hold(range(.12,.35));move(range(.22,.50),range(.08,.18));
+  }else{
+   // The existing eel bycatch keeps fine taps and occasional moderate draws.
+   move(range(.20,.45),range(.03,.09));hold(range(.18,.55));
+   if(profile.style==='eel_draw'&&random()<.55){
+    move(range(.45,.80),range(.32,.47));hold(range(.20,.55));move(range(.30,.60),range(.08,.18));
+   }else{
+    const base=pull,count=2+Math.floor(random()*3);
+    for(let n=0;n<count&&time<horizon;n++){
+     move(range(.10,.20),range(.16,.30));move(range(.14,.28),base);hold(range(.12,.38));
+    }
+   }
+  }
+ }
+}
+
 function anglingBankCatfishBiteProfile(species,cm,temperament='normal'){
  const fish=species||'catfish',random=()=>Math.random(),clamp=THREE.MathUtils.clamp;
  const wild=temperament==='wild',calm=['ruhig','ausdauernd'].includes(temperament);
@@ -29980,6 +30055,7 @@ function anglingBankCatfishBiteProfile(species,cm,temperament='normal'){
 
  frames.sort((a,b)=>a.time-b.time);
  const profile={species:fish,style,size,maxBend,volume,frames,signals:[],bellEvents:[]};
+ anglingBankContinueCatfishBite(profile,random);
  profile.bellEvents=anglingBankBuildBellEvents(profile,random);
  return profile;
 }
