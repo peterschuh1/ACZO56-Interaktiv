@@ -30030,7 +30030,20 @@ function anglingBankCarpBiteProfile(species,cm,temperament='normal'){
   style='small-taps';peak=.035*individual;duration=9;
   frame(0,0);frame(.5,0);frame(.8,peak);frame(1.3,0);frame(2.8,0);frame(3.2,peak);frame(3.8,0);frame(7,0);frame(7.4,peak*.7);frame(8,0);frame(9,0);
  }
- return {species,cm,kg,size,style,frames,peakSpeed:peak,runDuration:duration,temperament,tailSpeed:carp?.08:['sturgeon','catfish','pike','zander','eel'].includes(species)?.025:0};
+ // Prepare individual follow-up movements once per fish, never independent sound loops.
+ let cursor=frames[frames.length-1].time;
+ const turns=[{time:0,angle:0},{time:cursor*.55,angle:(Math.random()-.5)*.32}];
+ const phases=carp?(size>.8?3:2):2;
+ for(let i=0;i<phases;i++){
+  const rest=.60+Math.random()*(carp?1.25:2.4),attack=carp?.45+Math.random()*.75:.25+Math.random()*.65;
+  const pull=carp?1.0+Math.random()*1.7+size*.85:species==='tench'?1.0+Math.random()*1.5:.35+Math.random()*.65;
+  const speed=peak*(carp?.42+Math.random()*.54:species==='tench'?.45+Math.random()*.5:.55+Math.random()*.45);
+  frame(cursor+.3,0);cursor+=.3+rest;frame(cursor,0);frame(cursor+attack,speed);
+  frame(cursor+attack+pull*.45,speed*(.7+Math.random()*.3));frame(cursor+attack+pull,speed*.55);
+  cursor+=attack+pull+.65;frame(cursor,0);turns.push({time:cursor,angle:(Math.random()-.5)*.80});
+ }
+ const escapeAt=cursor+3+Math.random()*3;
+ return {species,cm,kg,size,style,frames,turns,escapeAt,peakSpeed:peak,runDuration:duration,temperament,tailSpeed:0};
 }
 function anglingBankBiteSignals(profile,elapsed){
  const rt=anglingBankRuntime,motion=rt.rigs[rt.active]?.motion;if(!motion||!motion.sensorNew)return;
@@ -30138,6 +30151,49 @@ function anglingBankRunSpeed(profile,time){
  for(let i=1;i<frames.length;i++)if(time<=frames[i].time){const a=frames[i-1],b=frames[i],t=THREE.MathUtils.smoothstep(time,a.time,b.time);return THREE.MathUtils.lerp(a.speed,b.speed,t);}
  return profile.tailSpeed||0;
 }
+function anglingBankRunHeading(profile,time){
+ const turns=profile.turns||[{time:0,angle:0}];
+ for(let i=1;i<turns.length;i++)if(time<=turns[i].time)return THREE.MathUtils.lerp(turns[i-1].angle,turns[i].angle,THREE.MathUtils.smoothstep(time,turns[i-1].time,turns[i].time));
+ return turns[turns.length-1].angle;
+}
+function anglingBankForecastRunDistance(profile,time,seconds){
+ let distance=0;const step=.2;
+ for(let t=0;t<seconds;t+=step)distance+=anglingBankRunSpeed(profile,time+t+step*.5)*Math.min(step,seconds-t);
+ return distance;
+}
+function anglingBankSetHazardNotice(text=''){
+ const rt=anglingBankRuntime;
+ if(!text){if(rt.hazardNotice)rt.hazardNotice.hidden=true;rt.hazardStatusKey=null;return;}
+ if(!rt.hazardNotice){rt.hazardNotice=document.createElement('div');rt.hazardNotice.className='angling-bank-notice';rt.hazardNotice.setAttribute('role','alert');document.body.append(rt.hazardNotice);}
+ const notice=rt.hazardNotice;if(notice.textContent!==text)notice.textContent=text;notice.hidden=false;
+ // The existing body-level notice avoids the menu's stacking context.
+ const rect=renderer.domElement.getBoundingClientRect();let top=(rect.top||0)+72;
+ for(const element of [anglingSetupHint?.parentElement,anglingLineSummary]){
+  const bounds=element?.getBoundingClientRect?.();if(bounds&&bounds.height>0)top=Math.max(top,bounds.bottom+10);
+ }
+ top=Math.min(top,(rect.top||0)+(rect.height||renderer.domElement.clientHeight)-140);
+ const position=Math.max((rect.top||0)+12,top)+'px';if(notice.style.top!==position)notice.style.top=position;
+}
+function anglingBankCheckPickupEscape(){
+ const rt=anglingBankRuntime,motion=rt.rigs[rt.active]?.motion;
+ if(anglingProgress.selectedEquipment!=='carp_set'||!motion||!Number.isFinite(motion.profile.escapeAt)||motion.time<motion.profile.escapeAt)return false;
+ anglingBankMissPickup('Fisch ausgestiegen · Rute zu spät aufgenommen.');return true;
+}
+function anglingBankSteerRun(motion,step){
+ const old=motion.position;
+ if(motion.time-(motion.lastObstacleCheck??-1)>.2){
+  motion.lastObstacleCheck=motion.time;
+  if(!motion.target){
+   const range=Math.max(4.5,Math.min(12,anglingBankForecastRunDistance(motion.profile,motion.time,6)+1));
+   const target=anglingBankNearestPickupObstacle(old,range,motion.direction,motion.obstacles);
+   if(target)motion.target={...target,warned:false,critical:false};
+  }
+ }
+ const desired=motion.target?motion.target.point.clone().sub(old).setZ(0).normalize():motion.baseDirection.clone().applyAxisAngle(anglingUp,anglingBankRunHeading(motion.profile,motion.time));
+ if(desired.lengthSq()<.5)return;
+ const angle=Math.atan2(motion.direction.x*desired.y-motion.direction.y*desired.x,motion.direction.dot(desired));
+ motion.direction.applyAxisAngle(anglingUp,THREE.MathUtils.clamp(angle,-.75*step,.75*step)).normalize();
+}
 function anglingBankPhysicalLineLength(anchor,point){
  return Math.hypot(point.x-anchor.x,point.y-anchor.y,(point.z-anchor.z)/Math.max(.001,exaggeration));
 }
@@ -30147,7 +30203,7 @@ function anglingBankCreateRun(rig,index,profile){
  direction.applyAxisAngle(anglingUp,(Math.random()-.5)*.36);
  const anchor=new THREE.Vector3();anglingBankRuntime.rods[index].userData.tipAnchor.getWorldPosition(anchor);
  const motion={profile,time:0,accumulator:0,position:rig.point.clone(),previousPosition:rig.point.clone(),direction,anchor,
-  velocity:new THREE.Vector3(),speed:0,lineSpeed:0,lineLength:anglingBankPhysicalLineLength(anchor,rig.point),linePaidOut:0,path:0,
+  baseDirection:direction.clone(),velocity:new THREE.Vector3(),speed:0,lineSpeed:0,lineLength:anglingBankPhysicalLineLength(anchor,rig.point),linePaidOut:0,path:0,
   sensorRemainder:0,sensorCount:0,sensorNew:0,lastSignalTime:-Infinity,audioAt:-Infinity,contact:null,obstacles:[]};
  const obstacle=anglingBankCreatePickupHazard(rig.point,profile.cm,profile.temperament,direction);
  if(obstacle){motion.direction.copy(obstacle.point).sub(rig.point).setZ(0).normalize();motion.target=obstacle;}
@@ -30161,6 +30217,7 @@ function anglingBankAdvanceRun(motion,dt){
  const step=1/120;
  while(motion.accumulator+1e-10>=step){
   motion.accumulator-=step;const old=motion.position.clone();
+  anglingBankSteerRun(motion,step);
   const speed=(anglingBankRunSpeed(motion.profile,motion.time)+anglingBankRunSpeed(motion.profile,motion.time+step))*.5;
   motion.time+=step;
   const next=old.clone().addScaledVector(motion.direction,speed*step),depth=pondDepthAt(next.x,next.y);
@@ -30544,6 +30601,7 @@ function anglingBankRetrieve(only=-1){
  anglingState='ready';anglingStateTime=0;anglingUi.classList.remove('line-active');anglingAimLocked=false;anglingUi.classList.remove('aim-locked');anglingBankRefreshUi();
 }
 function anglingBankStartBite(i){
+ anglingBankSetHazardNotice();
  const rt=anglingBankRuntime,rig=rt.rigs[i];if(!rig||rt.active>=0||rt.casting>=0)return;
  rig.candidates=anglingBankCandidates(rig);if(!rig.candidates.length)return;
  rt.active=i;rt.lastPulse=-1;rt.qteLap=0;rt.qteTime=0;rt.selected=i;anglingSelectedBait=rig.bait;anglingCandidateEntries=rig.candidates;anglingCastEnd.copy(rig.point);
@@ -30553,7 +30611,7 @@ function anglingBankStartBite(i){
  anglingYawOffset=Math.atan2(Math.sin(yaw),Math.cos(yaw));
  const species=pickAnglingCandidate(),temperament=pickAnglingTemperament();let cm=anglingSizeForSpecies(species);
  if(['boilie','popup'].includes(rig.bait)&&['bream','tench'].includes(species)){const [min,max]=anglingCatchSizes[species];cm=Number((min+(max-min)*(.70+Math.random()*.27)).toFixed(1));}
- rt.ledMemoryUntil=rt.ledMemoryUntil||[0,0];rt.biteProfile=anglingProgress.selectedEquipment==='catfish_set'?anglingBankCatfishBiteProfile(species,cm,temperament.name):anglingBankCarpBiteProfile(species,cm,temperament.name);rt.biteElapsed=0;rt.biteSignalIndex=0;rt.bellEventIndex=0;rt.bellAt=-Infinity;rt.signalDuration=0;rt.bellShake=0;rt.bellDecay=4;rt.previousPull=0;rt.previousBend=.085;rt.pickupElapsed=0;rt.pickupPenalty=0;rt.pickupMisses=0;rt.pickupHazard=null;if(anglingProgress.selectedEquipment==='carp_set'){rt.motion=anglingBankCreateRun(rig,i,rt.biteProfile);rt.pickupHazard=rt.motion.target||null;}else {rt.motion=null;rig.motion=null;}
+ rt.ledMemoryUntil=rt.ledMemoryUntil||[0,0];rt.biteProfile=anglingProgress.selectedEquipment==='catfish_set'?anglingBankCatfishBiteProfile(species,cm,temperament.name):anglingBankCarpBiteProfile(species,cm,temperament.name);rt.biteElapsed=0;rt.biteSignalIndex=0;rt.bellEventIndex=0;rt.bellAt=-Infinity;rt.signalDuration=0;rt.bellShake=0;rt.bellDecay=4;rt.previousPull=0;rt.previousBend=.085;rt.pickupElapsed=0;rt.pickupPenalty=0;rt.pickupMisses=0;rt.pickupLastAttemptAt=-Infinity;rt.pickupHazard=null;if(anglingProgress.selectedEquipment==='carp_set'){rt.motion=anglingBankCreateRun(rig,i,rt.biteProfile);rt.pickupHazard=rt.motion.target||null;}else {rt.motion=null;rig.motion=null;}
  anglingPendingCatch={species,cm,baitConsumed:false,temperament:temperament.name};anglingFishTemperament=temperament.name;anglingFishTemperamentFactor=temperament.run;anglingStrikeQuality='normal';
  if(rig.bait==='baitfish'){anglingBankConsume(rig,'bite');anglingPendingCatch.baitConsumed=true;}
  closeAnglingAllMenusForAction();anglingState='bank-bite';anglingStateTime=0;anglingHideFeedVisuals();rt.markers.forEach(marker=>marker.hidden=true);anglingUi.classList.add('line-active');anglingActionBtn.disabled=true;anglingExitBtn.disabled=true;
@@ -30564,6 +30622,7 @@ function anglingBankStartBite(i){
 }
 function anglingBankAttemptPickup(){
  const rt=anglingBankRuntime;if(anglingState!=='bank-pickup'||rt.active<0)return;
+ if(anglingBankCheckPickupEscape())return;
  const now=performance.now();if(now-(rt.pickupLastAttemptAt||0)<145)return;rt.pickupLastAttemptAt=now;
  const phase=THREE.MathUtils.clamp(rt.qteTime/2.6,0,1),good=phase>=.60&&phase<=.90,perfect=phase>=.72&&phase<=.80;
  const cat=anglingProgress.selectedEquipment==='catfish_set';
@@ -30578,20 +30637,23 @@ function anglingBankAttemptPickup(){
   return;
  }
 
- // Karpfen: Selbsthakmontage. Ein schlechter Tipp verliert den Fisch nicht
- // sofort, erhöht aber bei einem realen Hindernis etwas den Zeitdruck.
+ // Karpfen: Selbsthakmontage. Einzelne Fehlversuche sind toleriert;
+ // wiederholte erfolglose Aufnahmeversuche können den Fisch verlieren.
  rt.pickupMisses=(rt.pickupMisses||0)+1;
- // Time continues naturally; a mistimed tap never teleports the fish or advances an obstacle clock.
- showAnglingToast('Noch nicht · grünen Zielbereich treffen.',650);
+ if(rt.pickupMisses>=4){anglingBankMissPickup('Fisch ausgestiegen · Rute mehrfach nicht aufgenommen.');return;}
+ // A bad tap never teleports the fish or advances an obstacle clock.
+ showAnglingToast(rt.pickupMisses>=3?'Letzte Chance · grünen Zielbereich treffen.':'Noch nicht · grünen Zielbereich treffen.',1100);
 }
 function anglingBankMissPickup(reason='Fisch ausgestiegen.',forceRigLoss=false){
+ anglingBankSetHazardNotice();
  const rt=anglingBankRuntime,rig=rt.rigs[rt.active];if(!rig)return;
  if(forceRigLoss)anglingBankConsume(rig,'break',1);else if(!['boilie','popup'].includes(rig.bait))anglingBankConsume(rig,'miss',.35);
  const i=rt.active;anglingBankResetRodSignals(i);rt.motion=null;rt.active=-1;rt.pickButton.hidden=true;aczoSoundStop('catfishBells');aczoSoundStop('predatorAlarm');anglingPendingCatch=null;anglingUi.classList.remove('line-active');
  if(forceRigLoss||rig.consumed)rt.rigs[i]=null;else rig.age=-6;
- anglingState=rt.rigs[rt.selected]?'bank-waiting':'ready';anglingStateTime=0;anglingExitBtn.disabled=false;rt.pickupHazard=null;rt.pickupElapsed=0;rt.pickupPenalty=0;rt.pickButton?.classList.remove('now','perfect','danger','critical');anglingBankRefreshUi();setAnglingStatus(forceRigLoss?'Montage verloren':'Biss vorbei',forceRigLoss?((i?'Rechte':'Linke')+' Rute erneut auswerfen · Köder wird automatisch aus dem Vorrat montiert.'):(rig.consumed?'Köder verloren.':'Köder bleibt montiert.'));showAnglingToast(reason+' '+((forceRigLoss||rig.consumed)?'Köder verloren.':'Köder bleibt montiert.'),1850);
+ anglingState=rt.rigs[rt.selected]?'bank-waiting':'ready';anglingStateTime=0;anglingExitBtn.disabled=false;rt.pickupHazard=null;rt.pickupElapsed=0;rt.pickupPenalty=0;rt.pickButton?.classList.remove('now','perfect','danger','critical');anglingBankRefreshUi();setAnglingStatus(forceRigLoss?'Montage verloren':anglingProgress.selectedEquipment==='carp_set'?'Fisch ausgestiegen':'Biss vorbei',forceRigLoss?((i?'Rechte':'Linke')+' Rute erneut auswerfen · Köder wird automatisch aus dem Vorrat montiert.'):(rig.consumed?'Köder verloren.':'Köder bleibt montiert.'));showAnglingToast(reason+' '+((forceRigLoss||rig.consumed)?'Köder verloren.':'Köder bleibt montiert.'),1850);
 }
 function anglingBankBeforeReset(){
+ anglingBankSetHazardNotice();
  anglingBankResetLandingView();const rt=anglingBankRuntime;rt.waitingHudKey=null;rt.waitingHudCompact=false;if(rt.compactUi)rt.compactUi.hidden=true;if(rt.feedBar)rt.feedBar.hidden=true;anglingUi.classList.remove('bank-waiting-compact');rt.landingLimits=null;rt.beforeLandingCamera=null;if(rt.active>=0){anglingBankResetRodSignals(rt.active);rt.rigs[rt.active]=null;rt.active=-1;}rt.motion=null;rt.drillEntryPoint=null;rt.pickupHazard=null;rt.pickupElapsed=rt.pickupPenalty=0;rt.pickButton?.classList.remove('danger','critical');
  rt.casting=-1;if(rt.castBall)rt.castBall.visible=false;if(rt.pickButton)rt.pickButton.hidden=true;aczoSoundStop('catfishBells');aczoSoundStop('predatorAlarm');anglingRodGroup.scale.setScalar(1);
 }
@@ -30600,6 +30662,7 @@ function anglingBankAfterReset(){
  rt.selected=rt.rigs[0]?1:0;anglingSelectedBait=anglingBankChoices()[rt.selected].bait;anglingState=rt.rigs[rt.selected]?'bank-waiting':'ready';anglingExitBtn.disabled=false;anglingBankRefreshUi();
 }
 function anglingBankClearRuntime(){
+ anglingBankSetHazardNotice();
  anglingBankResetLandingView();const rt=anglingBankRuntime;rt.waitingHudKey=null;rt.waitingHudCompact=false;if(rt.compactUi)rt.compactUi.hidden=true;if(rt.feedBar)rt.feedBar.hidden=true;anglingUi.classList.remove('bank-waiting-compact');rt.landingLimits=null;rt.beforeLandingCamera=null;rt.pickupHazard=null;rt.pickupElapsed=0;rt.pickupPenalty=0;rt.pickupMisses=0;rt.markerUntil=[0,0];rt.markerNextAt=0;rt.rigs=[null,null];rt.active=rt.casting=-1;rt.placedFor=null;rt.motion=null;rt.drillEntryPoint=null;anglingBankResetRodSignals(0);anglingBankResetRodSignals(1);rt.lines.forEach(l=>l.visible=false);rt.markers.forEach(m=>m.hidden=true);rt.feedBalls.forEach(b=>{b.done=true;b.splashed=false;b.mesh.visible=false;});
  if(rt.group)rt.group.visible=false;if(rt.castBall)rt.castBall.visible=false;if(rt.pickButton)rt.pickButton.hidden=true;if(rt.ui)rt.ui.hidden=true;anglingRodGroup.scale.setScalar(1);anglingUi.classList.remove('bank-set-active','bank-aiming');anglingBankShoreDepth(false);aczoSoundStop('catfishBells');aczoSoundStop('predatorAlarm');
 }
@@ -30690,20 +30753,22 @@ function anglingBankUpdateCarpPickupHazard(){
  if(anglingProgress.selectedEquipment!=='carp_set'||!motion)return false;
  if(motion.contact){anglingBankMissPickup('Montage am '+motion.contact.label+' abgerissen.',true);return true;}
  let hazard=motion.target;
- if(!hazard&&motion.speed>.001&&(motion.time-(motion.lastObstacleCheck||0)>.20)){
-  motion.lastObstacleCheck=motion.time;hazard=anglingBankNearestPickupObstacle(motion.position,4.5,motion.direction,motion.obstacles);
-  if(hazard){hazard.warned=false;hazard.critical=false;motion.target=hazard;rt.pickupHazard=hazard;}
- }
- if(!hazard){pick?.classList.remove('danger','critical');return false;}
+ if(hazard)rt.pickupHazard=hazard;
+ if(!hazard){pick?.classList.remove('danger','critical');anglingBankSetHazardNotice();return anglingBankCheckPickupEscape();}
  const offset=hazard.point.clone().sub(motion.position),distance=Math.max(0,Math.hypot(offset.x,offset.y,offset.z/Math.max(.001,exaggeration))-(Number(hazard.segment.r)||.04));
- const approaching=motion.velocity.dot(offset)>0&&motion.speed>.001;
- const warning=approaching&&distance<=motion.speed*3+.20,critical=approaching&&distance<=motion.speed*1.2+.12;
+ const approaching=motion.direction.dot(offset.clone().setZ(0).normalize())>.45;
+ const warning=approaching&&distance<=Math.max(.8,anglingBankForecastRunDistance(motion.profile,motion.time,5)+.35),critical=approaching&&distance<=Math.max(.35,anglingBankForecastRunDistance(motion.profile,motion.time,2.5)+.18);
  pick?.classList.toggle('danger',warning&&!critical);pick?.classList.toggle('critical',critical);
- if(warning&&!hazard.warned){hazard.warned=true;showAnglingToast('⚠ Fisch zieht Richtung '+hazard.label+'!',1450);}
- if(critical&&!hazard.critical){hazard.critical=true;setAnglingStatus('⚠ Rute aufnehmen!','Der Fisch nähert sich '+hazard.label+'.');}
- return false;
+ const statusKey=warning?anglingState+'|'+critical:null;
+ if(warning){
+  const previousKey=rt.hazardStatusKey;anglingBankSetHazardNotice(critical?'⚠ Jetzt Rute aufnehmen! Fisch dicht am '+hazard.label+'.':'⚠ Fisch zieht Richtung '+hazard.label+' · Rute aufnehmen!');
+  if(previousKey!==statusKey){setAnglingStatus(critical?'⚠ Jetzt aufnehmen!':'⚠ Hindernis voraus','Der Fisch zieht zum '+hazard.label+'. Rute aufnehmen.');rt.hazardStatusKey=statusKey;}
+ }else{const wasWarning=rt.hazardStatusKey;anglingBankSetHazardNotice();if(wasWarning&&anglingState==='bank-pickup')setAnglingStatus('Rute aufnehmen','Goldenen Ring in den grünen Zielbereich laufen lassen und tippen.');}
+ hazard.warned=warning;hazard.critical=critical;
+ return anglingBankCheckPickupEscape();
 }
 function anglingBankCompletePickup(perfect=false){
+ anglingBankSetHazardNotice();
  const rt=anglingBankRuntime,cat=anglingProgress.selectedEquipment==='catfish_set';
  rt.pickButton.hidden=true;rt.pickButton.classList.remove('now','perfect','danger','critical');
  aczoSoundStop('catfishBells');aczoSoundStop('predatorAlarm');
@@ -30978,7 +31043,7 @@ function updateAnglingBankSet(dt){
    catMotion=anglingBankCatfishBiteMotion(rt.biteProfile,rt.biteElapsed);
    anglingBankCatfishBellSignals(rt.biteProfile,rt.biteElapsed);
    rt.previousBend=catMotion.bend;rt.previousPull=catMotion.pull;
-  }else {const motion=rt.rigs[rt.active]?.motion;anglingBankAdvanceRun(motion,dt);anglingBankBiteSignals(rt.biteProfile,rt.biteElapsed);if(anglingBankUpdateCarpPickupHazard())return;}
+  }else {const motion=rt.rigs[rt.active]?.motion;anglingBankAdvanceRun(motion,dt);anglingBankBiteSignals(rt.biteProfile,rt.biteElapsed);if(anglingBankUpdateCarpPickupHazard())return;updateAnglingLiveHud();}
 
  }
  const pulse=inBite&&rt.biteElapsed-rt.bellAt<Math.max(.075,rt.signalDuration);const signalNow=performance.now();
@@ -39659,7 +39724,8 @@ function anglingCurrentTerminalDistance(){
  if(!anglingSelection)return 0;
  const bank=anglingUsesBankSet(),rig=bank?anglingBankHudRig():null;
  const fighting=bank&&['drilling','landing','catch-reveal','caught'].includes(anglingState);
- const p=bank?(fighting?anglingHookPoint:rig?.point):(anglingUsesDeeper()?anglingDeeper.position:(anglingUsesArtificialLure()?anglingLure.position:anglingBobber.position));
+ const moving=bank&&['bank-bite','bank-pickup','bank-lifting'].includes(anglingState)?rig?.motion?.position:null;
+ const p=bank?(fighting?anglingHookPoint:(moving||rig?.point)):(anglingUsesDeeper()?anglingDeeper.position:(anglingUsesArtificialLure()?anglingLure.position:anglingBobber.position));
  if(!p)return 0;return Math.max(0,Math.hypot(p.x-anglingSelection.shore.x,p.y-anglingSelection.shore.y));
 }
 function updateAnglingLiveHud(){
