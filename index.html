@@ -6375,6 +6375,9 @@ function aczoPredatorAlarmListenerGain(){
   if(inCreator&&typeof camera!=='undefined')listener=camera.position;
   else if(typeof anglingMode!=='undefined'&&anglingMode
     &&!(typeof anglingHallOfFameActive!=='undefined'&&anglingHallOfFameActive)
+    &&!(typeof fishMode!=='undefined'&&fishMode)
+    &&!window.__aczoUnderwaterSceneActive
+    &&!(typeof anglingCinematicView!=='undefined'&&anglingCinematicView==='underwater')
     &&typeof anglingSelection!=='undefined'&&anglingSelection?.shore)listener=anglingSelection.shore;
   if(!listener)return 0;
   const d=Math.hypot(listener.x-personalFishingSpot.x,listener.y-personalFishingSpot.y);
@@ -15889,11 +15892,23 @@ function setPersonalBiteAlarm(index,on,pulse=false){
   if(typeof rt.wasOn!=='boolean')rt.wasOn=false;
   if(typeof rt.lastBright!=='boolean')rt.lastBright=false;
 
+  const inCreator=typeof anglingCreatorEasterEggActive!=='undefined'&&anglingCreatorEasterEggActive
+    &&typeof anglingHallOfFameActive!=='undefined'&&anglingHallOfFameActive;
   if(on){
+    if(!rt.wasOn){
+      // Count complete audible land-side bite episodes, not individual beeps.
+      // Creator/Hall-of-Fame playback bypasses this ambient reduction.
+      rt.ambientAudible=false;
+      if(!inCreator&&aczoPredatorAlarmListenerGain()>.001){
+        const data=personalRodPod.userData;
+        data.ambientAlarmCount=(Number(data.ambientAlarmCount)||0)+1;
+        rt.ambientAudible=data.ambientAlarmCount%3===0;
+      }
+    }
     rt.holdUntil=0;
     // Ein Piepton genau an der steigenden Blinkflanke, nie pro Renderframe.
     if(bright&&!rt.lastBright&&now-rt.lastBeepAt>140){
-      aczoPlayPredatorAlarmBeep();rt.lastBeepAt=now;
+      if(inCreator||rt.ambientAudible)aczoPlayPredatorAlarmBeep();rt.lastBeepAt=now;
     }
     rt.wasOn=true;rt.lastBright=bright;
   }else{
