@@ -5251,11 +5251,18 @@ function aczoSetIconText(element,value){
                </form>
                <form id="aczoResetForm" class="aczo-account-form" method="post" autocomplete="on" hidden>
                  <h4>🔑 Passwort zurücksetzen</h4>
-                 <label for="aczoResetName">Benutzername</label><input id="aczoResetName" name="username" type="text" autocapitalize="none" spellcheck="false" autocomplete="username" required>
-                 <label for="aczoResetCode">Sicherungscode</label><input id="aczoResetCode" name="recovery-code" type="text" required>
-                 <label for="aczoResetPassword">Neues Passwort</label><input id="aczoResetPassword" name="new-password" type="password" autocomplete="new-password" minlength="12" required>
-                 <label for="aczoResetRepeat">Neues Passwort wiederholen</label><input id="aczoResetRepeat" name="confirm-password" type="password" autocomplete="new-password" minlength="12" required>
-                 <button class="angling-main-btn primary" type="submit">Passwort zurücksetzen</button>
+                 <p>Gib zuerst nur deinen Wiederherstellungscode ein. Das Spiel findet damit automatisch dein bestehendes Spielerkonto.</p>
+                 <div id="aczoResetLookupBlock">
+                   <label for="aczoResetCode">Wiederherstellungscode</label><input id="aczoResetCode" name="recovery-code" type="text" autocapitalize="characters" spellcheck="false" autocomplete="off" placeholder="XXXX-XXXX-XXXX-XXXX-XXXX-XXXX" required>
+                   <button id="aczoResetCheck" class="angling-main-btn primary" type="button">Code prüfen</button>
+                   <div id="aczoResetLookupResult" class="aczo-account-status" aria-live="polite"></div>
+                 </div>
+                 <div id="aczoResetCredentials" hidden>
+                   <label for="aczoResetName">Benutzername</label><input id="aczoResetName" name="username" type="text" autocapitalize="none" spellcheck="false" autocomplete="username" readonly>
+                   <label for="aczoResetPassword">Neues Passwort</label><input id="aczoResetPassword" name="new-password" type="password" autocomplete="new-password" minlength="12">
+                   <label for="aczoResetRepeat">Neues Passwort wiederholen</label><input id="aczoResetRepeat" name="confirm-password" type="password" autocomplete="new-password" minlength="12">
+                   <button class="angling-main-btn primary" type="submit">Passwort zurücksetzen &amp; anmelden</button>
+                 </div>
                  <button class="angling-main-btn" type="button" data-account-back>Zurück zur Anmeldung</button>
                </form>
                <form id="aczoPasswordForm" class="aczo-account-form" method="post" autocomplete="on" hidden>
@@ -5486,7 +5493,7 @@ function aczoSetIconText(element,value){
          <section class="aczo-account-help"><h3>🎣 Als Gastangler spielen</h3><p>Ein Konto ist freiwillig. Wähle „Als Gastangler spielen“, wenn du ohne Passwortkonto beginnen möchtest. Einen bestehenden Gastspielstand kannst du später unter „Profil“ aktivieren. Für Gastprofile bleibt der private Wiederherstellungscode wichtig, um einen Cloud-Spielstand wiederherzustellen. Wer bereits ein Konto besitzt und seinen Fortschritt laden möchte, meldet sich mit seinen Zugangsdaten an.</p></section>
          <section class="aczo-account-help"><h3>🔐 Anmelden &amp; Gerätewechsel</h3><p>Wähle im Bereich „Profil“ „Mit Spielerkonto anmelden“, gib deinen Benutzernamen und dein Passwort ein und drücke „Anmelden“. Auf einem unbekannten Gerät kannst du dieselben Zugangsdaten verwenden. Der Cloud-Spielstand wird geladen; der grüne Hinweis mit deinem Namen und „Spielerkonto verbunden“ bestätigt die Anmeldung. Auf einem bekannten Gerät wird die gespeicherte Sitzung normalerweise automatisch wieder aufgenommen. Warte bei langsamem Laden auf die Rückmeldung.</p><p>Das einzelne Fangbuch bleibt auf dem jeweiligen Gerät. Cloud-Fortschritt, Fangsumme und persönliche Rekorde werden geladen; einzelne Fangbuchzeilen wandern nicht automatisch auf ein anderes Gerät.</p></section>
          <section class="aczo-account-help"><h3>📱 Passwort speichern &amp; automatisch ausfüllen</h3><p>Wenn Safari oder dein PC-Browser die Speicherung anbietet, kannst du Benutzername und Passwort im Passwortmanager des Geräts speichern. Beim nächsten Anmelden lassen sie sich automatisch ausfüllen; auf einem entsprechend eingerichteten iPhone kann Face ID die gespeicherten Zugangsdaten freigeben. Das Spiel entscheidet nicht über den Speicherhinweis. Dieser kann auch erst beim Verlassen des Formulars erscheinen. Falls kein Angebot kommt, prüfe die Passwort- und AutoFill-Einstellungen deines Browsers beziehungsweise Geräts.</p></section>
-         <section class="aczo-account-help"><h3>🔑 Passwort vergessen &amp; Sicherungscode</h3><p>Tippe im Anmeldeformular auf „Passwort vergessen?“. Gib deinen Benutzernamen, den privaten Sicherungscode und zweimal dein neues Passwort ein. Mit „Passwort zurücksetzen“ wird das neue Passwort gesetzt; alte Sitzungen werden ungültig. Andere Geräte müssen sich danach erneut anmelden. Es gibt keinen Zurücksetzen-Link per E-Mail.</p><p>Der Sicherungscode liegt unter „Profil“ → „Wiederherstellungscode“ auf dem Gerät, auf dem er erstellt wurde. Ein anderes angemeldetes Gerät zeigt ihn erst, wenn du den vorhandenen Code dort eingibst und prüfen lässt. Bewahre ihn privat außerhalb des Browsers auf. Für die normale Anmeldung reicht Benutzername und Passwort; zum Zurücksetzen des Passworts ist der Code nötig.</p></section>
+         <section class="aczo-account-help"><h3>🔑 Passwort vergessen &amp; Sicherungscode</h3><p>Tippe im Anmeldeformular auf „Passwort vergessen?“. Gib zuerst nur deinen privaten Wiederherstellungscode ein und prüfe ihn. Das Spiel erkennt den zugehörigen Benutzernamen automatisch. Danach vergibst du zweimal dein neues Passwort. Mit „Passwort zurücksetzen & anmelden“ wird das neue Passwort gesetzt; alte Sitzungen werden ungültig. Andere Geräte müssen sich danach erneut anmelden. Es gibt keinen Zurücksetzen-Link per E-Mail.</p><p>Der Sicherungscode liegt unter „Profil“ → „Wiederherstellungscode“ auf dem Gerät, auf dem er erstellt wurde. Ein anderes angemeldetes Gerät zeigt ihn erst, wenn du den vorhandenen Code dort eingibst und prüfen lässt. Bewahre ihn privat außerhalb des Browsers auf. Für die normale Anmeldung reicht Benutzername und Passwort; zum Zurücksetzen des Passworts ist der Code nötig.</p></section>
          <section class="aczo-account-help"><h3>⚙️ Konto ändern &amp; abmelden</h3><p>Unter „Profil“ kannst du mit „Benutzername ändern“ einen freien neuen Namen wählen und mit „Passwort ändern“ das aktuelle Passwort durch ein neues ersetzen. Nach einer Passwortänderung müssen andere Geräte sich erneut anmelden. „Auf diesem Gerät abmelden“ sichert zunächst den aktuellen Cloud-Spielstand und beendet die Sitzung dieses Geräts. Scheitert die Sicherung, bleibt die Anmeldung bestehen. Dein Konto und Cloud-Spielstand werden durch Abmelden nicht gelöscht.</p></section>
          <section><h3>☁️ Cloud-Spielstand</h3><p>EP, Gesamt-EP, Fortschritt, persönliche Bestwerte, Köderfische, gekaufte Köder und Futterbestände sowie die in der 3D-Unterwasseransicht entdeckten Fischarten werden automatisch online gespeichert. Das Fangbuch mit den einzelnen Fangereignissen bleibt ausschließlich lokal.</p></section>
          <section><h3>🔑 Cloud-Wiederherstellung</h3><p>Mit einem Spielerkonto meldest du dich auf einem anderen Gerät mit Benutzername und Passwort an. Für ältere Gastprofile steht im Bereich „Spielstand“ weiterhin die Wiederherstellung per privatem Code zur Verfügung. Verwende nur deinen eigenen Code; die Wiederherstellung lädt dessen Cloud-Profil. Der Code gehört nicht in öffentliche Nachrichten oder die Community.</p></section>
@@ -44341,7 +44348,7 @@ if(window.visualViewport){
 }
 
 // Spielerkonto und Community: Ergänzung des bestehenden Menüs.
-let aczoAccountMode='choices',aczoRegisterLegacyMode=false,aczoRecoveryLookup=null,aczoCommunityPage=0,aczoCommunityQuery='',aczoCommunityTimer=null;
+let aczoAccountMode='choices',aczoRegisterLegacyMode=false,aczoRecoveryLookup=null,aczoResetLookup=null,aczoCommunityPage=0,aczoCommunityQuery='',aczoCommunityTimer=null;
 let aczoGuestRecoveryEnsureInFlight=false;
 async function aczoEnsureGuestRecoveryCode(){
   if(aczoGuestRecoveryEnsureInFlight||aczoAccount||!anglingSetupComplete||anglingRecoveryCode||!anglingCloudEnabled)return;
@@ -44391,6 +44398,8 @@ function aczoRenderAccount(){
     :'Sichere diesen vorhandenen Spielstand mit Benutzername und Passwort und nutze ihn auf mehreren Geräten.';
   const credentials=aczoEl('aczoRegisterCredentials');
   if(credentials)credentials.hidden=aczoRegisterLegacyMode&&!aczoRecoveryLookup;
+  const resetCredentials=aczoEl('aczoResetCredentials');
+  if(resetCredentials)resetCredentials.hidden=!aczoResetLookup;
 
   // Gastprofil bewusst minimal halten: keine Anzeigenamen-/Cloud-/Privatsphäre-
   // Technik zeigen. Für Gäste bleiben nur Kontoaktionen + Recovery-Code sichtbar.
@@ -44529,7 +44538,15 @@ function aczoBindForm(id,task){
       else aczoEl('aczoGuestStart').click();
     }else aczoSetAccountMode(id==='aczoRegisterForm'?'choices':id==='aczoResetForm'?'login':'choices');
   });
-  aczoEl(id).querySelector('#aczoShowReset')?.addEventListener('click',()=>{aczoEl('aczoResetName').value=aczoEl('aczoLoginName').value;aczoSetAccountMode('reset');});
+  aczoEl(id).querySelector('#aczoShowReset')?.addEventListener('click',()=>{
+    aczoResetLookup=null;
+    aczoEl('aczoResetCode').value='';
+    aczoEl('aczoResetName').value='';
+    aczoEl('aczoResetPassword').value='';
+    aczoEl('aczoResetRepeat').value='';
+    aczoEl('aczoResetLookupResult').textContent='';
+    aczoSetAccountMode('reset');
+  });
 }
 async function aczoOfferPasswordSave(username,password){
   if(!globalThis.isSecureContext||typeof globalThis.PasswordCredential!=='function'||!navigator.credentials?.store)return;
@@ -44589,6 +44606,27 @@ aczoEl('aczoCheckRecovery').addEventListener('click',async()=>{
     }
     aczoRenderAccount();
   }catch(err){aczoRecoveryLookup=null;out.textContent=err?.message||'Code konnte nicht geprüft werden.';aczoRenderAccount();}
+  finally{aczoAccountBusy=false;btn.disabled=false;}
+});
+
+aczoEl('aczoResetCheck').addEventListener('click',async()=>{
+  if(aczoAccountBusy)return;
+  const code=normalizeAnglingRecoveryCode(aczoEl('aczoResetCode').value||'');
+  const out=aczoEl('aczoResetLookupResult'),btn=aczoEl('aczoResetCheck');
+  aczoResetLookup=null;
+  aczoEl('aczoResetName').value='';
+  if(code.replace(/-/g,'').length!==24){out.textContent='Bitte den vollständigen Wiederherstellungscode eingeben.';aczoRenderAccount();return;}
+  aczoAccountBusy=true;btn.disabled=true;out.textContent='Code wird geprüft …';
+  try{
+    const recovered=await fetchAnglingRecoveryPlayer(code);
+    if(!recovered?.playerId||!recovered?.player)throw new Error('Spielstand nicht gefunden.');
+    if(!recovered.account?.username)throw new Error('Zu diesem Spielstand gibt es noch kein Spielerkonto. Nutze „Alten Spielstand wiederherstellen“, um zuerst ein Konto anzulegen.');
+    aczoResetLookup={code,playerId:String(recovered.playerId),account:recovered.account};
+    aczoEl('aczoResetCode').value=code;
+    aczoEl('aczoResetName').value=recovered.account.username;
+    out.textContent='Konto gefunden. Lege jetzt ein neues Passwort fest.';
+    aczoRenderAccount();
+  }catch(err){aczoResetLookup=null;out.textContent=err?.message||'Code konnte nicht geprüft werden.';aczoRenderAccount();}
   finally{aczoAccountBusy=false;btn.disabled=false;}
 });
 
@@ -44688,11 +44726,14 @@ aczoBindForm('aczoRegisterForm',async form=>{
   aczoCompletePasswordForm(form);
 });
 aczoBindForm('aczoResetForm',async form=>{
-  const username=form.elements.namedItem('username').value,password=form.elements.namedItem('new-password').value;
+  if(!aczoResetLookup?.account?.username)throw new Error('Bitte zuerst den Wiederherstellungscode prüfen.');
+  const password=form.elements.namedItem('new-password').value;
   if(password!==form.elements.namedItem('confirm-password').value)throw new Error('Die Passwörter stimmen nicht überein.');
-  const data=await aczoApi('resetAccountPassword',{username,recoveryCode:form.elements.namedItem('recovery-code').value,newPassword:password});
+  const data=await aczoApi('resetAccountPassword',{username:aczoResetLookup.account.username,recoveryCode:aczoResetLookup.code,newPassword:password});
+  if(String(data?.account?.playerId||'')!==String(aczoResetLookup.playerId))throw new Error('Sicherheitsabbruch: Konto und Spielstand stimmen nicht überein.');
   await aczoOfferPasswordSave(data.account.username,password);
   await aczoFinishAccountLogin(data);
+  aczoResetLookup=null;
   aczoCompletePasswordForm(form);
 });
 aczoBindForm('aczoPasswordForm',async form=>{
