@@ -10418,6 +10418,21 @@ function aczoBuildCleanWaterGeometry(){
 }
 const waterGeo=aczoBuildCleanWaterGeometry();
 
+// Gemeinsame Bootsmaske fuer Wasser, Wasserreflexe und Oberflaechenschatten.
+// Der Innenraum folgt dem Dollbord-Grundriss, unabhaengig von der Wellenhoehe.
+const aczoBoatWaterMaskGLSL=`
+ uniform vec4 boatHullMask;
+ uniform float boatHullActive;
+ bool aczoBoatWaterInside(vec2 worldXY){
+   if(boatHullActive<.5)return false;
+   vec2 d=worldXY-boatHullMask.xy;
+   vec2 p=vec2(d.x*boatHullMask.z+d.y*boatHullMask.w,-d.x*boatHullMask.w+d.y*boatHullMask.z);
+   if(p.x<=-2.35||p.x>=2.22)return false;
+   float w=p.x< -1.86?mix(.055,.54,(p.x+2.35)/.49):p.x< -.60?mix(.54,.62,(p.x+1.86)/1.26):p.x<.72?.62:mix(.62,.56,(p.x-.72)/1.50);
+   return abs(p.y)<w;
+ }
+`;
+
 const waterUniforms={
  boatHullMask:{value:new THREE.Vector4()},boatHullZ:{value:0},boatHullActive:{value:0},
  time:{value:0},
@@ -10523,7 +10538,8 @@ const waterMat=new THREE.ShaderMaterial({
  `,
  fragmentShader:`
    uniform float time;
-   uniform vec4 boatHullMask;uniform float boatHullZ;uniform float boatHullActive;
+   uniform float boatHullZ;
+   ${aczoBoatWaterMaskGLSL}
    uniform float opacity;
    uniform vec3 deepColor;
    uniform vec3 lightColor;
@@ -10632,15 +10648,7 @@ const waterMat=new THREE.ShaderMaterial({
    }
 
    void main(){
-     if(boatHullActive>.5){
-       vec2 d=vWorldPos.xy-boatHullMask.xy;
-       vec2 p=vec2(d.x*boatHullMask.z+d.y*boatHullMask.w,-d.x*boatHullMask.w+d.y*boatHullMask.z);
-       if(p.x>-2.35&&p.x<2.22){
-         float w=p.x< -1.86?mix(.055,.54,(p.x+2.35)/.49):p.x< -.60?mix(.54,.62,(p.x+1.86)/1.26):p.x<.72?.62:mix(.62,.56,(p.x-.72)/1.50);
-         w*=mix(.82,1.0,clamp((vWorldPos.z-boatHullZ+.08)/.32,0.0,1.0));
-         if(abs(p.y)<w)discard;
-       }
-     }
+     if(aczoBoatWaterInside(vWorldPos.xy))discard;
 
      if(clipToPond>.5){
        vec2 pondUV=vec2(
@@ -10971,6 +10979,12 @@ aczoWaterStructureShadowMat=new THREE.ShadowMaterial({
 });
 aczoWaterStructureShadowMat.alphaMap=waterMaskTex;
 aczoWaterStructureShadowMat.alphaTest=.50;
+aczoWaterStructureShadowMat.onBeforeCompile=shader=>{
+  shader.uniforms.boatHullMask=waterUniforms.boatHullMask;
+  shader.uniforms.boatHullActive=waterUniforms.boatHullActive;
+  shader.vertexShader='varying vec2 aczoBoatWaterXY;\n'+shader.vertexShader.replace('#include <project_vertex>','aczoBoatWaterXY=(modelMatrix*vec4(transformed,1.0)).xy;\n#include <project_vertex>');
+  shader.fragmentShader='varying vec2 aczoBoatWaterXY;\n'+aczoBoatWaterMaskGLSL+shader.fragmentShader.replace('void main() {','void main() {\nif(aczoBoatWaterInside(aczoBoatWaterXY))discard;');
+};
 aczoWaterStructureShadowReceiver=new THREE.Mesh(aczoWaterShadowGeo,aczoWaterStructureShadowMat);
 aczoWaterStructureShadowReceiver.name='ACZO56_WASSEROBERFLAECHE_LIVE_SONNENSCHATTEN';
 aczoWaterStructureShadowReceiver.position.z=.028;
@@ -10999,6 +11013,8 @@ function makeDirectCelestialReflectionMaterial(color){
     blending:THREE.AdditiveBlending,
     fog:false,
     uniforms:{
+      boatHullMask:waterUniforms.boatHullMask,
+      boatHullActive:waterUniforms.boatHullActive,
       time:waterUniforms.time,
       anchor:{value:new THREE.Vector2(0,0)},
       trailDir:{value:new THREE.Vector2(0,-1)},
@@ -11026,6 +11042,7 @@ function makeDirectCelestialReflectionMaterial(color){
       }
     `,
     fragmentShader:`
+      ${aczoBoatWaterMaskGLSL}
       uniform float time;
       uniform vec2 anchor;
       uniform vec2 trailDir;
@@ -11043,6 +11060,7 @@ function makeDirectCelestialReflectionMaterial(color){
 
       void main(){
         if(strength<.002)discard;
+        if(aczoBoatWaterInside(vWorldXY))discard;
         // V2.3.5: Der Zusatzreflex wird fragmentgenau auf die echte
         // Weihermaske begrenzt. Zuvor lag das neue waterGeo als Rechteck vor
         // und der Reflex konnte deshalb auf der Satellitenkarte erscheinen.
@@ -11381,6 +11399,8 @@ scene.add(waterSkirt);
 // werden genau dieselben wandernden Wellenstellen nicht nur oben gespiegelt,
 // sondern hellen zugleich die darunterliegenden Tiefenfarben auf.
 const celestialDepthUniforms={
+  boatHullMask:waterUniforms.boatHullMask,
+  boatHullActive:waterUniforms.boatHullActive,
   time:waterUniforms.time,
   viewportSize:waterUniforms.viewportSize,
   viewportOrigin:waterUniforms.viewportOrigin,
@@ -11414,6 +11434,7 @@ const celestialDepthMat=new THREE.ShaderMaterial({
     }
   `,
   fragmentShader:`
+    ${aczoBoatWaterMaskGLSL}
     uniform float time;
     uniform vec2 viewportSize;
     uniform vec2 viewportOrigin;
@@ -11430,6 +11451,7 @@ const celestialDepthMat=new THREE.ShaderMaterial({
     varying vec3 vWorldPos;
 
     void main(){
+      if(aczoBoatWaterInside(vWorldPos.xy))discard;
       if(clipToPond>.5){
         vec2 puv=vec2(
           (vWorldPos.x-pondMaskMin.x)/max(pondMaskSpan.x,.001),
