@@ -29808,7 +29808,6 @@ function aczoBoatInstallUi(){
  const sonar=document.createElement('div');sonar.className='aczo-boat-sonar';sonar.hidden=true;sonar.innerHTML='<canvas aria-label="Deeper am Bootsheck"></canvas><span>DEEPER · AM HECK</span>';anglingUi.append(sonar);rt.sonar=sonar;rt.canvas=sonar.querySelector('canvas');rt.ctx=rt.canvas.getContext('2d');
  window.addEventListener('keydown',e=>{if(!aczoBoatActive()||aczoBoatRuntime.claimPending||aczoBoatNoteOpen()||anglingGamePanelOpen()||e.target?.closest?.('input,textarea,select,[contenteditable]'))return;const keys={ArrowUp:'forward',w:'forward',ArrowDown:'reverse',s:'reverse',ArrowLeft:'left',a:'left',ArrowRight:'right',d:'right'};const key=keys[e.key];if(key){e.preventDefault();rt.input[key]=true;}});
  window.addEventListener('keyup',e=>{const keys={ArrowUp:'forward',w:'forward',ArrowDown:'reverse',s:'reverse',ArrowLeft:'left',a:'left',ArrowRight:'right',d:'right'};if(keys[e.key])rt.input[keys[e.key]]=false;});window.addEventListener('blur',()=>{rt.input={};rt.speed=0;aczoBoatStopMotor();});
- renderer.domElement.addEventListener('pointerdown',aczoBoatPickFind,true);
 }
 function aczoBoatRefreshUi(){
  const rt=aczoBoatRuntime;if(!rt.ui)return;const paused=rt.claimPending||aczoBoatNoteOpen()||anglingGamePanelOpen()||anglingHallOfFameActive||anglingTimeShiftActive;
@@ -29942,26 +29941,35 @@ function aczoBoatFindAnchor(cfg,frame,def){
  }
  return best&&score<12?best:aczoBirchWorldPoint(frame,cfg.trunk[def.fallback]);
 }
+function aczoBoatGlintTexture(){
+ const rt=aczoBoatRuntime;if(rt.glintTexture)return rt.glintTexture;
+ const canvas=document.createElement('canvas');canvas.width=canvas.height=128;const ctx=canvas.getContext('2d');
+ const glow=ctx.createRadialGradient(64,64,2,64,64,62);glow.addColorStop(0,'rgba(255,255,225,1)');glow.addColorStop(.18,'rgba(255,216,105,.85)');glow.addColorStop(.55,'rgba(246,187,48,.28)');glow.addColorStop(1,'rgba(246,187,48,0)');ctx.fillStyle=glow;ctx.fillRect(0,0,128,128);
+ ctx.beginPath();ctx.moveTo(64,12);ctx.lineTo(64,116);ctx.moveTo(12,64);ctx.lineTo(116,64);ctx.strokeStyle='rgba(190,137,39,.75)';ctx.lineWidth=5;ctx.stroke();ctx.strokeStyle='#fff9d9';ctx.lineWidth=2;ctx.stroke();
+ ctx.beginPath();ctx.arc(64,64,5,0,Math.PI*2);ctx.fillStyle='#fffde8';ctx.fill();
+ rt.glintTexture=new THREE.CanvasTexture(canvas);return rt.glintTexture;
+}
 function aczoBoatBuildFinds(){
  const rt=aczoBoatRuntime;if(rt.findsReady)return;rt.findsReady=true;
  for(const def of aczoBoatFindDefinitions){
   const cfg=ACZO_REAL_BIRCH_CONFIGS.find(c=>c.id===def.tree),id=def.id,d=ACZO_LURE_DESIGNS[id],frame=aczoMasterBoundaryFrame(...cfg.center);if(!frame)continue;
   const anchor=aczoBoatFindAnchor(cfg,frame,def),point=anchor.clone().addScaledVector(new THREE.Vector3(frame.nx,frame.ny,0),.35),group=new THREE.Group();group.name='ACZO_BOAT_HIDDEN_FIND';
   point.z=Math.max(WATER_OVERLAY_Z+.70,Math.min(def.z-.45,anchor.z-.45));group.position.copy(point);
-  const mat=new THREE.MeshStandardMaterial({color:d.soft||d.metal||0xe3c666,metalness:d.family==='shad'?.12:.95,roughness:.15,emissive:0x20382a,emissiveIntensity:.32});const body=new THREE.Mesh(aczoLureGeometryCache[id].body.clone(),mat);body.scale.setScalar(1.10);body.rotation.x=Math.PI/2;group.add(body);
+  const mat=new THREE.MeshStandardMaterial({color:d.family==='shad'?0xffffff:d.metal||0xe3c666,vertexColors:d.family==='shad',side:THREE.DoubleSide,envMap:aczoLureEnv,envMapIntensity:1.8,metalness:d.family==='shad'?.12:.95,roughness:.15,emissive:0x20382a,emissiveIntensity:.45});const body=new THREE.Mesh(aczoLureGeometryCache[id].body.clone(),mat);body.scale.setScalar(1.10);body.rotation.x=Math.PI/2;group.add(body);
   if(d.family==='shad'){const tail=new THREE.Mesh(new THREE.SphereGeometry(.07,10,8),mat);tail.scale.set(.55,.22,1);tail.position.z=-.22;group.add(tail);}
   const hook=new THREE.Mesh(new THREE.TorusGeometry(.035,.006,5,12,Math.PI*1.7),new THREE.MeshStandardMaterial({color:0xa4b9bb,metalness:.85,roughness:.2}));hook.position.z=-.21;group.add(hook);
   const hanger=new THREE.Line(new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(0,0,.20),anchor.clone().sub(point)]),new THREE.LineBasicMaterial({color:0xb8c1bd,transparent:true,opacity:.55}));group.add(hanger);
-  const glint=new THREE.Sprite(new THREE.SpriteMaterial({map:fishLightGlowTex,color:0xffed91,transparent:true,depthWrite:false,depthTest:false,opacity:0}));glint.scale.set(1.1,1.1,1);group.add(glint);scene.add(group);
+  const glint=new THREE.Sprite(new THREE.SpriteMaterial({map:aczoBoatGlintTexture(),color:0xffffff,transparent:true,depthWrite:false,depthTest:false,fog:false,opacity:0}));glint.scale.set(1.25,1.25,1);group.add(glint);scene.add(group);
   const find={key:def.key,id,group,glint};const button=document.createElement('button');button.type='button';button.className='aczo-boat-find';button.textContent='Aufnehmen';button.setAttribute('aria-label','Gefundenen Kunstköder aufnehmen');button.hidden=true;
   button.addEventListener('pointerdown',e=>aczoBoatCollectFind(find,e));button.addEventListener('click',e=>{if(e.detail===0)aczoBoatCollectFind(find,e);});anglingUi.append(button);find.button=button;rt.finds.push(find);
  }
 }
 function aczoBoatUpdateFinds(){
  const rt=aczoBoatRuntime;if(!rt.active)return;aczoBoatBuildFinds();const now=performance.now()/1000,rect=renderer.domElement.getBoundingClientRect();
+ if(rt.tinGlint){const unopened=!aczoBoatFindClaims()['tin-sabrina'];rt.tinGlint.visible=anglingCinematicView!=='underwater'&&!anglingHallOfFameActive&&!aczoBoatNoteOpen()&&!rt.claimPending;rt.tinGlint.material.opacity=Math.pow(Math.max(0,Math.sin(now*(unopened?1.05:.55)-.8)),6)*(unopened?.85:.35);}
  for(let i=0;i<rt.finds.length;i++){
   const f=rt.finds[i];f.group.visible=anglingMode&&!aczoBoatFindTaken(f)&&anglingCinematicView!=='underwater'&&!anglingHallOfFameActive;
-  f.glint.material.opacity=Math.pow(Math.max(0,Math.sin(now*1.1+i*1.8)),18)*.96;
+  f.glint.material.opacity=.12+Math.pow(Math.max(0,Math.sin(now*1.55+i*1.8)),4)*.88;
   const screen=f.group.getWorldPosition(new THREE.Vector3()).project(camera),canTake=!rt.claimPending&&f.group.visible&&['driving','anchored'].includes(rt.phase)&&!aczoBoatNoteOpen()&&!aczoBoatLineBusy()&&!anglingGamePanelOpen()&&!anglingTimeShiftActive&&eastBoatModel.position.distanceTo(f.group.position)<=8;
   if(rt.selectedFind===f&&(!canTake||performance.now()>rt.selectedFindUntil))rt.selectedFind=null;
   f.button.hidden=rt.selectedFind!==f||!canTake||screen.z< -1||screen.z>1||Math.abs(screen.x)>.92||Math.abs(screen.y)>.90;
@@ -29978,21 +29986,23 @@ async function aczoBoatCollectFind(find,e){
  const rare=!!ANGLING_LURE_CATALOG[find.id]?.unique;showAnglingMajorNotice(rare?'⭐ SELTENER KUNSTKÖDER GEFUNDEN!':'⭐ KUNSTKÖDER GEFUNDEN!','Super! '+ANGLING_LURE_CATALOG[find.id].name+' liegt jetzt in deiner Tacklebox.','success',3200);return true;
 }
 function aczoBoatPickFind(e){
- if(aczoBoatRuntime.claimPending||e.button>0||!aczoBoatActive()||!['driving','anchored'].includes(aczoBoatRuntime.phase)||aczoBoatNoteOpen()||aczoBoatLineBusy()||anglingGamePanelOpen()||anglingHallOfFameActive||anglingTimeShiftActive)return;
- const rect=renderer.domElement.getBoundingClientRect();if(e.clientX<rect.left||e.clientX>rect.left+rect.width||e.clientY<rect.top||e.clientY>rect.top+rect.height)return;
- if(aczoBoatPickTin(e,rect))return;
- // Match the visible glow in screen pixels, giving touch users the same generous target at any distance.
+ if(aczoBoatRuntime.claimPending||e.button>0||!aczoBoatActive()||!['driving','anchored'].includes(aczoBoatRuntime.phase)||aczoBoatNoteOpen()||aczoBoatLineBusy()||anglingGamePanelOpen()||anglingHallOfFameActive||anglingTimeShiftActive)return false;
+ const rect=renderer.domElement.getBoundingClientRect();if(e.clientX<rect.left||e.clientX>rect.left+rect.width||e.clientY<rect.top||e.clientY>rect.top+rect.height)return false;
+ if(aczoBoatPickTin(e,rect))return true;
+ // Accept the actual lure mesh or a finger-sized area around its visible glint.
+ const ray=new THREE.Raycaster();ray.setFromCamera(new THREE.Vector2((e.clientX-rect.left)/rect.width*2-1,1-(e.clientY-rect.top)/rect.height*2),camera);
  let selected=null,nearest=Infinity;
  for(const find of aczoBoatRuntime.finds){
   if(!find.group.visible||aczoBoatFindTaken(find))continue;
   const p=find.group.getWorldPosition(new THREE.Vector3()).project(camera);if(p.z< -1||p.z>1)continue;
   const x=rect.left+(p.x+1)*.5*rect.width,y=rect.top+(1-p.y)*.5*rect.height,dist=Math.hypot(e.clientX-x,e.clientY-y);
-  if(dist<30&&dist<nearest){nearest=dist;selected=find;}
+  if((dist<=36||ray.intersectObjects(find.group.children.filter(o=>o.isMesh),true).length)&&dist<nearest){nearest=dist;selected=find;}
  }
  const rt=aczoBoatRuntime;rt.selectedFind=null;
  if(selected){e.preventDefault?.();e.stopImmediatePropagation?.();if(eastBoatModel.position.distanceTo(selected.group.position)>8){showAnglingToast('Zum Aufnehmen noch etwas näher heranfahren.',1500);}
   else{rt.speed=0;rt.turnRate=0;rt.input={};rt.selectedFind=selected;rt.selectedFindUntil=performance.now()+6000;}}
  aczoBoatUpdateFinds();
+ return !!selected;
 }
 
 function aczoBoatNoteOpen(){return !!aczoBoatRuntime.note&&!aczoBoatRuntime.note.hidden;}
@@ -30004,6 +30014,7 @@ function aczoBoatBuildTin(){
  const lid=new THREE.Mesh(new THREE.CylinderGeometry(.245,.245,.025,32),new THREE.MeshStandardMaterial({color:0x1c5543,metalness:.35,roughness:.40}));lid.rotation.x=Math.PI/2;lid.position.z=.068;group.add(lid);
  const canvas=document.createElement('canvas');canvas.width=256;canvas.height=256;const ctx=canvas.getContext('2d');ctx.clearRect(0,0,256,256);ctx.fillStyle='#f5e6ad';ctx.textAlign='center';ctx.font='bold 39px system-ui';ctx.fillText('Sabrina',128,118);ctx.font='22px system-ui';ctx.fillText('KÖDERDOSE',128,153);
  const label=new THREE.Mesh(new THREE.PlaneGeometry(.36,.36),new THREE.MeshBasicMaterial({map:new THREE.CanvasTexture(canvas),transparent:true,depthWrite:false}));label.position.z=.082;label.rotation.z=Math.PI/2;group.add(label);eastBoatModel.add(group);rt.tin=group;eastBoatModel.userData.boatName='Sabrina';eastBoatModel.updateMatrixWorld(true);
+ const glint=new THREE.Sprite(new THREE.SpriteMaterial({map:aczoBoatGlintTexture(),color:0xffffff,transparent:true,depthWrite:false,depthTest:false,fog:false,opacity:0}));glint.position.z=.13;glint.scale.set(.55,.55,1);group.add(glint);rt.tinGlint=glint;
  const style=document.createElement('style');style.textContent=`
  .angling-ui .aczo-sabrina-note{position:absolute;inset:0;z-index:9500;display:flex;align-items:center;justify-content:center;padding:18px;background:rgba(3,20,17,.64);pointer-events:auto;box-sizing:border-box}
  .angling-ui .aczo-sabrina-note[hidden],.angling-ui .aczo-sabrina-saving[hidden]{display:none!important}
@@ -30024,7 +30035,7 @@ function aczoBoatPickTin(e,rect){
  const p=rt.tin.getWorldPosition(new THREE.Vector3()).project(camera);if(p.z< -1||p.z>1)return false;
  const x=rect.left+(p.x+1)*.5*rect.width,y=rect.top+(1-p.y)*.5*rect.height;
  const ray=new THREE.Raycaster();ray.setFromCamera(new THREE.Vector2((e.clientX-rect.left)/rect.width*2-1,1-(e.clientY-rect.top)/rect.height*2),camera);
- if(!ray.intersectObject(rt.tin,true).length&&Math.hypot(e.clientX-x,e.clientY-y)>32)return false;
+ if(!ray.intersectObjects(rt.tin.children.filter(o=>o.isMesh),true).length&&Math.hypot(e.clientX-x,e.clientY-y)>36)return false;
  e.preventDefault?.();e.stopImmediatePropagation?.();aczoBoatOpenTin();return true;
 }
 async function aczoBoatOpenTin(){
@@ -44990,6 +45001,8 @@ renderer.domElement.addEventListener('contextmenu',e=>{
 
 renderer.domElement.addEventListener('pointerdown',e=>{
   if(!anglingMode||anglingGamePanelOpen())return;
+  // Bootsfunde vor der allgemeinen Angelsteuerung verarbeiten: diese stoppt weitere Canvas-Handler.
+  if(aczoBoatPickFind(e))return;
   if(anglingFeedMode==='aim'&&(e.pointerType!=='mouse'||e.button===0)){
     setAnglingFeedAimFromPointer(e.clientX,e.clientY);
     anglingPointerStarts.set(e.pointerId,{x:e.clientX,y:e.clientY,lastX:e.clientX,lastY:e.clientY,dragX:0,moved:false,feed:true});
