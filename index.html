@@ -3099,6 +3099,18 @@ html,body{
 }
 
 
+/* V3.0 Account-UX: Recovery-Code auf schmalen Displays vollständig lesbar. */
+.angling-main-recovery-line textarea.angling-main-recovery{
+  width:100%;min-width:0;box-sizing:border-box;resize:none;overflow:hidden;
+  padding:8px 9px;border-radius:8px;border:1px solid rgba(255,255,255,.22);
+  background:rgba(0,0,0,.25);color:#fff;font-size:11px;font-weight:850;
+  line-height:1.35;white-space:pre-wrap;overflow-wrap:anywhere;word-break:break-word;
+}
+@media(max-width:680px){
+  .angling-main-recovery-line{grid-template-columns:1fr auto}
+  .angling-main-recovery-line textarea.angling-main-recovery{font-size:10.5px;letter-spacing:.045em}
+}
+
 /* V7.80: größere Typografie und klarere Hauptmenü-Hierarchie */
 .angling-main-card{width:min(700px,100%);padding:16px}
 .angling-main-head small{font-size:9px}
@@ -5207,9 +5219,10 @@ function aczoSetIconText(element,value){
              <div id="aczoAccountArea" class="aczo-account-area">
                <div id="aczoAccountSummary"></div>
                <div id="aczoAccountChoices" class="aczo-account-actions">
-                 <button type="button" id="aczoShowLogin" class="angling-main-btn">Mit Spielerkonto anmelden</button>
-                 <button type="button" id="aczoShowRegister" class="angling-main-btn primary">Spielerkonto erstellen</button>
-                 <button type="button" id="aczoGuestStart" class="angling-main-btn">Als Gastangler spielen</button>
+                 <button type="button" id="aczoShowRegister" class="angling-main-btn primary">🔐 Spielerkonto erstellen</button>
+                 <button type="button" id="aczoShowLogin" class="angling-main-btn">🔑 Mit bestehendem Konto anmelden</button>
+                 <button type="button" id="aczoShowRecover" class="angling-main-btn">♻️ Alten Spielstand wiederherstellen</button>
+                 <button type="button" id="aczoGuestStart" class="angling-main-btn">🎣 Als Gastangler spielen</button>
                </div>
                <form id="aczoLoginForm" class="aczo-account-form" method="post" autocomplete="on" hidden>
                  <h4>👤 Spielerkonto anmelden</h4><p>Melde dich an, um deinen vorhandenen Spielstand auf diesem Gerät zu laden.</p>
@@ -5220,9 +5233,12 @@ function aczoSetIconText(element,value){
                  <button class="angling-main-btn" type="button" data-account-back>Als Gastangler spielen</button>
                </form>
                <form id="aczoRegisterForm" class="aczo-account-form" method="post" autocomplete="on" hidden>
-                 <h4>🔐 Spielerkonto aktivieren</h4>
-                 <p>Schon vor dem neuen Kontosystem gespielt? Dann kannst du hier deinen bisherigen Wiederherstellungscode eingeben. Dein vorhandener Spieler und Spielstand bleiben erhalten. Neue Spieler lassen das Feld einfach leer.</p>
-                 <label for="aczoRegisterRecovery">Bisheriger Wiederherstellungscode <small>(nur für Altspieler)</small></label><input id="aczoRegisterRecovery" name="legacy-recovery-code" type="text" autocapitalize="characters" spellcheck="false" autocomplete="off" placeholder="XXXX-XXXX-XXXX-XXXX-XXXX-XXXX">
+                 <h4 id="aczoRegisterTitle">🔐 Spielerkonto erstellen</h4>
+                 <p id="aczoRegisterIntro">Sichere diesen vorhandenen Spielstand mit Benutzername und Passwort und nutze ihn auf mehreren Geräten.</p>
+                 <div id="aczoRegisterLegacyBlock" hidden>
+                   <p>Gib den Wiederherstellungscode deines alten Spielstands ein. Danach verknüpfst du genau diesen Spieler mit einem neuen Spielerkonto.</p>
+                   <label for="aczoRegisterRecovery">Bisheriger Wiederherstellungscode</label><input id="aczoRegisterRecovery" name="legacy-recovery-code" type="text" autocapitalize="characters" spellcheck="false" autocomplete="off" placeholder="XXXX-XXXX-XXXX-XXXX-XXXX-XXXX">
+                 </div>
                  <label for="aczoRegisterName">Benutzername</label><input id="aczoRegisterName" name="username" type="text" autocapitalize="none" spellcheck="false" autocomplete="username" minlength="3" maxlength="30" required>
                  <label for="aczoRegisterPassword">Passwort</label><input id="aczoRegisterPassword" name="new-password" type="password" autocomplete="new-password" minlength="12" required>
                  <label for="aczoRegisterRepeat">Passwort wiederholen</label><input id="aczoRegisterRepeat" name="confirm-password" type="password" autocomplete="new-password" minlength="12" required>
@@ -5276,7 +5292,7 @@ function aczoSetIconText(element,value){
                <div class="angling-main-subheading">🔑 Wiederherstellungscode</div>
                <p>Privat aufbewahren. Auf einem neuen Gerät kann der ursprüngliche Code nur mit deiner Kopie eingegeben werden.</p>
                <div class="angling-main-recovery-line">
-                 <input id="anglingMainRecoveryCode" class="angling-main-recovery" type="text" readonly value="Wird eingerichtet …">
+                 <textarea id="anglingMainRecoveryCode" class="angling-main-recovery" readonly rows="2" aria-label="Wiederherstellungscode">Wird eingerichtet …</textarea>
                  <button id="anglingMainCopyRecoveryBtn" class="angling-main-btn">Kopieren</button>
                  <button id="anglingMainNewRecoveryBtn" class="angling-main-btn warn new-code-btn" hidden>Neuen Code</button>
                </div>
@@ -44361,29 +44377,45 @@ if(window.visualViewport){
 }
 
 // Spielerkonto und Community: Ergänzung des bestehenden Menüs.
-let aczoAccountMode='choices',aczoCommunityPage=0,aczoCommunityQuery='',aczoCommunityTimer=null;
+let aczoAccountMode='choices',aczoRegisterLegacyMode=false,aczoCommunityPage=0,aczoCommunityQuery='',aczoCommunityTimer=null;
 const aczoEl=id=>document.getElementById(id);
 function aczoStatus(message){aczoEl('aczoAccountStatus').textContent=message;}
 function aczoRenderAccount(){
   if(!aczoEl('aczoAccountArea'))return;
-  const hasAccount=!!(aczoSessionToken&&aczoAccount),signedOut=!anglingSetupComplete;
+  const hasAccount=!!(aczoSessionToken&&aczoAccount),signedOut=!anglingSetupComplete,guest=!hasAccount&&!signedOut;
   aczoEl('aczoAccountSummary').classList.toggle('aczo-account-connected',hasAccount);
   aczoEl('aczoAccountSummary').textContent=hasAccount
     ?'👤 '+aczoAccount.username+' · Spielerkonto verbunden'
-    :signedOut?'👤 Spielerkonto anmelden oder als Gastangler spielen'
-      :(anglingPlayerProfile.name?'👤 '+anglingPlayerProfile.name+' · vorhandener Spielstand':'🎣 Gastangler · '+anglingProgress.xp+' EP · '+anglingProgress.totalCatches+' Fänge');
+    :guest
+      ?'🎣 '+(anglingPlayerProfile.name||'Gastangler')+' · '+anglingProgress.xp+' EP · '+anglingProgress.totalCatches+' Fänge · kein Spielerkonto'
+      :'👤 Noch kein Spieler auf diesem Gerät';
   if(hasAccount){const dot=document.createElement('span');dot.className='aczo-account-dot';dot.setAttribute('aria-hidden','true');aczoEl('aczoAccountSummary').prepend(dot);}
   aczoEl('aczoAccountChoices').hidden=hasAccount||aczoAccountMode!=='choices';
   aczoEl('aczoAccountControls').hidden=!hasAccount||aczoAccountMode!=='choices';
   for(const [mode,id] of [['login','aczoLoginForm'],['register','aczoRegisterForm'],['reset','aczoResetForm'],['password','aczoPasswordForm']])aczoEl(id).hidden=aczoAccountMode!==mode;
+
+  // Klare Zustandslogik: Ein vorhandener Gast braucht weder einen zweiten
+  // Gast-Button noch einen Recovery-Umweg. Ein leeres Gerät bekommt dagegen
+  // Anmeldung, Gaststart und Altspiel-Wiederherstellung angeboten.
+  aczoEl('aczoShowRegister').hidden=!guest;
+  aczoEl('aczoShowLogin').hidden=false;
+  aczoEl('aczoShowRecover').hidden=!signedOut;
+  aczoEl('aczoGuestStart').hidden=!signedOut;
+
+  const legacyBlock=aczoEl('aczoRegisterLegacyBlock');
+  if(legacyBlock)legacyBlock.hidden=!aczoRegisterLegacyMode;
+  const registerTitle=aczoEl('aczoRegisterTitle'),registerIntro=aczoEl('aczoRegisterIntro');
+  if(registerTitle)registerTitle.textContent=aczoRegisterLegacyMode?'♻️ Alten Spielstand wiederherstellen':'🔐 Spielerkonto erstellen';
+  if(registerIntro)registerIntro.textContent=aczoRegisterLegacyMode
+    ?'Stelle deinen bisherigen Spielstand mit dem Wiederherstellungscode wieder her und sichere ihn direkt mit Benutzername und Passwort.'
+    :'Sichere diesen vorhandenen Spielstand mit Benutzername und Passwort und nutze ihn auf mehreren Geräten.';
+
   aczoEl('aczoLegacyProfile').hidden=signedOut||hasAccount;
   aczoEl('anglingMainSaveProfileBtn').hidden=signedOut||hasAccount;
   aczoEl('aczoSavePrivacy').hidden=!hasAccount;
   anglingMainCloudEnabled.closest('label').hidden=hasAccount;
   if(hasAccount){anglingCloudEnabled=true;anglingMainCloudEnabled.checked=true;}
   const nudge=aczoEl('aczoGuestNudge');if(nudge){let until=0;try{until=Number(localStorage.getItem('aczo56-account-nudge-until')||0);}catch(err){}nudge.hidden=hasAccount||signedOut||Date.now()<until||!(anglingProgress.xp>=100||anglingProgress.totalCatches>=3);}
-  aczoEl('aczoGuestStart').hidden=!signedOut;
-  aczoEl('aczoShowRegister').textContent=anglingPlayerProfile.name?'Spielerkonto aktivieren':'Spielerkonto erstellen';
   aczoEl('anglingMainNewRecoveryBtn').hidden=true;
   aczoEl('anglingMainRecoveryCode').closest('.angling-main-recovery-block').hidden=signedOut;
   aczoEl('aczoAttachRecovery').hidden=!hasAccount||!!anglingRecoveryCode;
@@ -44397,7 +44429,7 @@ function aczoRankMedal(index){
   const img=document.createElement('img');img.className='aczo-rank-medal';img.alt=(index+1)+'. Platz';img.src='data:image/svg+xml;charset=utf-8,'+encodeURIComponent(svg);return img;
 }
 
-function aczoSetAccountMode(mode){aczoAccountMode=mode;aczoRenderAccount();aczoStatus('');}
+function aczoSetAccountMode(mode){aczoAccountMode=mode;if(mode!=='register')aczoRegisterLegacyMode=false;aczoRenderAccount();aczoStatus('');}
 async function aczoPasswordCredential(password,isNew=false){
   const value=String(password||'');
   if(value.length>256||value.length<(isNew?12:1))throw new Error(isNew?'Passwort: 12 bis 256 Zeichen.':'Bitte das Passwort eingeben.');
@@ -44527,7 +44559,18 @@ function aczoCompletePasswordForm(form){
 aczoEl('aczoNudgeNow').addEventListener('click',()=>{aczoMainNavigate('profile');aczoEl('aczoShowRegister').click();});
 aczoEl('aczoNudgeLater').addEventListener('click',()=>{try{localStorage.setItem('aczo56-account-nudge-until',String(Date.now()+7*86400000));}catch(err){}aczoRenderAccount();});
 aczoEl('aczoShowLogin').addEventListener('click',()=>aczoSetAccountMode('login'));
-aczoEl('aczoShowRegister').addEventListener('click',()=>{aczoEl('aczoRegisterName').value=anglingPlayerProfile.name||'';aczoSetAccountMode('register');});
+aczoEl('aczoShowRegister').addEventListener('click',()=>{
+  aczoRegisterLegacyMode=false;
+  aczoEl('aczoRegisterRecovery').value='';
+  aczoEl('aczoRegisterName').value=anglingPlayerProfile.name||'';
+  aczoSetAccountMode('register');
+});
+aczoEl('aczoShowRecover').addEventListener('click',()=>{
+  aczoRegisterLegacyMode=true;
+  aczoEl('aczoRegisterRecovery').value='';
+  aczoEl('aczoRegisterName').value='';
+  aczoSetAccountMode('register');
+});
 
 aczoEl('aczoChangePassword').addEventListener('click',()=>aczoSetAccountMode('password'));
 aczoEl('aczoRename').addEventListener('click',async()=>{
@@ -44585,7 +44628,7 @@ aczoBindForm('aczoLoginForm',async form=>{
 });
 aczoBindForm('aczoRegisterForm',async form=>{
   const username=form.elements.namedItem('username').value,password=form.elements.namedItem('new-password').value;
-  const legacyCode=normalizeAnglingRecoveryCode(form.elements.namedItem('legacy-recovery-code')?.value||'');
+  const legacyCode=aczoRegisterLegacyMode?normalizeAnglingRecoveryCode(form.elements.namedItem('legacy-recovery-code')?.value||''):'';
   if(password!==form.elements.namedItem('confirm-password').value)throw new Error('Die Passwörter stimmen nicht überein.');
 
   let data=null;
