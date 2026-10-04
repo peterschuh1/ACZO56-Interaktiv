@@ -35137,7 +35137,7 @@ function updateAnglingMainMenuUi(){
   anglingMainCloudEnabled.checked=!!anglingCloudEnabled;
   anglingMainHighscorePublic.checked=!!anglingPlayerProfile.shareRecords;
   anglingMainPresenceNamed.checked=!!anglingPresenceNamed;
-  anglingMainEpBadge.querySelector('strong').textContent=String(anglingProgress.xp);
+  anglingMainEpBadge.querySelector('strong').textContent=(!anglingSetupComplete&&!aczoAccount)?'0':String(anglingProgress.xp);
   anglingMainRecoveryCode.value=anglingRecoveryCode||(aczoAccount?'Auf diesem Gerät nicht hinterlegt':'Noch nicht erstellt');
   anglingMainCopyRecoveryBtn.disabled=!anglingRecoveryCode;
   anglingMainNewRecoveryBtn.disabled=true;
@@ -44276,6 +44276,56 @@ function updateAnglingMode(dt){
 }
 
 
+// ACCOUNT-UI FIX: Auf iPhone/iPad darf die Bildschirmtastatur nicht das komplette
+// Hauptmenü unter die Safari-Adressleiste schieben. Während ein Konto-Eingabefeld
+// fokussiert ist, folgt nur das Menü der tatsächlich sichtbaren visualViewport-Fläche;
+// die Karte selbst bleibt intern scrollbar. Desktop/Android ohne visualViewport bleiben unberührt.
+let aczoAccountKeyboardActive=false;
+function aczoSyncAccountKeyboardViewport(){
+  if(!aczoAccountKeyboardActive||!window.visualViewport||!anglingMainMenu)return;
+  const vv=window.visualViewport;
+  anglingMainMenu.style.position='fixed';
+  anglingMainMenu.style.inset='auto 0 auto 0';
+  anglingMainMenu.style.top=Math.max(0,vv.offsetTop)+'px';
+  anglingMainMenu.style.height=Math.max(180,vv.height)+'px';
+  anglingMainMenu.style.boxSizing='border-box';
+  anglingMainMenu.style.alignItems='flex-start';
+  const card=anglingMainMenu.querySelector('.angling-main-card');
+  if(card)card.style.maxHeight=Math.max(160,vv.height-12)+'px';
+}
+function aczoResetAccountKeyboardViewport(){
+  if(!anglingMainMenu)return;
+  anglingMainMenu.style.removeProperty('position');
+  anglingMainMenu.style.removeProperty('inset');
+  anglingMainMenu.style.removeProperty('top');
+  anglingMainMenu.style.removeProperty('height');
+  anglingMainMenu.style.removeProperty('box-sizing');
+  anglingMainMenu.style.removeProperty('align-items');
+  const card=anglingMainMenu.querySelector('.angling-main-card');
+  if(card)card.style.removeProperty('max-height');
+}
+function aczoIsAccountTextField(el){
+  return !!el?.closest?.('#aczoLoginForm,#aczoRegisterForm,#aczoResetForm,#aczoPasswordForm,#aczoAttachRecovery');
+}
+document.addEventListener('focusin',event=>{
+  if(!aczoIsAccountTextField(event.target)||!window.visualViewport)return;
+  aczoAccountKeyboardActive=true;
+  requestAnimationFrame(aczoSyncAccountKeyboardViewport);
+  setTimeout(aczoSyncAccountKeyboardViewport,80);
+},{passive:true});
+document.addEventListener('focusout',event=>{
+  if(!aczoIsAccountTextField(event.target))return;
+  setTimeout(()=>{
+    if(aczoIsAccountTextField(document.activeElement))return;
+    aczoAccountKeyboardActive=false;
+    aczoResetAccountKeyboardViewport();
+  },120);
+},{passive:true});
+if(window.visualViewport){
+  window.visualViewport.addEventListener('resize',aczoSyncAccountKeyboardViewport,{passive:true});
+  window.visualViewport.addEventListener('scroll',aczoSyncAccountKeyboardViewport,{passive:true});
+}
+
 // Spielerkonto und Community: Ergänzung des bestehenden Menüs.
 let aczoAccountMode='choices',aczoCommunityPage=0,aczoCommunityQuery='',aczoCommunityTimer=null;
 const aczoEl=id=>document.getElementById(id);
@@ -44497,10 +44547,6 @@ aczoBindForm('aczoLoginForm',async form=>{
   const data=await aczoApi('loginAccount',{username,password});
   await aczoOfferPasswordSave(data.account.username,password);
   await aczoFinishAccountLogin(data);
-  // Erst NACH dem Spielerwechsel speichern, weil aczoApplyAccountPlayer beim
-  // Gerätewechsel den lokalen Zielspieler wiederherstellt und dabei dessen
-  // Recovery-Zustand lädt. So bleibt der verifizierte Alt-Code sicher erhalten.
-  if(legacyCode)saveAnglingRecoveryCode(legacyCode);
   aczoCompletePasswordForm(form);
 });
 aczoBindForm('aczoRegisterForm',async form=>{
@@ -44544,10 +44590,6 @@ aczoBindForm('aczoResetForm',async form=>{
   const data=await aczoApi('resetAccountPassword',{username,recoveryCode:form.elements.namedItem('recovery-code').value,newPassword:password});
   await aczoOfferPasswordSave(data.account.username,password);
   await aczoFinishAccountLogin(data);
-  // Erst NACH dem Spielerwechsel speichern, weil aczoApplyAccountPlayer beim
-  // Gerätewechsel den lokalen Zielspieler wiederherstellt und dabei dessen
-  // Recovery-Zustand lädt. So bleibt der verifizierte Alt-Code sicher erhalten.
-  if(legacyCode)saveAnglingRecoveryCode(legacyCode);
   aczoCompletePasswordForm(form);
 });
 aczoBindForm('aczoPasswordForm',async form=>{
