@@ -5279,7 +5279,7 @@ function aczoSetIconText(element,value){
                <button id="anglingFirstSetupContinueBtn" class="angling-main-btn primary" style="display:none">Speichern & Angelstelle wählen</button>
              </div>
 
-             <div class="angling-main-profile-options">
+             <div id="aczoProfilePrivacyOptions" class="angling-main-profile-options">
                <label><input id="anglingMainCloudEnabled" type="checkbox"><span>☁️ Spielstand online sichern</span></label>
                <label><input id="anglingMainHighscorePublic" type="checkbox"><span>🏆 Rekorde öffentlich anzeigen</span></label>
                <label><input id="anglingMainPresenceNamed" type="checkbox"><span>🟢 Online mit Namen sichtbar</span></label>
@@ -5307,7 +5307,7 @@ function aczoSetIconText(element,value){
              </div>
 
              <button id="anglingMainRecoveryDetailsBtn" class="angling-main-btn" type="button">🔑 Notfall-Wiederherstellung</button>
-             <details class="angling-main-details">
+             <details id="aczoProfileStorageDetails" class="angling-main-details">
                <summary>Was wird gespeichert und was ist öffentlich?</summary>
                <p>Cloud-Sicherung speichert EP, Fortschritt, Käufe, Bestände, persönliche Rekorde und die im Unterwasser-Tauchmodus entdeckten Fischarten. Das Fangbuch mit einzelnen Fängen bleibt lokal. Öffentliche Rekorde und dein sichtbarer Online-Name sind zwei getrennte freiwillige Freigaben.</p>
              </details>
@@ -44378,6 +44378,20 @@ if(window.visualViewport){
 
 // Spielerkonto und Community: Ergänzung des bestehenden Menüs.
 let aczoAccountMode='choices',aczoRegisterLegacyMode=false,aczoCommunityPage=0,aczoCommunityQuery='',aczoCommunityTimer=null;
+let aczoGuestRecoveryEnsureInFlight=false;
+async function aczoEnsureGuestRecoveryCode(){
+  if(aczoGuestRecoveryEnsureInFlight||aczoAccount||!anglingSetupComplete||anglingRecoveryCode||!anglingCloudEnabled)return;
+  aczoGuestRecoveryEnsureInFlight=true;
+  try{
+    updateAnglingRecoveryUi();
+    const ok=await syncAnglingPlayerCloud();
+    if(ok&&anglingRecoveryCode){
+      updateAnglingRecoveryUi();
+      aczoRenderAccount();
+    }
+  }catch(err){console.warn('Gast-Recovery-Code konnte noch nicht eingerichtet werden:',err);}
+  finally{aczoGuestRecoveryEnsureInFlight=false;}
+}
 const aczoEl=id=>document.getElementById(id);
 function aczoStatus(message){aczoEl('aczoAccountStatus').textContent=message;}
 function aczoRenderAccount(){
@@ -44410,11 +44424,19 @@ function aczoRenderAccount(){
     ?'Stelle deinen bisherigen Spielstand mit dem Wiederherstellungscode wieder her und sichere ihn direkt mit Benutzername und Passwort.'
     :'Sichere diesen vorhandenen Spielstand mit Benutzername und Passwort und nutze ihn auf mehreren Geräten.';
 
-  aczoEl('aczoLegacyProfile').hidden=signedOut||hasAccount;
-  aczoEl('anglingMainSaveProfileBtn').hidden=signedOut||hasAccount;
+  // Gastprofil bewusst minimal halten: keine Anzeigenamen-/Cloud-/Privatsphäre-
+  // Technik zeigen. Für Gäste bleiben nur Kontoaktionen + Recovery-Code sichtbar.
+  aczoEl('aczoLegacyProfile').hidden=true;
+  aczoEl('anglingMainSaveProfileBtn').hidden=true;
   aczoEl('aczoSavePrivacy').hidden=!hasAccount;
+  const privacyOptions=aczoEl('aczoProfilePrivacyOptions');
+  if(privacyOptions)privacyOptions.hidden=!hasAccount;
+  if(anglingMainCloudState)anglingMainCloudState.hidden=!hasAccount;
+  if(aczoEl('anglingMainRecoveryDetailsBtn'))aczoEl('anglingMainRecoveryDetailsBtn').hidden=!hasAccount;
+  if(aczoEl('aczoProfileStorageDetails'))aczoEl('aczoProfileStorageDetails').hidden=!hasAccount;
   anglingMainCloudEnabled.closest('label').hidden=hasAccount;
   if(hasAccount){anglingCloudEnabled=true;anglingMainCloudEnabled.checked=true;}
+  if(guest&&!anglingRecoveryCode)window.setTimeout(aczoEnsureGuestRecoveryCode,0);
   const nudge=aczoEl('aczoGuestNudge');if(nudge){let until=0;try{until=Number(localStorage.getItem('aczo56-account-nudge-until')||0);}catch(err){}nudge.hidden=hasAccount||signedOut||Date.now()<until||!(anglingProgress.xp>=100||anglingProgress.totalCatches>=3);}
   aczoEl('anglingMainNewRecoveryBtn').hidden=true;
   aczoEl('anglingMainRecoveryCode').closest('.angling-main-recovery-block').hidden=signedOut;
