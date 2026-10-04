@@ -44387,7 +44387,7 @@ function aczoRenderAccount(){
   aczoEl('aczoShowRecover').hidden=!signedOut;
   aczoEl('aczoGuestStart').hidden=!signedOut;
   const loginBack=aczoEl('aczoLoginForm')?.querySelector('[data-account-back]');
-  if(loginBack)loginBack.textContent=guest?'Zurück':'Als Gastangler spielen';
+  if(loginBack)loginBack.textContent='Zurück';
 
   const legacyBlock=aczoEl('aczoRegisterLegacyBlock');
   if(legacyBlock)legacyBlock.hidden=!aczoRegisterLegacyMode;
@@ -44534,8 +44534,9 @@ function aczoBindForm(id,task){
   aczoEl(id).querySelector('[data-account-back]')?.addEventListener('click',()=>{
     if(aczoAccountBusy)return;
     if(id==='aczoLoginForm'){
-      if(!aczoSessionToken&&anglingSetupComplete)aczoSetAccountMode('choices');
-      else aczoEl('aczoGuestStart').click();
+      // Login wurde nur aufgeklappt: Zurück führt immer in die vorherige Konto-Auswahl.
+      // Es wird dabei ausdrücklich KEIN Gastspieler gestartet oder verändert.
+      aczoSetAccountMode('choices');
     }else aczoSetAccountMode(id==='aczoRegisterForm'?'choices':id==='aczoResetForm'?'login':'choices');
   });
   aczoEl(id).querySelector('#aczoShowReset')?.addEventListener('click',()=>{
