@@ -5221,6 +5221,8 @@ function aczoSetIconText(element,value){
                </form>
                <form id="aczoRegisterForm" class="aczo-account-form" method="post" autocomplete="on" hidden>
                  <h4>🔐 Spielerkonto aktivieren</h4>
+                 <p>Schon vor dem neuen Kontosystem gespielt? Dann kannst du hier deinen bisherigen Wiederherstellungscode eingeben. Dein vorhandener Spieler und Spielstand bleiben erhalten. Neue Spieler lassen das Feld einfach leer.</p>
+                 <label for="aczoRegisterRecovery">Bisheriger Wiederherstellungscode <small>(nur für Altspieler)</small></label><input id="aczoRegisterRecovery" name="legacy-recovery-code" type="text" autocapitalize="characters" spellcheck="false" autocomplete="off" placeholder="XXXX-XXXX-XXXX-XXXX-XXXX-XXXX">
                  <label for="aczoRegisterName">Benutzername</label><input id="aczoRegisterName" name="username" type="text" autocapitalize="none" spellcheck="false" autocomplete="username" minlength="3" maxlength="30" required>
                  <label for="aczoRegisterPassword">Passwort</label><input id="aczoRegisterPassword" name="new-password" type="password" autocomplete="new-password" minlength="12" required>
                  <label for="aczoRegisterRepeat">Passwort wiederholen</label><input id="aczoRegisterRepeat" name="confirm-password" type="password" autocomplete="new-password" minlength="12" required>
@@ -35191,9 +35193,11 @@ function openAnglingFirstSetup(){
   anglingMainSettings.style.display='none';
   aczoMainNavigate('profile');
 }
+let aczoStartAfterAccountLogin=false;
 function finishAnglingSetupAndStart(){
   saveAnglingMainProfile();
   if(!anglingSetupComplete)return;
+  aczoStartAfterAccountLogin=false;
   const playSection=anglingMainPlayBtn.closest('.angling-main-section');
   if(playSection)playSection.style.display='';
   closeAnglingMainMenu();
@@ -35201,9 +35205,14 @@ function finishAnglingSetupAndStart(){
 }
 function startAnglingFromMainButton(){
   if(!anglingSetupComplete){
+    // Der Spieler kam ausdrücklich über „Spielen“. Nach erfolgreicher Konto-
+    // anmeldung darf deshalb automatisch zur Stellenauswahl weitergegangen werden.
+    // Normale Anmeldungen aus einem bereits eingerichteten Profil setzen dieses Flag nicht.
+    aczoStartAfterAccountLogin=true;
     openAnglingFirstSetup();
     return;
   }
+  aczoStartAfterAccountLogin=false;
   startAnglingMode();
 }
 
@@ -44358,7 +44367,7 @@ function aczoApplyAccountPlayer(data){
     anglingSelectedBait='worm';
   }
   anglingPlayerProfile.id=id;
-  anglingPlayerProfile.name=String(data.account.username).slice(0,30);
+  anglingPlayerProfile.name=String(data?.player?.name||data.account.username).slice(0,30);
   saveAnglingPlayerProfile();
   anglingCloudEnabled=true;anglingSetupComplete=true;
   try{localStorage.setItem(ANGLING_CLOUD_ENABLED_KEY,'1');localStorage.setItem(ANGLING_SETUP_COMPLETE_KEY,'1');}catch(err){}
@@ -44384,6 +44393,14 @@ async function aczoFinishAccountLogin(data,generation=aczoAuthGeneration){
     aczoApplyAccountPlayer(data);
     anglingLastCloudSuccessAt=Date.now();anglingLastCloudMessage='Abgeglichen';updateAnglingCloudStatus();
     aczoInvalidatePublicData();aczoPreloadPublicData().catch(()=>{});
+    if(aczoStartAfterAccountLogin){
+      aczoStartAfterAccountLogin=false;
+      window.setTimeout(()=>{
+        // aczoHandleForm setzt aczoAccountBusy erst im finally zurück. Deshalb
+        // bewusst erst im nächsten Task starten, sonst blockiert startAnglingMode().
+        if(anglingSetupComplete&&!anglingMode&&!fishMode){closeAnglingMainMenu();startAnglingMode();}
+      },0);
+    }
     return true;
   }catch(err){if(generation===aczoAuthGeneration)anglingSetupComplete=wasReady;throw err;}
 }
@@ -44457,6 +44474,7 @@ aczoEl('aczoAttachRecoveryBtn').addEventListener('click',async()=>{
 aczoEl('aczoSavePrivacy').addEventListener('click',aczoSavePrivacy);
 aczoEl('aczoGuestStart').addEventListener('click',()=>{
   if(aczoAccountBusy)return;
+  aczoStartAfterAccountLogin=false;
   aczoAuthGeneration++;aczoInvalidatePublicData();
   aczoSessionToken='';aczoAccount=null;
   try{localStorage.removeItem(ACZO_SESSION_KEY);}catch(err){}
@@ -44478,24 +44496,59 @@ aczoBindForm('aczoLoginForm',async form=>{
   const username=form.elements.namedItem('username').value,password=form.elements.namedItem('password').value;
   const data=await aczoApi('loginAccount',{username,password});
   await aczoOfferPasswordSave(data.account.username,password);
-  await aczoFinishAccountLogin(data);aczoCompletePasswordForm(form);
+  await aczoFinishAccountLogin(data);
+  // Erst NACH dem Spielerwechsel speichern, weil aczoApplyAccountPlayer beim
+  // Gerätewechsel den lokalen Zielspieler wiederherstellt und dabei dessen
+  // Recovery-Zustand lädt. So bleibt der verifizierte Alt-Code sicher erhalten.
+  if(legacyCode)saveAnglingRecoveryCode(legacyCode);
+  aczoCompletePasswordForm(form);
 });
 aczoBindForm('aczoRegisterForm',async form=>{
   const username=form.elements.namedItem('username').value,password=form.elements.namedItem('new-password').value;
+  const legacyCode=normalizeAnglingRecoveryCode(form.elements.namedItem('legacy-recovery-code')?.value||'');
   if(password!==form.elements.namedItem('confirm-password').value)throw new Error('Die Passwörter stimmen nicht überein.');
-  if(!anglingSetupComplete){anglingMainName.value=anglingPlayerProfile.name||'';anglingMainCloudEnabled.checked=true;saveAnglingMainProfile();}
-  if(!anglingRecoveryCode){await loadAnglingPlayerCloud();if(!anglingRecoveryCode)throw new Error('Cloud-Sicherung bitte zuerst erfolgreich abgleichen.');}
-  if(!await syncAnglingPlayerCloud())throw new Error('Cloud-Spielstand bitte erst erfolgreich sichern.');
-  const data=await aczoApi('registerAccount',{playerId:anglingPlayerProfile.id,recoveryCode:anglingRecoveryCode,username,password});
+
+  let data=null;
+  if(legacyCode){
+    // Altspieler: ZUERST nur lesen und verifizieren. Den lokalen Spieler niemals
+    // vor erfolgreicher Kontoanlage umschalten, damit ein Netz-/Serverfehler den
+    // aktuellen Geräte-Spielstand nicht halb migriert zurücklässt.
+    if(legacyCode.replace(/-/g,'').length!==24)throw new Error('Bitte den vollständigen bisherigen Wiederherstellungscode eingeben.');
+    const recovered=await fetchAnglingRecoveryPlayer(legacyCode);
+    const recoveredId=String(recovered?.playerId||'');
+    if(!recoveredId||!recovered?.player)throw new Error('Der bisherige Spielstand konnte mit diesem Code nicht gefunden werden.');
+    data=await aczoApi('registerAccount',{
+      playerId:recoveredId,recoveryCode:legacyCode,username,password,preservePlayerName:true
+    });
+    if(String(data?.account?.playerId||'')!==recoveredId)throw new Error('Sicherheitsabbruch: Das Konto wurde nicht mit dem gefundenen Altspieler verknüpft.');
+    if(String(data?.player?.playerId||recoveredId)!==recoveredId)throw new Error('Sicherheitsabbruch: Der geladene Spielstand gehört nicht zum verknüpften Spieler.');
+  }else{
+    // Neuer bzw. bereits auf diesem Gerät eingerichteter Spieler: bestehender
+    // Ablauf bleibt unverändert.
+    if(!anglingSetupComplete){anglingMainName.value=anglingPlayerProfile.name||'';anglingMainCloudEnabled.checked=true;saveAnglingMainProfile();}
+    if(!anglingRecoveryCode){await loadAnglingPlayerCloud();if(!anglingRecoveryCode)throw new Error('Cloud-Sicherung bitte zuerst erfolgreich abgleichen.');}
+    if(!await syncAnglingPlayerCloud())throw new Error('Cloud-Spielstand bitte erst erfolgreich sichern.');
+    data=await aczoApi('registerAccount',{playerId:anglingPlayerProfile.id,recoveryCode:anglingRecoveryCode,username,password});
+  }
   await aczoOfferPasswordSave(data.account.username,password);
-  await aczoFinishAccountLogin(data);aczoCompletePasswordForm(form);
+  await aczoFinishAccountLogin(data);
+  // Erst NACH dem Spielerwechsel speichern, weil aczoApplyAccountPlayer beim
+  // Gerätewechsel den lokalen Zielspieler wiederherstellt und dabei dessen
+  // Recovery-Zustand lädt. So bleibt der verifizierte Alt-Code sicher erhalten.
+  if(legacyCode)saveAnglingRecoveryCode(legacyCode);
+  aczoCompletePasswordForm(form);
 });
 aczoBindForm('aczoResetForm',async form=>{
   const username=form.elements.namedItem('username').value,password=form.elements.namedItem('new-password').value;
   if(password!==form.elements.namedItem('confirm-password').value)throw new Error('Die Passwörter stimmen nicht überein.');
   const data=await aczoApi('resetAccountPassword',{username,recoveryCode:form.elements.namedItem('recovery-code').value,newPassword:password});
   await aczoOfferPasswordSave(data.account.username,password);
-  await aczoFinishAccountLogin(data);aczoCompletePasswordForm(form);
+  await aczoFinishAccountLogin(data);
+  // Erst NACH dem Spielerwechsel speichern, weil aczoApplyAccountPlayer beim
+  // Gerätewechsel den lokalen Zielspieler wiederherstellt und dabei dessen
+  // Recovery-Zustand lädt. So bleibt der verifizierte Alt-Code sicher erhalten.
+  if(legacyCode)saveAnglingRecoveryCode(legacyCode);
+  aczoCompletePasswordForm(form);
 });
 aczoBindForm('aczoPasswordForm',async form=>{
   const password=form.elements.namedItem('new-password').value;
