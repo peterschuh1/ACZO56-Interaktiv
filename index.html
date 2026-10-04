@@ -5236,13 +5236,17 @@ function aczoSetIconText(element,value){
                  <h4 id="aczoRegisterTitle">🔐 Spielerkonto erstellen</h4>
                  <p id="aczoRegisterIntro">Sichere diesen vorhandenen Spielstand mit Benutzername und Passwort und nutze ihn auf mehreren Geräten.</p>
                  <div id="aczoRegisterLegacyBlock" hidden>
-                   <p>Gib den Wiederherstellungscode deines alten Spielstands ein. Danach verknüpfst du genau diesen Spieler mit einem neuen Spielerkonto.</p>
-                   <label for="aczoRegisterRecovery">Bisheriger Wiederherstellungscode</label><input id="aczoRegisterRecovery" name="legacy-recovery-code" type="text" autocapitalize="characters" spellcheck="false" autocomplete="off" placeholder="XXXX-XXXX-XXXX-XXXX-XXXX-XXXX">
+                   <p>Gib zuerst nur den Wiederherstellungscode ein. Danach prüft das Spiel, ob zu diesem Spieler bereits ein Spielerkonto gehört.</p>
+                   <label for="aczoRegisterRecovery">Wiederherstellungscode</label><input id="aczoRegisterRecovery" name="legacy-recovery-code" type="text" autocapitalize="characters" spellcheck="false" autocomplete="off" placeholder="XXXX-XXXX-XXXX-XXXX-XXXX-XXXX">
+                   <button type="button" id="aczoCheckRecovery" class="angling-main-btn primary">Code prüfen</button>
+                   <div id="aczoRecoveryLookupResult" class="aczo-account-status" aria-live="polite"></div>
                  </div>
-                 <label for="aczoRegisterName">Benutzername</label><input id="aczoRegisterName" name="username" type="text" autocapitalize="none" spellcheck="false" autocomplete="username" minlength="3" maxlength="30" required>
-                 <label for="aczoRegisterPassword">Passwort</label><input id="aczoRegisterPassword" name="new-password" type="password" autocomplete="new-password" minlength="12" required>
-                 <label for="aczoRegisterRepeat">Passwort wiederholen</label><input id="aczoRegisterRepeat" name="confirm-password" type="password" autocomplete="new-password" minlength="12" required>
-                 <button class="angling-main-btn primary" type="submit">Spielerkonto erstellen</button>
+                 <div id="aczoRegisterCredentials">
+                   <label for="aczoRegisterName">Benutzername</label><input id="aczoRegisterName" name="username" type="text" autocapitalize="none" spellcheck="false" autocomplete="username" minlength="3" maxlength="30" required>
+                   <label for="aczoRegisterPassword">Passwort</label><input id="aczoRegisterPassword" name="new-password" type="password" autocomplete="new-password" minlength="12" required>
+                   <label for="aczoRegisterRepeat">Passwort wiederholen</label><input id="aczoRegisterRepeat" name="confirm-password" type="password" autocomplete="new-password" minlength="12" required>
+                   <button id="aczoRegisterSubmit" class="angling-main-btn primary" type="submit">Spielerkonto erstellen</button>
+                 </div>
                  <button class="angling-main-btn" type="button" data-account-back>Zurück</button>
                </form>
                <form id="aczoResetForm" class="aczo-account-form" method="post" autocomplete="on" hidden>
@@ -13786,6 +13790,11 @@ renderer.domElement.addEventListener('pointermove',e=>{
 
 let lastViewerWidth=0,lastViewerHeight=0,viewerResizeQueued=false;
 function syncVisibleViewerHeight(){
+ // Account-Audit: iOS verkleinert visualViewport beim Öffnen der Tastatur.
+ // Diese temporäre Tastaturhöhe darf NICHT die Höhe des gesamten Viewers/
+ // Hauptmenüs ersetzen, sonst springt das komplette Menü nach oben.
+ const accountFieldFocused=!!document.activeElement?.closest?.('#aczoLoginForm,#aczoRegisterForm,#aczoResetForm,#aczoPasswordForm,#aczoAttachRecovery');
+ if(accountFieldFocused)return;
  const viewport=window.visualViewport;
  const visibleHeight=Math.round((viewport&&viewport.height)||window.innerHeight||document.documentElement.clientHeight||0);
  if(visibleHeight>0)document.documentElement.style.setProperty('--aczo-visible-height',visibleHeight+'px');
@@ -44292,92 +44301,40 @@ function updateAnglingMode(dt){
 }
 
 
-// ACCOUNT-UI FIX 2: iOS/Safari darf beim Fokus eines Konto-Eingabefeldes
-// nicht die komplette Seite samt Hauptmenü verschieben. Die Geometrie des
-// Hauptmenüs bleibt unangetastet; nur der bereits vorhandene innere Scrollbereich
-// wird so weit bewegt, dass das aktive Feld oberhalb der Tastatur erreichbar ist.
-let aczoAccountKeyboardActive=false;
-let aczoAccountKeyboardScrollY=0;
-let aczoAccountKeyboardHtmlOverflow='';
-let aczoAccountKeyboardBodyOverflow='';
+// ACCOUNT-UI AUDIT: iOS/Safari-Tastatur.
+// Die globale Viewer-Höhe bleibt während Konto-Eingaben stabil (siehe
+// syncVisibleViewerHeight). Hier wird ausschließlich der innere Menübereich
+// gescrollt. Keine window.scrollTo-/overflow-Sperren, die Safari gegen das
+// Hauptmenü arbeiten lassen.
 function aczoIsAccountTextField(el){
   return !!el?.closest?.('#aczoLoginForm,#aczoRegisterForm,#aczoResetForm,#aczoPasswordForm,#aczoAttachRecovery');
 }
-function aczoKeepAccountMenuAnchored(){
-  if(!aczoAccountKeyboardActive)return;
-  // iOS versucht bei Input-Fokus die Dokumentseite zu scrollen. Das Hauptmenü
-  // besitzt aber selbst einen Scrollbereich; daher die Dokumentposition festhalten.
-  if(Math.abs(window.scrollY-aczoAccountKeyboardScrollY)>1){
-    window.scrollTo(0,aczoAccountKeyboardScrollY);
-  }
-}
 function aczoRevealFocusedAccountField(el){
-  if(!aczoAccountKeyboardActive||!el||!anglingMainMenu)return;
+  if(!aczoIsAccountTextField(el)||!anglingMainMenu)return;
   const scroller=anglingMainMenu.querySelector('.angling-main-grid');
   if(!scroller)return;
   const vv=window.visualViewport;
-  const visibleBottom=vv ? vv.offsetTop+vv.height : window.innerHeight;
-  const visibleTop=vv ? vv.offsetTop : 0;
-  const r=el.getBoundingClientRect();
-  const topGuard=Math.max(visibleTop+12, scroller.getBoundingClientRect().top+12);
-  const bottomGuard=visibleBottom-18;
-  if(r.bottom>bottomGuard){
-    scroller.scrollTop+=r.bottom-bottomGuard;
-  }else if(r.top<topGuard){
-    scroller.scrollTop-=topGuard-r.top;
-  }
-}
-function aczoStartAccountKeyboardGuard(el){
-  if(aczoAccountKeyboardActive)return;
-  aczoAccountKeyboardActive=true;
-  aczoAccountKeyboardScrollY=window.scrollY;
-  aczoAccountKeyboardHtmlOverflow=document.documentElement.style.overflow;
-  aczoAccountKeyboardBodyOverflow=document.body.style.overflow;
-  document.documentElement.style.overflow='hidden';
-  document.body.style.overflow='hidden';
-  const settle=()=>{aczoKeepAccountMenuAnchored();aczoRevealFocusedAccountField(el);};
-  requestAnimationFrame(settle);
-  setTimeout(settle,60);
-  setTimeout(settle,180);
-  setTimeout(settle,360);
-}
-function aczoStopAccountKeyboardGuard(){
-  aczoAccountKeyboardActive=false;
-  document.documentElement.style.overflow=aczoAccountKeyboardHtmlOverflow;
-  document.body.style.overflow=aczoAccountKeyboardBodyOverflow;
-  window.scrollTo(0,aczoAccountKeyboardScrollY);
+  const visibleTop=(vv?.offsetTop||0)+8;
+  const visibleBottom=(vv?.offsetTop||0)+(vv?.height||window.innerHeight)-14;
+  const sr=scroller.getBoundingClientRect(),r=el.getBoundingClientRect();
+  const topGuard=Math.max(visibleTop+8,sr.top+8);
+  const bottomGuard=Math.min(visibleBottom,sr.bottom-8);
+  if(r.bottom>bottomGuard)scroller.scrollTop+=r.bottom-bottomGuard;
+  else if(r.top<topGuard)scroller.scrollTop-=topGuard-r.top;
 }
 document.addEventListener('focusin',event=>{
   if(!aczoIsAccountTextField(event.target))return;
-  aczoStartAccountKeyboardGuard(event.target);
-  setTimeout(()=>aczoRevealFocusedAccountField(event.target),90);
+  const reveal=()=>aczoRevealFocusedAccountField(event.target);
+  requestAnimationFrame(reveal);setTimeout(reveal,120);setTimeout(reveal,320);
 },{passive:true});
-document.addEventListener('focusout',event=>{
-  if(!aczoIsAccountTextField(event.target))return;
-  setTimeout(()=>{
-    if(aczoIsAccountTextField(document.activeElement)){
-      aczoRevealFocusedAccountField(document.activeElement);
-      return;
-    }
-    aczoStopAccountKeyboardGuard();
-  },180);
-},{passive:true});
-window.addEventListener('scroll',aczoKeepAccountMenuAnchored,{passive:true});
 if(window.visualViewport){
-  window.visualViewport.addEventListener('resize',()=>{
-    if(!aczoAccountKeyboardActive)return;
-    aczoKeepAccountMenuAnchored();
-    aczoRevealFocusedAccountField(document.activeElement);
-  },{passive:true});
-  window.visualViewport.addEventListener('scroll',()=>{
-    if(!aczoAccountKeyboardActive)return;
-    aczoKeepAccountMenuAnchored();
-    aczoRevealFocusedAccountField(document.activeElement);
-  },{passive:true});
+  const reveal=()=>{if(aczoIsAccountTextField(document.activeElement))aczoRevealFocusedAccountField(document.activeElement);};
+  window.visualViewport.addEventListener('resize',reveal,{passive:true});
+  window.visualViewport.addEventListener('scroll',reveal,{passive:true});
 }
 
 // Spielerkonto und Community: Ergänzung des bestehenden Menüs.
-let aczoAccountMode='choices',aczoRegisterLegacyMode=false,aczoCommunityPage=0,aczoCommunityQuery='',aczoCommunityTimer=null;
+let aczoAccountMode='choices',aczoRegisterLegacyMode=false,aczoRecoveryLookup=null,aczoCommunityPage=0,aczoCommunityQuery='',aczoCommunityTimer=null;
 let aczoGuestRecoveryEnsureInFlight=false;
 async function aczoEnsureGuestRecoveryCode(){
   if(aczoGuestRecoveryEnsureInFlight||aczoAccount||!anglingSetupComplete||anglingRecoveryCode||!anglingCloudEnabled)return;
@@ -44421,8 +44378,10 @@ function aczoRenderAccount(){
   const registerTitle=aczoEl('aczoRegisterTitle'),registerIntro=aczoEl('aczoRegisterIntro');
   if(registerTitle)registerTitle.textContent=aczoRegisterLegacyMode?'♻️ Alten Spielstand wiederherstellen':'🔐 Spielerkonto erstellen';
   if(registerIntro)registerIntro.textContent=aczoRegisterLegacyMode
-    ?'Stelle deinen bisherigen Spielstand mit dem Wiederherstellungscode wieder her und sichere ihn direkt mit Benutzername und Passwort.'
+    ?'Gib zuerst deinen Wiederherstellungscode ein. Das Spiel erkennt danach automatisch, ob du ein bestehendes Konto zurücksetzt oder erstmals ein Konto anlegst.'
     :'Sichere diesen vorhandenen Spielstand mit Benutzername und Passwort und nutze ihn auf mehreren Geräten.';
+  const credentials=aczoEl('aczoRegisterCredentials');
+  if(credentials)credentials.hidden=aczoRegisterLegacyMode&&!aczoRecoveryLookup;
 
   // Gastprofil bewusst minimal halten: keine Anzeigenamen-/Cloud-/Privatsphäre-
   // Technik zeigen. Für Gäste bleiben nur Kontoaktionen + Recovery-Code sichtbar.
@@ -44451,7 +44410,7 @@ function aczoRankMedal(index){
   const img=document.createElement('img');img.className='aczo-rank-medal';img.alt=(index+1)+'. Platz';img.src='data:image/svg+xml;charset=utf-8,'+encodeURIComponent(svg);return img;
 }
 
-function aczoSetAccountMode(mode){aczoAccountMode=mode;if(mode!=='register')aczoRegisterLegacyMode=false;aczoRenderAccount();aczoStatus('');}
+function aczoSetAccountMode(mode){aczoAccountMode=mode;if(mode!=='register'){aczoRegisterLegacyMode=false;aczoRecoveryLookup=null;}aczoRenderAccount();aczoStatus('');}
 async function aczoPasswordCredential(password,isNew=false){
   const value=String(password||'');
   if(value.length>256||value.length<(isNew?12:1))throw new Error(isNew?'Passwort: 12 bis 256 Zeichen.':'Bitte das Passwort eingeben.');
@@ -44582,16 +44541,44 @@ aczoEl('aczoNudgeNow').addEventListener('click',()=>{aczoMainNavigate('profile')
 aczoEl('aczoNudgeLater').addEventListener('click',()=>{try{localStorage.setItem('aczo56-account-nudge-until',String(Date.now()+7*86400000));}catch(err){}aczoRenderAccount();});
 aczoEl('aczoShowLogin').addEventListener('click',()=>aczoSetAccountMode('login'));
 aczoEl('aczoShowRegister').addEventListener('click',()=>{
-  aczoRegisterLegacyMode=false;
+  aczoRegisterLegacyMode=false;aczoRecoveryLookup=null;
   aczoEl('aczoRegisterRecovery').value='';
+  aczoEl('aczoRegisterName').readOnly=false;
   aczoEl('aczoRegisterName').value=anglingPlayerProfile.name||'';
+  aczoEl('aczoRegisterSubmit').textContent='Spielerkonto erstellen';
   aczoSetAccountMode('register');
 });
 aczoEl('aczoShowRecover').addEventListener('click',()=>{
-  aczoRegisterLegacyMode=true;
+  aczoRegisterLegacyMode=true;aczoRecoveryLookup=null;
   aczoEl('aczoRegisterRecovery').value='';
-  aczoEl('aczoRegisterName').value='';
+  aczoEl('aczoRegisterName').value='';aczoEl('aczoRegisterName').readOnly=false;
+  aczoEl('aczoRecoveryLookupResult').textContent='';
+  aczoEl('aczoRegisterSubmit').textContent='Spielerkonto erstellen';
   aczoSetAccountMode('register');
+});
+aczoEl('aczoCheckRecovery').addEventListener('click',async()=>{
+  if(aczoAccountBusy)return;
+  const code=normalizeAnglingRecoveryCode(aczoEl('aczoRegisterRecovery').value||'');
+  const out=aczoEl('aczoRecoveryLookupResult'),btn=aczoEl('aczoCheckRecovery');
+  if(code.replace(/-/g,'').length!==24){out.textContent='Bitte den vollständigen Wiederherstellungscode eingeben.';return;}
+  aczoAccountBusy=true;btn.disabled=true;out.textContent='Code wird geprüft …';
+  try{
+    const recovered=await fetchAnglingRecoveryPlayer(code);
+    if(!recovered?.playerId||!recovered?.player)throw new Error('Spielstand nicht gefunden.');
+    aczoRecoveryLookup={code,playerId:String(recovered.playerId),player:recovered.player,account:recovered.account||null};
+    if(aczoRecoveryLookup.account?.username){
+      aczoEl('aczoRegisterName').value=aczoRecoveryLookup.account.username;
+      aczoEl('aczoRegisterName').readOnly=true;
+      aczoEl('aczoRegisterSubmit').textContent='Passwort zurücksetzen & anmelden';
+      out.textContent='Spielstand gefunden: '+(recovered.player.name||'Angler')+' · Konto vorhanden. Benutzername wurde erkannt.';
+    }else{
+      aczoEl('aczoRegisterName').value='';aczoEl('aczoRegisterName').readOnly=false;
+      aczoEl('aczoRegisterSubmit').textContent='Spielerkonto erstellen';
+      out.textContent='Spielstand gefunden: '+(recovered.player.name||'Angler')+' · Noch kein Spielerkonto. Wähle jetzt Benutzername und Passwort.';
+    }
+    aczoRenderAccount();
+  }catch(err){aczoRecoveryLookup=null;out.textContent=err?.message||'Code konnte nicht geprüft werden.';aczoRenderAccount();}
+  finally{aczoAccountBusy=false;btn.disabled=false;}
 });
 
 aczoEl('aczoChangePassword').addEventListener('click',()=>aczoSetAccountMode('password'));
@@ -44599,7 +44586,7 @@ aczoEl('aczoRename').addEventListener('click',async()=>{
   if(aczoAccountBusy)return;
   const name=window.prompt('Neuer Benutzername:',aczoAccount?.username||'');if(name===null)return;
   aczoAccountBusy=true;aczoAuthGeneration++;
-  try{const data=await aczoApi('changeAccountName',{sessionToken:aczoSessionToken,username:name});aczoAccount=data.account;anglingPlayerProfile.name=data.account.username;saveAnglingPlayerProfile();aczoRenderAccount();aczoInvalidatePublicData();aczoStatus('Benutzername geändert.');}catch(err){aczoStatus(err.message);}finally{aczoAccountBusy=false;}
+  try{const data=await aczoApi('changeAccountName',{sessionToken:aczoSessionToken,username:name});aczoAccount=data.account;aczoRenderAccount();aczoInvalidatePublicData();aczoStatus('Benutzername geändert.');}catch(err){aczoStatus(err.message);}finally{aczoAccountBusy=false;}
 });
 aczoEl('aczoLogout').addEventListener('click',aczoLogout);
 aczoEl('aczoAttachRecoveryBtn').addEventListener('click',async()=>{
@@ -44650,37 +44637,38 @@ aczoBindForm('aczoLoginForm',async form=>{
 });
 aczoBindForm('aczoRegisterForm',async form=>{
   const username=form.elements.namedItem('username').value,password=form.elements.namedItem('new-password').value;
-  const legacyCode=aczoRegisterLegacyMode?normalizeAnglingRecoveryCode(form.elements.namedItem('legacy-recovery-code')?.value||''):'';
   if(password!==form.elements.namedItem('confirm-password').value)throw new Error('Die Passwörter stimmen nicht überein.');
-
-  let data=null;
-  if(legacyCode){
-    // Altspieler: ZUERST nur lesen und verifizieren. Den lokalen Spieler niemals
-    // vor erfolgreicher Kontoanlage umschalten, damit ein Netz-/Serverfehler den
-    // aktuellen Geräte-Spielstand nicht halb migriert zurücklässt.
-    if(legacyCode.replace(/-/g,'').length!==24)throw new Error('Bitte den vollständigen bisherigen Wiederherstellungscode eingeben.');
-    const recovered=await fetchAnglingRecoveryPlayer(legacyCode);
-    const recoveredId=String(recovered?.playerId||'');
-    if(!recoveredId||!recovered?.player)throw new Error('Der bisherige Spielstand konnte mit diesem Code nicht gefunden werden.');
-    data=await aczoApi('registerAccount',{
-      playerId:recoveredId,recoveryCode:legacyCode,username,password,preservePlayerName:true
-    });
-    if(String(data?.account?.playerId||'')!==recoveredId)throw new Error('Sicherheitsabbruch: Das Konto wurde nicht mit dem gefundenen Altspieler verknüpft.');
-    if(String(data?.player?.playerId||recoveredId)!==recoveredId)throw new Error('Sicherheitsabbruch: Der geladene Spielstand gehört nicht zum verknüpften Spieler.');
+  let data=null,createdNewAccount=false,legacyCode='';
+  if(aczoRegisterLegacyMode){
+    if(!aczoRecoveryLookup)throw new Error('Bitte zuerst den Wiederherstellungscode prüfen.');
+    legacyCode=aczoRecoveryLookup.code;
+    if(aczoRecoveryLookup.account?.username){
+      data=await aczoApi('resetAccountPassword',{username:aczoRecoveryLookup.account.username,recoveryCode:legacyCode,newPassword:password});
+    }else{
+      const recoveredId=aczoRecoveryLookup.playerId;
+      data=await aczoApi('registerAccount',{playerId:recoveredId,recoveryCode:legacyCode,username,password,preservePlayerName:true});
+      if(String(data?.account?.playerId||'')!==recoveredId)throw new Error('Sicherheitsabbruch: Konto und Spielstand stimmen nicht überein.');
+      createdNewAccount=true;
+    }
   }else{
-    // Neuer bzw. bereits auf diesem Gerät eingerichteter Spieler: bestehender
-    // Ablauf bleibt unverändert.
     if(!anglingSetupComplete){anglingMainName.value=anglingPlayerProfile.name||'';anglingMainCloudEnabled.checked=true;saveAnglingMainProfile();}
     if(!anglingRecoveryCode){await loadAnglingPlayerCloud();if(!anglingRecoveryCode)throw new Error('Cloud-Sicherung bitte zuerst erfolgreich abgleichen.');}
     if(!await syncAnglingPlayerCloud())throw new Error('Cloud-Spielstand bitte erst erfolgreich sichern.');
     data=await aczoApi('registerAccount',{playerId:anglingPlayerProfile.id,recoveryCode:anglingRecoveryCode,username,password});
+    createdNewAccount=true;
   }
   await aczoOfferPasswordSave(data.account.username,password);
   await aczoFinishAccountLogin(data);
-  // Erst NACH dem Spielerwechsel speichern, weil aczoApplyAccountPlayer beim
-  // Gerätewechsel den lokalen Zielspieler wiederherstellt und dabei dessen
-  // Recovery-Zustand lädt. So bleibt der verifizierte Alt-Code sicher erhalten.
   if(legacyCode)saveAnglingRecoveryCode(legacyCode);
+  if(createdNewAccount){
+    anglingPlayerProfile.shareRecords=true;anglingPresenceNamed=true;
+    anglingMainHighscorePublic.checked=true;anglingMainPresenceNamed.checked=true;
+    saveAnglingPlayerProfile();
+    try{localStorage.setItem(ANGLING_PRESENCE_NAMED_KEY,'1');}catch(err){}
+    await aczoSaveStableCloud();
+    syncAnglingExistingPersonalBests();
+  }
+  aczoRecoveryLookup=null;
   aczoCompletePasswordForm(form);
 });
 aczoBindForm('aczoResetForm',async form=>{
