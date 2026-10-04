@@ -44276,54 +44276,88 @@ function updateAnglingMode(dt){
 }
 
 
-// ACCOUNT-UI FIX: Auf iPhone/iPad darf die Bildschirmtastatur nicht das komplette
-// Hauptmenü unter die Safari-Adressleiste schieben. Während ein Konto-Eingabefeld
-// fokussiert ist, folgt nur das Menü der tatsächlich sichtbaren visualViewport-Fläche;
-// die Karte selbst bleibt intern scrollbar. Desktop/Android ohne visualViewport bleiben unberührt.
+// ACCOUNT-UI FIX 2: iOS/Safari darf beim Fokus eines Konto-Eingabefeldes
+// nicht die komplette Seite samt Hauptmenü verschieben. Die Geometrie des
+// Hauptmenüs bleibt unangetastet; nur der bereits vorhandene innere Scrollbereich
+// wird so weit bewegt, dass das aktive Feld oberhalb der Tastatur erreichbar ist.
 let aczoAccountKeyboardActive=false;
-function aczoSyncAccountKeyboardViewport(){
-  if(!aczoAccountKeyboardActive||!window.visualViewport||!anglingMainMenu)return;
-  const vv=window.visualViewport;
-  anglingMainMenu.style.position='fixed';
-  anglingMainMenu.style.inset='auto 0 auto 0';
-  anglingMainMenu.style.top=Math.max(0,vv.offsetTop)+'px';
-  anglingMainMenu.style.height=Math.max(180,vv.height)+'px';
-  anglingMainMenu.style.boxSizing='border-box';
-  anglingMainMenu.style.alignItems='flex-start';
-  const card=anglingMainMenu.querySelector('.angling-main-card');
-  if(card)card.style.maxHeight=Math.max(160,vv.height-12)+'px';
-}
-function aczoResetAccountKeyboardViewport(){
-  if(!anglingMainMenu)return;
-  anglingMainMenu.style.removeProperty('position');
-  anglingMainMenu.style.removeProperty('inset');
-  anglingMainMenu.style.removeProperty('top');
-  anglingMainMenu.style.removeProperty('height');
-  anglingMainMenu.style.removeProperty('box-sizing');
-  anglingMainMenu.style.removeProperty('align-items');
-  const card=anglingMainMenu.querySelector('.angling-main-card');
-  if(card)card.style.removeProperty('max-height');
-}
+let aczoAccountKeyboardScrollY=0;
+let aczoAccountKeyboardHtmlOverflow='';
+let aczoAccountKeyboardBodyOverflow='';
 function aczoIsAccountTextField(el){
   return !!el?.closest?.('#aczoLoginForm,#aczoRegisterForm,#aczoResetForm,#aczoPasswordForm,#aczoAttachRecovery');
 }
-document.addEventListener('focusin',event=>{
-  if(!aczoIsAccountTextField(event.target)||!window.visualViewport)return;
+function aczoKeepAccountMenuAnchored(){
+  if(!aczoAccountKeyboardActive)return;
+  // iOS versucht bei Input-Fokus die Dokumentseite zu scrollen. Das Hauptmenü
+  // besitzt aber selbst einen Scrollbereich; daher die Dokumentposition festhalten.
+  if(Math.abs(window.scrollY-aczoAccountKeyboardScrollY)>1){
+    window.scrollTo(0,aczoAccountKeyboardScrollY);
+  }
+}
+function aczoRevealFocusedAccountField(el){
+  if(!aczoAccountKeyboardActive||!el||!anglingMainMenu)return;
+  const scroller=anglingMainMenu.querySelector('.angling-main-grid');
+  if(!scroller)return;
+  const vv=window.visualViewport;
+  const visibleBottom=vv ? vv.offsetTop+vv.height : window.innerHeight;
+  const visibleTop=vv ? vv.offsetTop : 0;
+  const r=el.getBoundingClientRect();
+  const topGuard=Math.max(visibleTop+12, scroller.getBoundingClientRect().top+12);
+  const bottomGuard=visibleBottom-18;
+  if(r.bottom>bottomGuard){
+    scroller.scrollTop+=r.bottom-bottomGuard;
+  }else if(r.top<topGuard){
+    scroller.scrollTop-=topGuard-r.top;
+  }
+}
+function aczoStartAccountKeyboardGuard(el){
+  if(aczoAccountKeyboardActive)return;
   aczoAccountKeyboardActive=true;
-  requestAnimationFrame(aczoSyncAccountKeyboardViewport);
-  setTimeout(aczoSyncAccountKeyboardViewport,80);
+  aczoAccountKeyboardScrollY=window.scrollY;
+  aczoAccountKeyboardHtmlOverflow=document.documentElement.style.overflow;
+  aczoAccountKeyboardBodyOverflow=document.body.style.overflow;
+  document.documentElement.style.overflow='hidden';
+  document.body.style.overflow='hidden';
+  const settle=()=>{aczoKeepAccountMenuAnchored();aczoRevealFocusedAccountField(el);};
+  requestAnimationFrame(settle);
+  setTimeout(settle,60);
+  setTimeout(settle,180);
+  setTimeout(settle,360);
+}
+function aczoStopAccountKeyboardGuard(){
+  aczoAccountKeyboardActive=false;
+  document.documentElement.style.overflow=aczoAccountKeyboardHtmlOverflow;
+  document.body.style.overflow=aczoAccountKeyboardBodyOverflow;
+  window.scrollTo(0,aczoAccountKeyboardScrollY);
+}
+document.addEventListener('focusin',event=>{
+  if(!aczoIsAccountTextField(event.target))return;
+  aczoStartAccountKeyboardGuard(event.target);
+  setTimeout(()=>aczoRevealFocusedAccountField(event.target),90);
 },{passive:true});
 document.addEventListener('focusout',event=>{
   if(!aczoIsAccountTextField(event.target))return;
   setTimeout(()=>{
-    if(aczoIsAccountTextField(document.activeElement))return;
-    aczoAccountKeyboardActive=false;
-    aczoResetAccountKeyboardViewport();
-  },120);
+    if(aczoIsAccountTextField(document.activeElement)){
+      aczoRevealFocusedAccountField(document.activeElement);
+      return;
+    }
+    aczoStopAccountKeyboardGuard();
+  },180);
 },{passive:true});
+window.addEventListener('scroll',aczoKeepAccountMenuAnchored,{passive:true});
 if(window.visualViewport){
-  window.visualViewport.addEventListener('resize',aczoSyncAccountKeyboardViewport,{passive:true});
-  window.visualViewport.addEventListener('scroll',aczoSyncAccountKeyboardViewport,{passive:true});
+  window.visualViewport.addEventListener('resize',()=>{
+    if(!aczoAccountKeyboardActive)return;
+    aczoKeepAccountMenuAnchored();
+    aczoRevealFocusedAccountField(document.activeElement);
+  },{passive:true});
+  window.visualViewport.addEventListener('scroll',()=>{
+    if(!aczoAccountKeyboardActive)return;
+    aczoKeepAccountMenuAnchored();
+    aczoRevealFocusedAccountField(document.activeElement);
+  },{passive:true});
 }
 
 // Spielerkonto und Community: Ergänzung des bestehenden Menüs.
