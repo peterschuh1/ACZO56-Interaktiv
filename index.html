@@ -35192,6 +35192,13 @@ function updateAnglingMainMenuUi(){
 function aczoMainNavigate(page){
  const valid=['overview','profile','community','settings'];
  if(!valid.includes(page))page='overview';
+ // Ein aktiver Gast landet beim erneuten Öffnen des Profils immer auf der
+ // schlanken Auswahlansicht. Ein bewusst geöffnetes Loginformular bleibt nur
+ // so lange offen, wie der Nutzer tatsächlich darin arbeitet.
+ if(page==='profile'&&!aczoSessionToken&&anglingSetupComplete&&aczoAccountMode==='login'){
+   aczoAccountMode='choices';
+   aczoStatus('');
+ }
  anglingMainMenu.querySelectorAll('[data-main-page]').forEach(el=>{el.hidden=el.dataset.mainPage!==page;});
  anglingMainMenu.querySelectorAll('[data-main-target]').forEach(el=>{el.setAttribute('aria-pressed',String(el.dataset.mainTarget===page));});
  if(page==='settings')anglingMainSettings.style.display='block';
@@ -44372,6 +44379,8 @@ function aczoRenderAccount(){
   aczoEl('aczoShowLogin').hidden=false;
   aczoEl('aczoShowRecover').hidden=!signedOut;
   aczoEl('aczoGuestStart').hidden=!signedOut;
+  const loginBack=aczoEl('aczoLoginForm')?.querySelector('[data-account-back]');
+  if(loginBack)loginBack.textContent=guest?'Zurück':'Als Gastangler spielen';
 
   const legacyBlock=aczoEl('aczoRegisterLegacyBlock');
   if(legacyBlock)legacyBlock.hidden=!aczoRegisterLegacyMode;
@@ -44515,8 +44524,10 @@ function aczoBindForm(id,task){
   aczoEl(id).addEventListener('submit',event=>{event.preventDefault();const form=event.currentTarget;aczoHandleForm(form,()=>task(form));});
   aczoEl(id).querySelector('[data-account-back]')?.addEventListener('click',()=>{
     if(aczoAccountBusy)return;
-    if(id==='aczoLoginForm')aczoEl('aczoGuestStart').click();
-    else aczoSetAccountMode(id==='aczoRegisterForm'?'choices':id==='aczoResetForm'?'login':'choices');
+    if(id==='aczoLoginForm'){
+      if(!aczoSessionToken&&anglingSetupComplete)aczoSetAccountMode('choices');
+      else aczoEl('aczoGuestStart').click();
+    }else aczoSetAccountMode(id==='aczoRegisterForm'?'choices':id==='aczoResetForm'?'login':'choices');
   });
   aczoEl(id).querySelector('#aczoShowReset')?.addEventListener('click',()=>{aczoEl('aczoResetName').value=aczoEl('aczoLoginName').value;aczoSetAccountMode('reset');});
 }
@@ -44622,7 +44633,12 @@ aczoEl('aczoGuestStart').addEventListener('click',()=>{
     refreshAnglingAfterFullReset();anglingProgress.xpRevision=0;saveAnglingProgress({preserveXpRevision:true,skipCloudSync:true,skipEpSync:true});
     anglingMainName.value='';anglingMainCloudEnabled.checked=true;anglingMainHighscorePublic.checked=false;anglingMainPresenceNamed.checked=false;
     finishAnglingSetupAndStart();
-  }else aczoSetAccountMode('choices');
+    aczoSetAccountMode('choices');
+    aczoStatus('');
+  }else{
+    aczoSetAccountMode('choices');
+    aczoStatus('');
+  }
 });
 
 
