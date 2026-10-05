@@ -12918,10 +12918,30 @@ const aczoBoatReflectionTarget=new THREE.Vector3();
 const aczoBoatReflectionHits=[];
 function aczoBoatReflectionProxyMeshes(){
   if(typeof aczoSurveyedNatureGroup==='undefined'||!aczoSurveyedNatureGroup)return [];
-  return aczoSurveyedNatureGroup.children.filter(o=>o&&o.isInstancedMesh&&(
-    o.name==='NATURWALD_STABILE_KRONENSCHATTEN_PROXIES'||
-    o.name==='NATURWALD_STABILE_NADELBAUMSCHATTEN_PROXIES'
-  ));
+  // Bootsmodus: Neben den groben Kronen-Proxies auch die tatsaechlich
+  // gerenderten Blatt-/Vegetationsflaechen als Sichtschutz fuer Wasserreflexe
+  // verwenden. Die normale Kartenansicht bleibt unveraendert.
+  return aczoSurveyedNatureGroup.children.filter(o=>{
+    if(!o||!o.visible)return false;
+    const n=String(o.name||'');
+    if(o.isInstancedMesh&&(
+      n==='NATURWALD_STABILE_KRONENSCHATTEN_PROXIES'||
+      n==='NATURWALD_STABILE_NADELBAUMSCHATTEN_PROXIES'||
+      n.includes('NATURWALD_EINZELBLAETTER')||
+      n.includes('NATURWALD_FEINE_BLATTFAECHER_UND_SCHATTEN')||
+      n.includes('MARKANTE_TANNEN_FEINE_NADELPOLSTER')||
+      n.includes('NATURWALD_P32_LEER_POLYPLUS_KRONEN')||
+      n.includes('NATURWALD_P32_LEER_FERNPOLY_KRONEN')||
+      n.includes('NATURWALD_P32_LEER_LOWPOLY_BUESCHE')||
+      n.includes('NATURWALD_P32_LEER_UNTERWUCHS')||
+      n.includes('NATURWALD_P32_LEER_NADELBAEUME_LOWPOLY')
+    ))return true;
+    return (o.isMesh||o.isLineSegments)&&(
+      n.includes('STAEMME_AESTE_UND_BUSCHZWEIGE')||
+      n.includes('MARKANTE_TANNEN_STAEMME_UND_ASTQUIRLE')||
+      n.includes('GROSSE_BIRKEN_HELLE_STRUKTURIERTE_STAEMME')
+    );
+  });
 }
 function aczoBoatCelestialReflectionOccluded(x,y,z=.70){
   if(typeof aczoBoatActive!=='function'||!aczoBoatActive())return false;
@@ -12939,7 +12959,8 @@ function aczoBoatCelestialReflectionOccluded(x,y,z=.70){
     // Die Proxies sind absichtlich fuer normale Maus-Raycast-Abfragen gesperrt.
     // Fuer diese reine Sichtlinienpruefung verwenden wir gezielt die native
     // InstancedMesh-Raycast-Routine, ohne das Objekt oder seine Layer zu aendern.
-    THREE.InstancedMesh.prototype.raycast.call(mesh,aczoBoatReflectionRaycaster,aczoBoatReflectionHits);
+    if(mesh.isInstancedMesh)THREE.InstancedMesh.prototype.raycast.call(mesh,aczoBoatReflectionRaycaster,aczoBoatReflectionHits);
+    else if(typeof mesh.raycast==='function')mesh.raycast(aczoBoatReflectionRaycaster,aczoBoatReflectionHits);
     if(aczoBoatReflectionHits.length)return true;
   }
   return false;
@@ -35041,7 +35062,7 @@ function renderAnglingCommunityList(el,players,emptyText,recent=false){
     const row=document.createElement('div');row.className='angling-community-item';
     row.textContent=emptyText;el.appendChild(row);return;
   }
-  (recent?players.slice(0,5):players).forEach(p=>{
+  (recent?players.slice(0,8):players).forEach(p=>{
     const row=document.createElement('div');row.className='angling-community-item';
     const name=document.createElement('strong');name.textContent=String(p.name||'Angler');
     const when=document.createElement('small');
@@ -35068,7 +35089,7 @@ async function loadAnglingCommunity(){
     try{
       const preload=await aczoPreloadPublicData();
       const data=preload?.community||await anglingLeaderboardJson(
-        base+'action=community&limit=5&minutes=5&exclude='+encodeURIComponent(anglingPlayerProfile.id||''),
+        base+'action=community&limit=8&minutes=5&exclude='+encodeURIComponent(anglingPlayerProfile.id||''),
         {method:'GET',cache:'no-store'},
         30000
       );
@@ -35087,7 +35108,7 @@ async function loadAnglingCommunity(){
     }
 
     const [recentResult,activeResult]=await Promise.allSettled([
-      anglingLeaderboardJson(base+'action=recentPlayers&limit=5',{method:'GET',cache:'no-store'},30000),
+      anglingLeaderboardJson(base+'action=recentPlayers&limit=8',{method:'GET',cache:'no-store'},30000),
       anglingLeaderboardJson(base+'action=activePlayers&minutes=5&exclude='+encodeURIComponent(anglingPlayerProfile.id||''),{method:'GET',cache:'no-store'},30000)
     ]);
 
