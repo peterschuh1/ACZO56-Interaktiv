@@ -5368,6 +5368,8 @@ function aczoSetIconText(element,value){
                  <button type="button" id="aczoLogout" class="angling-main-btn">Auf diesem Gerät abmelden</button>
                </div>
                <div id="aczoAccountStatus" role="status" aria-live="polite"></div>
+               <button type="button" id="aczoRetrySession" class="angling-main-btn" hidden>Verbindung erneut prüfen</button>
+               <p id="aczoStorageWarning" role="status" aria-live="polite" hidden></p>
              </div>
              <div id="aczoLegacyProfile" class="angling-main-compact-row">
                <div class="angling-main-field" style="margin:0">
@@ -34896,6 +34898,31 @@ const ACZO_SESSION_KEY='aczo56-account-session-v1';
 let aczoSessionToken='';
 let aczoAccount=null;
 let aczoAccountBusy=false,aczoAuthGeneration=0;
+// TEST07: A saved token is not a guest and is not yet a verified account.
+let aczoResumePromise=null,aczoResumeState='idle',aczoResumeAttemptAt=0,aczoResumeSuccessAt=0;
+let aczoResumeDeferredTimer=null,aczoSessionStorageWarning='',anglingRecoveryStorageWarning='';
+function aczoValidCloudPlayer(p,id){
+  return !!p&&typeof p==='object'&&!Array.isArray(p)&&p.playerId===id
+    &&['xp','revision','stateVersion','lifetimeXp','totalCatches','baitfish'].every(key=>Number.isFinite(p[key])&&p[key]>=0)
+    &&['records','bonusState','naturalInventory','lureInventory','feedInventory','equipmentInventory'].every(key=>p[key]&&typeof p[key]==='object'&&!Array.isArray(p[key]));
+}
+function aczoCloudContext(){
+  const generation=aczoAuthGeneration,id=anglingPlayerProfile.id,token=aczoSessionToken;
+  return ()=>generation===aczoAuthGeneration&&id===anglingPlayerProfile.id&&token===aczoSessionToken;
+}
+function aczoSessionUnverified(){return !!aczoSessionToken&&!aczoAccount;}
+function aczoUpdateStorageWarning(){
+  const node=document.getElementById('aczoStorageWarning');if(!node)return;
+  node.textContent=[aczoSessionStorageWarning,anglingRecoveryStorageWarning].filter(Boolean).join(' ');node.hidden=!node.textContent;
+}
+function aczoStorageWrite(key,value){
+  try{localStorage.setItem(key,value);return localStorage.getItem(key)===value;}catch(err){return false;}
+}
+function aczoReadableError(err){
+  if(err?.name==='AbortError'||/aborted|timeout/i.test(String(err?.message||'')))return 'Die Serverantwort hat zu lange gedauert oder die Verbindung wurde unterbrochen. Bitte erneut versuchen.';
+  if(err instanceof TypeError&&/fetch|network|load failed/i.test(String(err.message)))return 'Keine Verbindung zum Server. Bitte die Verbindung prüfen und erneut versuchen.';
+  return String(err?.message||'Der Vorgang konnte nicht abgeschlossen werden. Bitte erneut versuchen.');
+}
 try{aczoSessionToken=String(localStorage.getItem(ACZO_SESSION_KEY)||'');}catch(err){}
 const ANGLING_LEADERBOARD_SPECIES_TO_API={
   roach:'Rotauge',rudd:'Rotfeder',pike:'Hecht',catfish:'Wels',carp:'Karpfen',
@@ -34926,7 +34953,7 @@ if(!anglingPlayerProfile.id){
  anglingPlayerProfile.id=createAnglingPlayerId();
  try{localStorage.setItem(ANGLING_PLAYER_KEY,JSON.stringify(anglingPlayerProfile));}catch(err){}
 }
-function saveAnglingPlayerProfile(){try{localStorage.setItem(ANGLING_PLAYER_KEY,JSON.stringify(anglingPlayerProfile));}catch(err){}}
+function saveAnglingPlayerProfile(){return aczoStorageWrite(ANGLING_PLAYER_KEY,JSON.stringify(anglingPlayerProfile));}
 
 // V7.70: vollständiger dauerhafter Cloud-Spielstand.
 // NICHT synchronisiert wird ausschließlich das Fangbuch (anglingProgress.catches)
@@ -34938,18 +34965,23 @@ function normalizeAnglingRecoveryCode(value){
   const raw=String(value||'').toUpperCase().replace(/[^A-F0-9]/g,'').slice(0,24);
   return raw.match(/.{1,4}/g)?.join('-')||'';
 }
-function saveAnglingRecoveryCode(value){
+function saveAnglingRecoveryCode(value,{keepInMemoryOnFailure=false}={}){
   const code=normalizeAnglingRecoveryCode(value);
   if(code.replace(/-/g,'').length!==24)return false;
-  anglingRecoveryCode=code;
-  try{localStorage.setItem(ANGLING_RECOVERY_KEY,code);}catch(err){}
-  updateAnglingRecoveryUi();
-  return true;
+  if(!aczoStorageWrite(ANGLING_RECOVERY_KEY,code)){
+    // A freshly generated code is only returned once: keep it copyable.
+    if(keepInMemoryOnFailure)anglingRecoveryCode=code;
+    anglingRecoveryStorageWarning='Der Wiederherstellungscode konnte auf diesem Gerät nicht dauerhaft gespeichert werden. Bitte kopieren und sicher aufbewahren.';
+    updateAnglingRecoveryUi();return false;
+  }
+  anglingRecoveryCode=code;anglingRecoveryStorageWarning='';
+  updateAnglingRecoveryUi();return true;
 }
 function captureAnglingRecoveryCode(data){
-  if(data&&typeof data.recoveryCode==='string')saveAnglingRecoveryCode(data.recoveryCode);
+  if(data&&typeof data.recoveryCode==='string')saveAnglingRecoveryCode(data.recoveryCode,{keepInMemoryOnFailure:true});
 }
 function updateAnglingRecoveryUi(){
+  aczoUpdateStorageWarning();
   if(anglingMainRecoveryCode)anglingMainRecoveryCode.value=anglingRecoveryCode||(aczoAccount?'Auf diesem Gerät nicht hinterlegt':'Noch nicht erstellt');
   if(anglingMainCopyRecoveryBtn)anglingMainCopyRecoveryBtn.disabled=!anglingRecoveryCode;
   if(anglingMainNewRecoveryBtn)anglingMainNewRecoveryBtn.disabled=!anglingRecoveryCode;
@@ -34957,12 +34989,12 @@ function updateAnglingRecoveryUi(){
     anglingRecoveryCodeDisplay.value=aczoAccount?'Auf diesem Gerät nicht hinterlegt':'Noch nicht erstellt';
     anglingRecoveryCopyBtn.disabled=true;
     anglingRecoveryRotateBtn.disabled=true;
-    anglingRecoveryStatus.textContent=aczoAccount?'Den vorhandenen Code vom ersten Gerät unter Profil hier im Profil hinterlegen.':'Der Code wird beim nächsten erfolgreichen Cloud-Abgleich automatisch erstellt.';
+    anglingRecoveryStatus.textContent=anglingRecoveryStorageWarning||(aczoAccount?'Den vorhandenen Code vom ersten Gerät unter Profil hier im Profil hinterlegen.':'Der Code wird beim nächsten erfolgreichen Cloud-Abgleich automatisch erstellt.');
   }else{
     anglingRecoveryCodeDisplay.value=anglingRecoveryCode;
     anglingRecoveryCopyBtn.disabled=false;
     anglingRecoveryRotateBtn.disabled=false;
-    anglingRecoveryStatus.textContent='Cloud-Spielstand und Wiederherstellungscode sind eingerichtet.';
+    anglingRecoveryStatus.textContent=anglingRecoveryStorageWarning||'Cloud-Spielstand und Wiederherstellungscode sind eingerichtet.';
   }
 }
 
@@ -35006,7 +35038,7 @@ function aczoCloudSyncBusyWithFish(){
 // Während Biss/QTE/Drill/Kescher werden auch Community-/Presence-/Wetterrequests
 // zurückgestellt. Netzwerk ist in diesen Frames nicht spielkritisch und darf Safari nicht belasten.
 function aczoNetworkBusyWithFish(){
-  return aczoCloudSyncBusyWithFish();
+  return aczoCloudSyncBusyWithFish()||aczoAccountBusy||aczoSessionUnverified();
 }
 function scheduleAnglingCloudSync(delay=900){
   // Keine Google-Sheet-Netzwerkanfrage mitten in Biss/QTE/Drill/Kescher.
@@ -35015,6 +35047,7 @@ function scheduleAnglingCloudSync(delay=900){
   if(anglingCloudSyncTimer)window.clearTimeout(anglingCloudSyncTimer);
   anglingCloudSyncTimer=window.setTimeout(()=>{
     anglingCloudSyncTimer=null;
+    if(aczoAccountBusy||aczoSessionUnverified())return;
     if(aczoCloudSyncBusyWithFish()){scheduleAnglingCloudSync(1800);return;}
     syncAnglingPlayerCloud();
   },delay);
@@ -35088,7 +35121,7 @@ function applyAnglingCloudPlayer(player,{force=false}={}){
   // Reject stale replies before changing stocks, XP or the selected method, even before casting.
   if(!force&&Number(player.revision||0)<Number(anglingProgress.xpRevision||0))return false;
   if(!force&&anglingBankNeedsCloud()&&(!Object.prototype.hasOwnProperty.call(player.equipmentInventory||{},'carp_set')||!Object.prototype.hasOwnProperty.call(player.naturalInventory||{},'boilie'))){
-    anglingLastCloudMessage='Cloud-Backend für Angelsets aktualisieren (API 19)';updateAnglingCloudStatus();return false;
+    anglingLastCloudMessage='Die Cloud-Antwort enthält keine vollständigen Angelset-Daten. Der lokale Spielstand bleibt erhalten.';updateAnglingCloudStatus();return false;
   }
   if(force){
     if(aczoBoatActive())aczoBoatReset();
@@ -35173,6 +35206,8 @@ function applyAnglingCloudPlayer(player,{force=false}={}){
 
 let anglingCloudPlayerLoadPromise=null;
 async function loadAnglingPlayerCloud({skipShared=false,retryTransient=true}={}){
+  if(aczoSessionUnverified())return false;
+  const current=aczoCloudContext();
   if(!anglingSetupComplete||!anglingCloudEnabled||!ANGLING_LEADERBOARD_ENDPOINT||!anglingPlayerProfile?.id)return false;
   if(!skipShared&&anglingCloudPlayerLoadPromise)return await anglingCloudPlayerLoadPromise;
 
@@ -35181,6 +35216,7 @@ async function loadAnglingPlayerCloud({skipShared=false,retryTransient=true}={})
    // eigentliche Spielstand-Abruf laeuft dadurch nicht mehr parallel zum
    // Kaltstart des Backends.
    await prewarmAnglingCloudBackend(false);
+   if(!current())return false;
    try{
     let res=await anglingLeaderboardFetch(ANGLING_LEADERBOARD_ENDPOINT,{
       method:'POST',
@@ -35197,6 +35233,7 @@ async function loadAnglingPlayerCloud({skipShared=false,retryTransient=true}={})
     try{data=await res.json();}catch(parseErr){
       const err=new Error('Ungültige Serverantwort');err.retryable=true;throw err;
     }
+    if(!current())return false;
     // Übergangsweg für die kurze Zeit, in der das neue HTML bereits online ist,
     // aber noch die vorherige Backend-Version läuft. Nach V12 wird ausschließlich
     // der geschützte POST-Zugriff verwendet.
@@ -35216,6 +35253,8 @@ async function loadAnglingPlayerCloud({skipShared=false,retryTransient=true}={})
     }
     if(!data){const err=new Error('Leere Serverantwort');err.retryable=true;throw err;}
     if(data.ok===false){const err=new Error(data.error||'Cloud-Lesefehler');err.retryable=false;throw err;}
+    if(!current())return false;
+    if(data.player&&!aczoValidCloudPlayer(data.player,anglingPlayerProfile.id))throw new Error('Die Cloud-Antwort enthält keinen vollständigen Spielstand für diesen Spieler.');
     captureAnglingRecoveryCode(data);
 
     // Noch kein Online-Spielstand: kompletten lokalen Stand anlegen.
@@ -35278,9 +35317,12 @@ async function loadAnglingPlayerCloud({skipShared=false,retryTransient=true}={})
     // Genau ein automatischer Zweitversuch, ausschliesslich bei Netzwerk-,
     // Timeout- oder temporaeren Serverfehlern. Fachliche Backend-Fehler werden
     // nicht wiederholt und koennen daher keinen doppelten Zustand erzeugen.
+    if(!current())return false;
     if(retryTransient&&anglingCloudErrorIsTransient(err)){
       await new Promise(resolve=>window.setTimeout(resolve,700));
+      if(!current())return false;
       await prewarmAnglingCloudBackend(true);
+      if(!current())return false;
       return await loadAnglingPlayerCloud({skipShared:true,retryTransient:false});
     }
     console.warn('Google-Spielstand konnte nicht geladen werden:',err);
@@ -35294,9 +35336,17 @@ async function loadAnglingPlayerCloud({skipShared=false,retryTransient=true}={})
 }
 
 async function syncAnglingPlayerCloud(){
+  if(aczoSessionUnverified()||!anglingSetupComplete||!anglingCloudEnabled||!anglingPlayerProfile?.id)return false;
+  const current=aczoCloudContext();
   if(anglingCloudEnabled&&anglingBankNeedsCloud()){
     await prewarmAnglingCloudBackend(false);
-    if(!(anglingBankRuntime.cloudApi>=ANGLING_REQUIRED_CLOUD_API)){anglingLastCloudMessage='Angelsets noch nicht online gesichert: Cloud-Backend API 19 erforderlich';updateAnglingCloudStatus();return false;}
+    if(!current())return false;
+    if(!(anglingBankRuntime.cloudApi>=ANGLING_REQUIRED_CLOUD_API)){
+      anglingLastCloudMessage=Number(anglingBankRuntime.cloudApi)>0
+        ?'Angelsets noch nicht online gesichert: Cloud-Backend API 19 oder neuer erforderlich'
+        :'Cloud-Verbindung nicht bestätigt. Die Backend-Version konnte noch nicht geprüft werden.';
+      updateAnglingCloudStatus();return false;
+    }
   }
   if(!anglingSetupComplete||!anglingCloudEnabled||!ANGLING_LEADERBOARD_ENDPOINT||!anglingPlayerProfile?.id)return false;
   if(aczoCloudSyncBusyWithFish()){scheduleAnglingCloudSync(1800);return false;}
@@ -35306,7 +35356,6 @@ async function syncAnglingPlayerCloud(){
   // das Einstellungsmenue keinen Fehlversuch mehr, nur weil im Hintergrund
   // bereits derselbe Spielstand gespeichert wird.
   if(anglingCloudSyncPromise){
-    anglingCloudSyncPending=true;
     return await anglingCloudSyncPromise;
   }
 
@@ -35323,12 +35372,11 @@ async function syncAnglingPlayerCloud(){
         body:JSON.stringify(requestPayload)
       },30000);
 
-      if(!res.ok)return false;
+      if(!res.ok)throw new Error('Cloud-Speichern fehlgeschlagen (HTTP '+res.status+').');
       const data=await res.json().catch(()=>null);
-      if(!data||data.ok===false||!data.player)return false;
+      if(!current())return false;
+      if(!data||data.ok!==true||!aczoValidCloudPlayer(data.player,requestPayload.playerId))throw new Error(data?.error||'Unvollständige Antwort beim Cloud-Speichern.');
       captureAnglingRecoveryCode(data);
-      anglingLastCloudSuccessAt=Date.now();
-      anglingLastCloudMessage='Gespeichert';
 
       const currentRevision=Math.max(0,Math.floor(Number(anglingProgress.xpRevision)||0));
       const currentSignature=anglingCloudSignature();
@@ -35340,11 +35388,15 @@ async function syncAnglingPlayerCloud(){
         // Lokaler Stand wurde waehrend des Requests veraendert. Die alte
         // Serverantwort nicht anwenden, sondern den neueren Stand nachsenden.
         anglingCloudSyncPending=true;
+        anglingLastCloudSuccessAt=Date.now();anglingLastCloudMessage='Gespeichert';
         return true;
       }
 
-      return applyAnglingCloudPlayer(data.player);
+      if(!applyAnglingCloudPlayer(data.player))return false;
+      anglingLastCloudSuccessAt=Date.now();anglingLastCloudMessage='Gespeichert';
+      return true;
     }catch(err){
+      if(current())anglingLastCloudMessage='Noch nicht bestätigt: '+aczoReadableError(err);
       console.warn('Google-Spielstand konnte nicht gespeichert werden:',err);
       return false;
     }
@@ -35356,6 +35408,7 @@ async function syncAnglingPlayerCloud(){
   }finally{
     anglingCloudSyncPromise=null;
     anglingCloudSyncInFlight=false;
+    updateAnglingCloudStatus();
     if(anglingCloudSyncPending){
       anglingCloudSyncPending=false;
       scheduleAnglingCloudSync(300);
@@ -35363,14 +35416,18 @@ async function syncAnglingPlayerCloud(){
   }
 }
 
+let aczoLastFlushSignature='',aczoLastFlushAt=0;
 function flushAnglingCloudSync(){
-  if(aczoCloudSyncBusyWithFish())return;
+  if(aczoCloudSyncBusyWithFish()||aczoAccountBusy||aczoSessionUnverified())return;
   if(!anglingSetupComplete||!anglingCloudEnabled||!ANGLING_LEADERBOARD_ENDPOINT||!anglingPlayerProfile?.id)return;
+  const payload=JSON.stringify(anglingCloudSyncPayload());
+  if(payload===aczoLastFlushSignature&&Date.now()-aczoLastFlushAt<1500)return;
+  aczoLastFlushSignature=payload;aczoLastFlushAt=Date.now();
   try{
     fetch(ANGLING_LEADERBOARD_ENDPOINT,{
       method:'POST',
       headers:{'Content-Type':'text/plain;charset=utf-8'},
-      body:JSON.stringify(anglingCloudSyncPayload()),
+      body:payload,
       keepalive:true
     }).catch(()=>{});
   }catch(err){}
@@ -35398,7 +35455,7 @@ document.addEventListener('visibilitychange',()=>{
 // Auf einem neuen Handy bleibt der Server unangetastet, bis der Spieler entweder
 // die Ersteinrichtung abschließt oder seinen vorhandenen Code wiederherstellt.
 window.setTimeout(()=>{
-  if(anglingSetupComplete)loadAnglingPlayerCloud();
+  if(anglingSetupComplete&&!aczoSessionToken)loadAnglingPlayerCloud();
 },650);
 
 
@@ -35500,10 +35557,10 @@ function updateAnglingCloudStatus(){
   if(anglingLastCloudSuccessAt){
     const d=new Date(anglingLastCloudSuccessAt);
     const label=anglingLastCloudMessage||'Abgeglichen';
-    anglingMainCloudState.textContent='☁️ '+label+' · zuletzt '+d.toLocaleTimeString('de-DE',{hour:'2-digit',minute:'2-digit'})+' Uhr';
+    anglingMainCloudState.textContent='☁️ '+label+(/^(Gespeichert|Abgeglichen)$/.test(label)?' · zuletzt ':' · letzter erfolgreicher Abgleich ')+d.toLocaleTimeString('de-DE',{hour:'2-digit',minute:'2-digit'})+' Uhr';
     return;
   }
-  anglingMainCloudState.textContent='☁️ Cloud aktiviert · noch kein erfolgreicher Abgleich in dieser Sitzung';
+  anglingMainCloudState.textContent='☁️ '+(anglingLastCloudMessage||'Cloud aktiviert · noch kein erfolgreicher Abgleich in dieser Sitzung');
 }
 
 function renderAnglingCommunityList(el,players,emptyText,recent=false){
@@ -35523,9 +35580,23 @@ function renderAnglingCommunityList(el,players,emptyText,recent=false){
 }
 
 let anglingCommunityLoadInFlight=null;
+let aczoRecentPlayersCache=null,aczoRecentPlayersPromise=null;
+async function aczoRecentPlayers(){
+  const revision=aczoPublicRevision;
+  if(aczoRecentPlayersCache&&Date.now()-aczoRecentPlayersCache.savedAt<60000)return aczoRecentPlayersCache.data;
+  if(aczoRecentPlayersPromise)return aczoRecentPlayersPromise;
+  const task=anglingLeaderboardJson(ANGLING_LEADERBOARD_ENDPOINT+'?action=recentPlayers&limit=8',{method:'GET',cache:'no-store'},30000).then(data=>{
+    if(data?.ok!==true||!Array.isArray(data.players))throw new Error('Unvollständige Communityantwort');
+    if(revision!==aczoPublicRevision)return null;
+    aczoRecentPlayersCache={savedAt:Date.now(),data};return data;
+  });
+  aczoRecentPlayersPromise=task;
+  try{return await task;}finally{if(aczoRecentPlayersPromise===task)aczoRecentPlayersPromise=null;}
+}
 let anglingCommunityToastTimer=null;
 let anglingCommunityToastSignature='';
 async function loadAnglingCommunity(){
+  const revision=aczoPublicRevision,current=()=>revision===aczoPublicRevision;
   if(typeof aczoNetworkBusyWithFish==='function'&&aczoNetworkBusyWithFish())return false;
   if(!ANGLING_LEADERBOARD_ENDPOINT){
     renderAnglingCommunityList(anglingRecentPlayers,[],'Online-Verbindung nicht eingerichtet.');
@@ -35539,22 +35610,26 @@ async function loadAnglingCommunity(){
 
     try{
       const preload=await aczoPreloadPublicData();
+      if(!current()||aczoNetworkBusyWithFish())return;
       const data=preload?.community||await anglingLeaderboardJson(
         base+'action=community&limit=8&minutes=5&exclude='+encodeURIComponent(anglingPlayerProfile.id||''),
         {method:'GET',cache:'no-store'},
         30000
       );
 
+      if(!current())return;
       if(Array.isArray(data?.recentPlayers)&&Array.isArray(data?.activePlayers)){
+        renderAnglingCommunityList(anglingActivePlayers,data.activePlayers,'Gerade ist sonst niemand aktiv.',false);
         // Das bestehende communityBootstrap liefert nur 5 neue Angler.
         // Ohne Backend-Aenderung holen wir deshalb die vorhandene recentPlayers-
         // Route separat mit limit=8 ab. ActivePlayers koennen aus dem Bootstrap
         // weiterverwendet werden.
         let recentPlayers=data.recentPlayers;
         try{
-          const recentData=await anglingLeaderboardJson(base+'action=recentPlayers&limit=8',{method:'GET',cache:'no-store'},30000);
+          const recentData=await aczoRecentPlayers();
           if(Array.isArray(recentData?.players))recentPlayers=recentData.players;
         }catch(err){console.warn('8er-Neueste-Angler-Abfrage nicht verfügbar, Bootstrap-Fallback wird benutzt:',err);}
+        if(!current())return;
         anglingLatestRecentPlayers=recentPlayers;
         anglingLatestActivePlayers=data.activePlayers;
         renderAnglingCommunityList(anglingRecentPlayers,anglingLatestRecentPlayers,'Noch keine neuen Angler.',true);
@@ -35567,11 +35642,13 @@ async function loadAnglingCommunity(){
       console.warn('V13-Community-Abfrage nicht verfügbar, Fallback wird benutzt:',err);
     }
 
+    if(!current()||aczoNetworkBusyWithFish())return;
     const [recentResult,activeResult]=await Promise.allSettled([
-      anglingLeaderboardJson(base+'action=recentPlayers&limit=8',{method:'GET',cache:'no-store'},30000),
+      aczoRecentPlayers(),
       anglingLeaderboardJson(base+'action=activePlayers&minutes=5&exclude='+encodeURIComponent(anglingPlayerProfile.id||''),{method:'GET',cache:'no-store'},30000)
     ]);
 
+    if(!current())return;
     if(recentResult.status==='fulfilled'){
       anglingLatestRecentPlayers=recentResult.value?.players||[];
       renderAnglingCommunityList(anglingRecentPlayers,anglingLatestRecentPlayers,'Noch keine neuen Angler.',true);
@@ -35702,7 +35779,7 @@ function updateAnglingMainMenuUi(){
   anglingMainCloudEnabled.checked=!!anglingCloudEnabled;
   anglingMainHighscorePublic.checked=!!anglingPlayerProfile.shareRecords;
   anglingMainPresenceNamed.checked=!!anglingPresenceNamed;
-  anglingMainEpBadge.querySelector('strong').textContent=(!anglingSetupComplete&&!aczoAccount)?'0':String(anglingProgress.xp);
+  anglingMainEpBadge.querySelector('strong').textContent=aczoSessionUnverified()?'…':(!anglingSetupComplete&&!aczoAccount)?'0':String(anglingProgress.xp);
   anglingMainRecoveryCode.value=anglingRecoveryCode||(aczoAccount?'Auf diesem Gerät nicht hinterlegt':'Noch nicht erstellt');
   anglingMainCopyRecoveryBtn.disabled=!anglingRecoveryCode;
   anglingMainNewRecoveryBtn.disabled=true;
@@ -35789,6 +35866,7 @@ function startAnglingFromMainButton(){
 }
 
 function openAnglingMainMenu(){
+  if(aczoSessionToken&&!aczoAccountBusy)aczoResumeSession();
   if(anglingMode&&guardAnglingMenuOpen())return;
   hideAnglingWelcomeBack();
   anglingMainSaveProfileBtn.style.display='';
@@ -35803,7 +35881,7 @@ function openAnglingMainMenu(){
   anglingMainMenu.setAttribute('aria-hidden','false');
   anglingMainSettings.style.display='none';
   aczoMainNavigate(anglingSetupComplete?'overview':'profile');
-  if(!anglingMode||anglingHallOfFameCanStart())requestAnglingHallOfFameData().catch(()=>{});
+  if(!aczoNetworkBusyWithFish()&&(!anglingMode||anglingHallOfFameCanStart()))requestAnglingHallOfFameData().catch(()=>{});
   stopAnglingActionHold?.();
   anglingPointerStarts?.clear?.();
 }
@@ -36223,7 +36301,6 @@ async function fetchAnglingRecoveryPlayer(code){
         error.retryable=false;
         throw error;
       }
-      anglingCloudWarmAt=Date.now();
       return data;
     }catch(err){
       lastError=err;
@@ -36278,6 +36355,8 @@ async function deleteDisposableAnglingProfileAfterRecovery(previous,newPlayerId)
 }
 
 async function restoreAnglingPlayerFromCode(){
+  if(aczoAccountBusy)return;
+  if(aczoSessionToken){anglingRecoveryStatus.textContent='Bitte den vorhandenen Code unter Profil prüfen und speichern. Für ein anderes Spielerkonto zuerst abmelden.';return;}
   const code=normalizeAnglingRecoveryCode(anglingRecoveryInput.value);
   if(code.replace(/-/g,'').length!==24){
     anglingRecoveryStatus.textContent='Bitte einen vollständigen Wiederherstellungscode eingeben.';
@@ -36285,14 +36364,19 @@ async function restoreAnglingPlayerFromCode(){
   }
   if(!ANGLING_LEADERBOARD_ENDPOINT)return;
 
+  aczoAccountBusy=true;aczoAuthGeneration++;
   anglingRecoveryRestoreBtn.disabled=true;
   anglingRecoveryStatus.textContent='Cloud-Spielstand wird geladen …';
 
   try{
     if(anglingCloudSyncTimer){window.clearTimeout(anglingCloudSyncTimer);anglingCloudSyncTimer=null;}
 
+    if(anglingCloudPlayerLoadPromise)await anglingCloudPlayerLoadPromise;
+    if(anglingCloudSyncPromise)await anglingCloudSyncPromise;
     const previousProfile=captureDisposableAnglingProfileBeforeRecovery();
     const data=await fetchAnglingRecoveryPlayer(code);
+    if(data.player.playerId!==String(data.playerId))throw new Error('Unvollständige Wiederherstellungsantwort.');
+    aczoArchiveLocalPlayer();
 
     anglingPlayerProfile.id=String(data.playerId);
     if(data.player.name)anglingPlayerProfile.name=String(data.player.name).slice(0,30);
@@ -36306,7 +36390,7 @@ async function restoreAnglingPlayerFromCode(){
       localStorage.setItem(ANGLING_CLOUD_ENABLED_KEY,'1');
       localStorage.setItem(ANGLING_SETUP_COMPLETE_KEY,'1');
     }catch(err){}
-    saveAnglingRecoveryCode(code);
+    saveAnglingRecoveryCode(code,{keepInMemoryOnFailure:true});
 
     applyAnglingCloudPlayer(data.player,{force:true});
     anglingLastCloudSuccessAt=Date.now();
@@ -36328,7 +36412,7 @@ async function restoreAnglingPlayerFromCode(){
       ?'Wiederherstellung fehlgeschlagen: Der Cloud-Dienst antwortet auch nach mehreren Versuchen nicht. Bitte Verbindung prüfen und erneut versuchen.'
       :'Wiederherstellung fehlgeschlagen: '+String(err?.message||'unbekannter Fehler');
   }finally{
-    anglingRecoveryRestoreBtn.disabled=false;
+    anglingRecoveryRestoreBtn.disabled=false;aczoAccountBusy=false;
   }
 }
 
@@ -36361,7 +36445,7 @@ async function rotateAnglingRecoveryCode(){
     try{
       await syncAnglingPlayerCloud();
       if(anglingRecoveryCode){
-        setStatus('✅ Wiederherstellungscode wurde eingerichtet.');
+        setStatus(anglingRecoveryStorageWarning||'✅ Wiederherstellungscode wurde eingerichtet.');
         return;
       }
       setStatus('⚠️ Es konnte noch kein Code erzeugt werden. Bitte Cloud-Einstellungen einmal speichern und erneut versuchen.');
@@ -36396,8 +36480,8 @@ async function rotateAnglingRecoveryCode(){
       throw new Error(data?.error||('HTTP '+res.status));
     }
 
-    saveAnglingRecoveryCode(data.recoveryCode);
-    setStatus('✅ Neuer Code erstellt. Der bisherige Code ist jetzt ungültig.');
+    const saved=saveAnglingRecoveryCode(data.recoveryCode,{keepInMemoryOnFailure:true});
+    setStatus(saved?'✅ Neuer Code erstellt. Der bisherige Code ist jetzt ungültig.':anglingRecoveryStorageWarning);
     showAnglingToast('Neuer Wiederherstellungscode erstellt.',1400);
   }catch(err){
     const msg=String(err?.message||'unbekannter Fehler');
@@ -37332,36 +37416,26 @@ async function anglingLeaderboardFetch(url,options={},timeoutMs=15000){
  const controller=new AbortController();
  const timer=window.setTimeout(()=>controller.abort(),timeoutMs);
  try{
-   return await fetch(url,{...options,signal:controller.signal});
- }finally{
-   window.clearTimeout(timer);
- }
+   const res=await fetch(url,{...options,signal:controller.signal});
+   const body=await res.arrayBuffer();
+   return new Response([204,205,304].includes(res.status)?null:body,{status:res.status,statusText:res.statusText,headers:res.headers});
+ }finally{window.clearTimeout(timer);}
 }
 async function anglingLeaderboardJson(url,options={},timeoutMs=15000){
- const res=await anglingLeaderboardFetch(url,options,timeoutMs);
- if(!res.ok){
-   const err=new Error('HTTP '+res.status);
-   err.status=res.status;
-   err.retryable=res.status===408||res.status===429||res.status>=500;
-   throw err;
- }
- let data=null;
- try{data=await res.json();}catch(parseErr){
-   const err=new Error('Ungültige Serverantwort');
-   err.retryable=true;
-   throw err;
- }
- if(!data){
-   const err=new Error('Leere Serverantwort');
-   err.retryable=true;
-   throw err;
- }
- if(data.ok===false){
-   const err=new Error(data.error||'Online-Dienst meldet einen Fehler');
-   err.retryable=false;
-   throw err;
- }
- return data;
+ const controller=new AbortController();
+ const timer=window.setTimeout(()=>controller.abort(),timeoutMs);
+ try{
+   const res=await fetch(url,{...options,signal:controller.signal});
+   if(!res.ok){const err=new Error('HTTP '+res.status);err.status=res.status;err.retryable=res.status===408||res.status===429||res.status>=500;throw err;}
+   let data;
+   try{data=await res.json();}catch(parseErr){
+     if(controller.signal.aborted)throw new DOMException('Die Serverantwort hat zu lange gedauert.','AbortError');
+     const err=new Error('Ungültige Serverantwort');err.retryable=true;throw err;
+   }
+   if(!data){const err=new Error('Leere Serverantwort');err.retryable=true;throw err;}
+   if(data.ok===false){const err=new Error(data.error||'Online-Dienst meldet einen Fehler');err.retryable=false;err.serverRejected=true;throw err;}
+   return data;
+ }finally{window.clearTimeout(timer);}
 }
 function anglingCloudErrorIsTransient(err){
  return !!(err&&(err.retryable===true||err.name==='AbortError'||err instanceof TypeError||
@@ -37394,7 +37468,7 @@ async function prewarmAnglingCloudBackend(force=false){
        {method:'GET',cache:'no-store'},
        20000
      );
-     if(data?.ok!==false){anglingBankRuntime.cloudApi=Number(data.apiVersion)||0;anglingCloudWarmAt=Date.now();return true;}
+     if(data?.ok===true&&Number.isInteger(Number(data.apiVersion))&&Number(data.apiVersion)>0){anglingBankRuntime.cloudApi=Number(data.apiVersion);anglingCloudWarmAt=Date.now();return true;}
    }catch(err){console.warn('Cloud-Vorwärmung konnte nicht bestätigt werden:',err);}
    return false;
  })();
@@ -37402,7 +37476,7 @@ async function prewarmAnglingCloudBackend(force=false){
  try{return await task;}
  finally{if(anglingCloudWarmPromise===task)anglingCloudWarmPromise=null;}
 }
-window.setTimeout(()=>{prewarmAnglingCloudBackend(false);},1800);
+window.setTimeout(()=>{if(!aczoNetworkBusyWithFish())prewarmAnglingCloudBackend(false);},1800);
 
 const ANGLING_LEADERBOARD_LOCAL_CACHE_KEY='aczo56-leaderboard-cache-v2';
 const anglingLeaderboardCache=new Map();
@@ -44886,7 +44960,7 @@ if(window.visualViewport){
 let aczoAccountMode='choices',aczoRegisterLegacyMode=false,aczoRecoveryLookup=null,aczoResetLookup=null,aczoCommunityPage=0,aczoCommunityQuery='',aczoCommunityTimer=null;
 let aczoGuestRecoveryEnsureInFlight=false;
 async function aczoEnsureGuestRecoveryCode(){
-  if(aczoGuestRecoveryEnsureInFlight||aczoAccount||!anglingSetupComplete||anglingRecoveryCode||!anglingCloudEnabled)return;
+  if(aczoGuestRecoveryEnsureInFlight||aczoSessionToken||aczoAccountBusy||aczoAccount||!anglingSetupComplete||anglingRecoveryCode||!anglingCloudEnabled)return;
   aczoGuestRecoveryEnsureInFlight=true;
   try{
     updateAnglingRecoveryUi();
@@ -44902,13 +44976,17 @@ const aczoEl=id=>document.getElementById(id);
 function aczoStatus(message){aczoEl('aczoAccountStatus').textContent=message;}
 function aczoRenderAccount(){
   if(!aczoEl('aczoAccountArea'))return;
-  const hasAccount=!!(aczoSessionToken&&aczoAccount),signedOut=!anglingSetupComplete,guest=!hasAccount&&!signedOut;
+  const hasAccount=!!(aczoSessionToken&&aczoAccount),pending=aczoSessionUnverified(),signedOut=!anglingSetupComplete&&!pending,guest=!hasAccount&&!signedOut&&!pending;
   aczoEl('aczoAccountSummary').classList.toggle('aczo-account-connected',hasAccount);
   aczoEl('aczoAccountSummary').textContent=hasAccount
     ?'👤 '+aczoAccount.username+' · Spielerkonto verbunden'
-    :guest
+    :pending
+      ?(aczoResumeState==='error'?'👤 Gespeicherte Anmeldung · Verbindung noch nicht bestätigt':'👤 Gespeicherte Anmeldung wird geprüft …')
+      :guest
       ?'🎣 '+(anglingPlayerProfile.name||'Gastangler')+' · '+anglingProgress.xp+' EP · '+anglingProgress.totalCatches+' Fänge · kein Spielerkonto'
       :'👤 Noch kein Spieler auf diesem Gerät';
+  const retry=aczoEl('aczoRetrySession');retry.hidden=!aczoSessionToken||aczoResumeState!=='error';retry.disabled=aczoAccountBusy;
+  aczoUpdateStorageWarning();
   if(hasAccount){const dot=document.createElement('span');dot.className='aczo-account-dot';dot.setAttribute('aria-hidden','true');aczoEl('aczoAccountSummary').prepend(dot);}
   aczoEl('aczoAccountChoices').hidden=hasAccount||aczoAccountMode!=='choices';
   aczoEl('aczoAccountControls').hidden=!hasAccount||aczoAccountMode!=='choices';
@@ -44949,10 +45027,10 @@ function aczoRenderAccount(){
   anglingMainCloudEnabled.closest('label').hidden=hasAccount;
   if(hasAccount){anglingCloudEnabled=true;anglingMainCloudEnabled.checked=true;}
   if(guest&&!anglingRecoveryCode)window.setTimeout(aczoEnsureGuestRecoveryCode,0);
-  const nudge=aczoEl('aczoGuestNudge');if(nudge){let until=0;try{until=Number(localStorage.getItem('aczo56-account-nudge-until')||0);}catch(err){}nudge.hidden=hasAccount||signedOut||Date.now()<until||!(anglingProgress.xp>=100||anglingProgress.totalCatches>=3);}
+  const nudge=aczoEl('aczoGuestNudge');if(nudge){let until=0;try{until=Number(localStorage.getItem('aczo56-account-nudge-until')||0);}catch(err){}nudge.hidden=hasAccount||pending||signedOut||Date.now()<until||!(anglingProgress.xp>=100||anglingProgress.totalCatches>=3);}
   aczoEl('anglingMainNewRecoveryBtn').hidden=true;
   aczoEl('anglingMainRecoveryCode').closest('.angling-main-recovery-block').hidden=signedOut;
-  aczoEl('aczoAttachRecovery').hidden=!hasAccount||!!anglingRecoveryCode;
+  aczoEl('aczoAttachRecovery').hidden=!hasAccount||!!anglingRecoveryCode&&!anglingRecoveryStorageWarning;
   if(hasAccount)aczoEl('aczoPasswordUsername').value=aczoAccount.username;
   aczoColorIcons(anglingMainMenu);
 }
@@ -44973,21 +45051,52 @@ async function aczoPasswordCredential(password,isNew=false){
   const bits=await crypto.subtle.deriveBits({name:'PBKDF2',hash:'SHA-256',salt:encoder.encode('aczo56-account-client-kdf-v1'),iterations:600000},key,256);
   return Array.from(new Uint8Array(bits),b=>b.toString(16).padStart(2,'0')).join('');
 }
+function aczoValidateAccountResponse(action,data,fields={}){
+  const invalid=()=>{const err=new Error('Die Kontoantwort ist unvollständig oder passt nicht zur Anfrage. Bitte erneut versuchen.');err.retryable=true;throw err;};
+  if(!data||data.ok!==true)invalid();
+  if(action==='logoutAccount')return data;
+  const account=data.account;
+  if(!account||typeof account.username!=='string'||!account.username.trim()||typeof account.playerId!=='string'||!account.playerId.trim())invalid();
+  if(fields.playerId&&account.playerId!==String(fields.playerId))invalid();
+  if(fields.sessionToken&&aczoAccount&&account.playerId!==aczoAccount.playerId)invalid();
+  if(['loginAccount','registerAccount','resetAccountPassword','sessionAccount'].includes(action)){
+    const p=data.player;
+    if(!aczoValidCloudPlayer(p,account.playerId))invalid();
+  }
+  if(['loginAccount','registerAccount','resetAccountPassword','changeAccountPassword'].includes(action)&&!/^[a-f0-9]{128}$/.test(String(data.sessionToken||'')))invalid();
+  return data;
+}
 async function aczoApi(action,fields){
-  const payload={...fields};
+  const payload={...fields},generation=aczoAuthGeneration;
   if(Object.prototype.hasOwnProperty.call(payload,'password'))payload.password=await aczoPasswordCredential(payload.password,action==='registerAccount');
   if(Object.prototype.hasOwnProperty.call(payload,'newPassword'))payload.newPassword=await aczoPasswordCredential(payload.newPassword,true);
   const entropy=new Uint8Array(32);crypto.getRandomValues(entropy);
   const clientEntropy=Array.from(entropy,b=>b.toString(16).padStart(2,'0')).join('');
-  const data=await anglingLeaderboardJson(ANGLING_LEADERBOARD_ENDPOINT,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify({action,clientEntropy,...payload})},60000);
-  if(data?.ok===false)throw new Error(data.error||'Anmeldung fehlgeschlagen.');
-  return data;
+  const options={method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify({action,clientEntropy,...payload})};
+  // Only login/session checks may retry. Never repeat a password change or registration.
+  const attempts=['loginAccount','sessionAccount'].includes(action)?2:1;
+  for(let attempt=0;attempt<attempts;attempt++){
+    if(generation!==aczoAuthGeneration)throw new Error('Der Kontovorgang wurde durch eine neuere Aktion ersetzt.');
+    try{
+      const data=await anglingLeaderboardJson(ANGLING_LEADERBOARD_ENDPOINT,options,action==='sessionAccount'?25000:60000);
+      if(generation!==aczoAuthGeneration)throw new Error('Der Kontovorgang wurde durch eine neuere Aktion ersetzt.');
+      return aczoValidateAccountResponse(action,data,payload);
+    }catch(err){
+      if(generation!==aczoAuthGeneration)throw err;
+      if(attempt+1<attempts&&!err.serverRejected&&err.status!==429&&anglingCloudErrorIsTransient(err)){
+        if(aczoAccountBusy||action==='sessionAccount')aczoStatus('Verbindung wird erneut geprüft …');
+        await new Promise(resolve=>window.setTimeout(resolve,1000));continue;
+      }
+      throw new Error(aczoReadableError(err));
+    }
+  }
 }
 function aczoSaveSession(data){
-  if(data.sessionToken)aczoSessionToken=data.sessionToken;
-  if(!/^[a-f0-9]{128}$/.test(String(aczoSessionToken||'')))throw new Error('Keine gültige Sitzung erhalten. Bitte erneut anmelden.');
-  aczoAccount=data.account;
-  try{localStorage.setItem(ACZO_SESSION_KEY,aczoSessionToken);}catch(err){}
+  const token=data.sessionToken||aczoSessionToken;
+  if(!/^[a-f0-9]{128}$/.test(String(token||''))||!data?.account?.playerId||!data?.account?.username)throw new Error('Keine gültige Sitzung erhalten. Bitte erneut anmelden.');
+  aczoSessionToken=token;aczoAccount=data.account;
+  aczoSessionStorageWarning=aczoStorageWrite(ACZO_SESSION_KEY,token)?'':'Du bist angemeldet, aber der Browser konnte die Anmeldung nicht dauerhaft speichern. Nach dem Schließen kann eine erneute Anmeldung nötig sein.';
+  aczoResumeState='verified';aczoResumeSuccessAt=Date.now();
   aczoSetAccountMode('choices');
 }
 function aczoArchiveLocalPlayer(){
@@ -45003,17 +45112,19 @@ function aczoRestoreLocalPlayer(id){
   anglingProgress.catches=Array.isArray(progress?.catches)?progress.catches:[];
   anglingPlayerProfile.shareRecords=!!saved?.profile?.shareRecords;
   anglingPresenceNamed=!!saved?.presenceNamed;
-  anglingRecoveryCode=String(saved?.recoveryCode||'');
+  anglingRecoveryCode=String(saved?.recoveryCode||'');anglingRecoveryStorageWarning='';
   try{
     if(anglingRecoveryCode)localStorage.setItem(ANGLING_RECOVERY_KEY,anglingRecoveryCode);else localStorage.removeItem(ANGLING_RECOVERY_KEY);
     localStorage.setItem(ANGLING_PRESENCE_NAMED_KEY,anglingPresenceNamed?'1':'0');
-  }catch(err){}
+  }catch(err){anglingRecoveryStorageWarning='Der lokale Speicher ist nicht verfügbar. Bitte deinen Wiederherstellungscode sicher aufbewahren.';}
 }
 function aczoApplyAccountPlayer(data){
   const id=String(data.account.playerId);
   const samePlayer=id===anglingPlayerProfile.id;
   if(!samePlayer){
-    aczoArchiveLocalPlayer();aczoRestoreLocalPlayer(id);
+    aczoArchiveLocalPlayer();
+    if(!aczoStorageWrite(ACZO_SESSION_KEY,data.sessionToken||aczoSessionToken))throw new Error('Kontowechsel nicht übernommen: Der Browser kann die Anmeldung nicht speichern. Dein bisheriger lokaler Spielstand bleibt erhalten.');
+    aczoRestoreLocalPlayer(id);
     anglingSelectedBait='worm';
   }
   anglingPlayerProfile.id=id;
@@ -45030,23 +45141,26 @@ function aczoApplyAccountPlayer(data){
     anglingPlayerProfile.shareRecords=data.player.shareRecords;
     saveAnglingPlayerProfile();
   }
-  if(data.player&&!olderSamePlayer)applyAnglingCloudPlayer(data.player,{force:!samePlayer});
+  if(data.player&&!olderSamePlayer&&!applyAnglingCloudPlayer(data.player,{force:!samePlayer}))throw new Error('Der Cloud-Spielstand konnte nicht vollständig übernommen werden. Bitte die Backend-Version prüfen.');
   saveAnglingProgress({preserveXpRevision:true,skipCloudSync:true,skipEpSync:true});
   aczoSaveSession(data);updateAnglingMainMenuUi();
 }
 async function aczoFinishAccountLogin(data,generation=aczoAuthGeneration){
   if(generation!==aczoAuthGeneration)return false;
-  if(!data?.account?.playerId||!data?.account?.username||!data?.player)throw new Error('Unvollständige Kontoantwort. Bitte erneut anmelden.');
-  const wasReady=anglingSetupComplete;anglingSetupComplete=false;
+  aczoValidateAccountResponse(data?.sessionToken?'loginAccount':'sessionAccount',data);
+  if(!/^[a-f0-9]{128}$/.test(String(data.sessionToken||aczoSessionToken||'')))throw new Error('Keine gültige Sitzung erhalten.');
+  const wasReady=anglingSetupComplete;
   try{
     if(anglingCloudPlayerLoadPromise)await anglingCloudPlayerLoadPromise;
     if(anglingCloudSyncPromise)await anglingCloudSyncPromise;
     if(generation!==aczoAuthGeneration)return false;
+    if(aczoCloudSyncBusyWithFish())return false;
     if(anglingCloudSyncTimer){clearTimeout(anglingCloudSyncTimer);anglingCloudSyncTimer=null;}
     if(anglingMode&&String(data.account.playerId)!==anglingPlayerProfile.id){finishLeaveAngling();anglingUi.style.display='';openAnglingMainMenu();}
     aczoApplyAccountPlayer(data);
     anglingLastCloudSuccessAt=Date.now();anglingLastCloudMessage='Abgeglichen';updateAnglingCloudStatus();
     aczoInvalidatePublicData();aczoPreloadPublicData().catch(()=>{});
+    if(Number(anglingProgress.xpRevision||0)>Number(data.player.revision||0))scheduleAnglingCloudSync(900);
     if(aczoStartAfterAccountLogin){
       aczoStartAfterAccountLogin=false;
       window.setTimeout(()=>{
@@ -45068,8 +45182,12 @@ async function aczoHandleForm(form,task){
     form.id==='aczoPasswordForm'?'Passwort wird aktualisiert …':'Spielerdaten werden geladen …';
   aczoStatus(loadLabel);aczoBusyOverlayShow(loadLabel);
   try{if(aczoCloudSyncBusyWithFish())throw new Error('Bitte zuerst den laufenden Fang beenden.');await task();aczoStatus('✅ Fertig.');}
-  catch(err){aczoStatus(String(err?.message||'Vorgang fehlgeschlagen.'));}
-  finally{aczoBusyOverlayHide();button.disabled=false;aczoAccountBusy=false;}
+  catch(err){aczoStatus(aczoReadableError(err));}
+  finally{
+    aczoBusyOverlayHide();button.disabled=false;aczoAccountBusy=false;
+    if(aczoSessionUnverified()){aczoResumeState='error';aczoResumeAttemptAt=0;}
+    aczoRenderAccount();
+  }
 }
 const aczoFormTasks=new Map();
 function aczoBindForm(id,task){
@@ -45134,7 +45252,7 @@ aczoEl('aczoCheckRecovery').addEventListener('click',async()=>{
   const code=normalizeAnglingRecoveryCode(aczoEl('aczoRegisterRecovery').value||'');
   const out=aczoEl('aczoRecoveryLookupResult'),btn=aczoEl('aczoCheckRecovery');
   if(code.replace(/-/g,'').length!==24){out.textContent='Bitte den vollständigen Wiederherstellungscode eingeben.';return;}
-  aczoAccountBusy=true;btn.disabled=true;out.textContent='Code wird geprüft …';
+  aczoAccountBusy=true;aczoAuthGeneration++;btn.disabled=true;out.textContent='Code wird geprüft …';
   try{
     const recovered=await fetchAnglingRecoveryPlayer(code);
     if(!recovered?.playerId||!recovered?.player)throw new Error('Spielstand nicht gefunden.');
@@ -45161,7 +45279,7 @@ aczoEl('aczoResetCheck').addEventListener('click',async()=>{
   aczoResetLookup=null;
   aczoEl('aczoResetName').value='';
   if(code.replace(/-/g,'').length!==24){out.textContent='Bitte den vollständigen Wiederherstellungscode eingeben.';aczoRenderAccount();return;}
-  aczoAccountBusy=true;btn.disabled=true;out.textContent='Code wird geprüft …';
+  aczoAccountBusy=true;aczoAuthGeneration++;btn.disabled=true;out.textContent='Code wird geprüft …';
   try{
     const recovered=await fetchAnglingRecoveryPlayer(code);
     if(!recovered?.playerId||!recovered?.player)throw new Error('Spielstand nicht gefunden.');
@@ -45185,20 +45303,23 @@ aczoEl('aczoRename').addEventListener('click',async()=>{
 aczoEl('aczoLogout').addEventListener('click',aczoLogout);
 aczoEl('aczoAttachRecoveryBtn').addEventListener('click',async()=>{
   const input=aczoEl('aczoAttachRecoveryInput'),button=aczoEl('aczoAttachRecoveryBtn'),status=aczoEl('aczoAttachRecoveryStatus');
+  if(button.disabled||aczoAccountBusy)return;
   const code=normalizeAnglingRecoveryCode(input.value);
   if(code.replace(/-/g,'').length!==24){status.textContent='Bitte den vollständigen Code vom anderen Gerät eingeben.';return;}
   if(!aczoAccount||!aczoSessionToken){status.textContent='Bitte zuerst bei deinem Spielerkonto anmelden.';return;}
+  const current=aczoCloudContext(),playerId=aczoAccount.playerId;
   button.disabled=true;status.textContent='Code wird geprüft …';
   try{
     const data=await anglingLeaderboardJson(ANGLING_LEADERBOARD_ENDPOINT,{
       method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},
       body:JSON.stringify({action:'recoverPlayer',recoveryCode:code})
     },30000);
-    if(data?.ok===false||data?.playerId!==aczoAccount.playerId)throw new Error('Dieser Code gehört nicht zu deinem Spielerkonto.');
-    if(!saveAnglingRecoveryCode(code))throw new Error('Code konnte nicht gespeichert werden.');
+    if(!current())return;
+    if(data?.ok!==true||data?.playerId!==playerId)throw new Error('Dieser Code gehört nicht zu deinem Spielerkonto.');
+    if(!saveAnglingRecoveryCode(code))throw new Error('Code ist gültig, konnte aber auf diesem Gerät nicht dauerhaft gespeichert werden. Bitte den Browserspeicher prüfen und erneut speichern.');
     input.value='';status.textContent='Code auf diesem Gerät gespeichert.';
     aczoRenderAccount();
-  }catch(err){status.textContent=err?.message||'Code konnte gerade nicht geprüft werden.';}
+  }catch(err){if(current())status.textContent=aczoReadableError(err);}
   finally{button.disabled=false;}
 });
 aczoEl('aczoSavePrivacy').addEventListener('click',aczoSavePrivacy);
@@ -45228,13 +45349,15 @@ aczoEl('aczoGuestStart').addEventListener('click',()=>{
 
 
 aczoBindForm('aczoLoginForm',async form=>{
+  const generation=aczoAuthGeneration;
   const username=form.elements.namedItem('username').value,password=form.elements.namedItem('password').value;
   const data=await aczoApi('loginAccount',{username,password});
+  if(!await aczoFinishAccountLogin(data,generation))throw new Error('Anmeldung noch nicht übernommen. Bitte nach dem laufenden Fang erneut versuchen.');
   await aczoOfferPasswordSave(data.account.username,password);
-  await aczoFinishAccountLogin(data);
   aczoCompletePasswordForm(form);
 });
 aczoBindForm('aczoRegisterForm',async form=>{
+  const generation=aczoAuthGeneration;
   const username=form.elements.namedItem('username').value,password=form.elements.namedItem('new-password').value;
   if(password!==form.elements.namedItem('confirm-password').value)throw new Error('Die Passwörter stimmen nicht überein.');
   let data=null,createdNewAccount=false,legacyCode='';
@@ -45256,9 +45379,9 @@ aczoBindForm('aczoRegisterForm',async form=>{
     data=await aczoApi('registerAccount',{playerId:anglingPlayerProfile.id,recoveryCode:anglingRecoveryCode,username,password});
     createdNewAccount=true;
   }
+  if(!await aczoFinishAccountLogin(data,generation))throw new Error('Anmeldung noch nicht übernommen. Bitte nach dem laufenden Fang erneut versuchen.');
   await aczoOfferPasswordSave(data.account.username,password);
-  await aczoFinishAccountLogin(data);
-  if(legacyCode)saveAnglingRecoveryCode(legacyCode);
+  if(legacyCode)saveAnglingRecoveryCode(legacyCode,{keepInMemoryOnFailure:true});
   if(createdNewAccount){
     anglingPlayerProfile.shareRecords=true;anglingPresenceNamed=true;
     anglingMainHighscorePublic.checked=true;anglingMainPresenceNamed.checked=true;
@@ -45271,22 +45394,26 @@ aczoBindForm('aczoRegisterForm',async form=>{
   aczoCompletePasswordForm(form);
 });
 aczoBindForm('aczoResetForm',async form=>{
+  const generation=aczoAuthGeneration;
   if(!aczoResetLookup?.account?.username)throw new Error('Bitte zuerst den Wiederherstellungscode prüfen.');
   const password=form.elements.namedItem('new-password').value;
   if(password!==form.elements.namedItem('confirm-password').value)throw new Error('Die Passwörter stimmen nicht überein.');
   const data=await aczoApi('resetAccountPassword',{username:aczoResetLookup.account.username,recoveryCode:aczoResetLookup.code,newPassword:password});
   if(String(data?.account?.playerId||'')!==String(aczoResetLookup.playerId))throw new Error('Sicherheitsabbruch: Konto und Spielstand stimmen nicht überein.');
+  if(!await aczoFinishAccountLogin(data,generation))throw new Error('Anmeldung noch nicht übernommen. Bitte nach dem laufenden Fang erneut versuchen.');
   await aczoOfferPasswordSave(data.account.username,password);
-  await aczoFinishAccountLogin(data);
+  saveAnglingRecoveryCode(aczoResetLookup.code,{keepInMemoryOnFailure:true});
   aczoResetLookup=null;
   aczoCompletePasswordForm(form);
 });
 aczoBindForm('aczoPasswordForm',async form=>{
+  const generation=aczoAuthGeneration;
   const password=form.elements.namedItem('new-password').value;
   if(password!==form.elements.namedItem('confirm-password').value)throw new Error('Die Passwörter stimmen nicht überein.');
   const data=await aczoApi('changeAccountPassword',{sessionToken:aczoSessionToken,password:form.elements.namedItem('password').value,newPassword:password});
-  await aczoOfferPasswordSave(data.account.username,password);
-  aczoSaveSession(data);aczoCompletePasswordForm(form);
+  if(generation!==aczoAuthGeneration)return;
+  aczoSaveSession(data);
+  await aczoOfferPasswordSave(data.account.username,password);aczoCompletePasswordForm(form);
 });
 async function aczoSaveStableCloud(){
   if(anglingCloudPlayerLoadPromise)await anglingCloudPlayerLoadPromise;
@@ -45312,13 +45439,15 @@ async function aczoSavePrivacy(){
     if(anglingCloudPlayerLoadPromise)await anglingCloudPlayerLoadPromise;
     if(anglingCloudSyncPromise)await anglingCloudSyncPromise;
     anglingPlayerProfile.shareRecords=shareRecords;anglingPresenceNamed=presenceNamed;
-    saveAnglingPlayerProfile();
-    try{localStorage.setItem(ANGLING_PRESENCE_NAMED_KEY,presenceNamed?'1':'0');}catch(err){}
+    const profileSaved=saveAnglingPlayerProfile();
+    const presenceSaved=aczoStorageWrite(ANGLING_PRESENCE_NAMED_KEY,presenceNamed?'1':'0');
     aczoInvalidatePublicData();
     if(!await aczoSaveStableCloud())throw new Error('Lokal gespeichert; die Cloud hat die Freigabe noch nicht bestätigt. Bitte erneut speichern.');
     aczoInvalidatePublicData();updateAnglingMainMenuUi();
     if(shareRecords)syncAnglingExistingPersonalBests();
-    aczoStatus('Namensfreigabe in der Cloud gespeichert. Rekordfreigabe auf diesem Gerät gespeichert; veröffentlichte Rekorde bleiben öffentlich.');
+    aczoStatus(profileSaved&&presenceSaved
+      ?'Namensfreigabe in der Cloud gespeichert. Rekordfreigabe auf diesem Gerät gespeichert; veröffentlichte Rekorde bleiben öffentlich.'
+      :'Cloud-Abgleich bestätigt. Die Freigabe konnte auf diesem Gerät aber nicht dauerhaft gespeichert werden. Bitte den Browserspeicher prüfen und erneut speichern.');
   }catch(err){aczoStatus(err?.message||'Privatsphäre konnte nicht bestätigt werden. Bitte erneut speichern.');}
   finally{button.disabled=false;aczoAccountBusy=false;}
 }
@@ -45331,31 +45460,60 @@ async function aczoLogout(){
   try{aczoArchiveLocalPlayer();}catch(err){aczoStatus(err.message);return;}
   try{await aczoApi('logoutAccount',{sessionToken:aczoSessionToken});}catch(err){aczoStatus('Abmelden nicht bestätigt. Bitte Verbindung prüfen.');return;}
   stopAnglingPresence();if(anglingCloudSyncTimer)clearTimeout(anglingCloudSyncTimer);
-  aczoSessionToken='';aczoAccount=null;anglingSetupComplete=false;aczoInvalidatePublicData();
+  aczoSessionToken='';aczoAccount=null;anglingSetupComplete=false;aczoSessionStorageWarning='';aczoResumeState='idle';aczoInvalidatePublicData();
   try{localStorage.removeItem(ACZO_SESSION_KEY);localStorage.removeItem(ANGLING_SETUP_COMPLETE_KEY);}catch(err){}
   if(anglingMode)finishLeaveAngling();
   anglingUi.style.display='';openAnglingMainMenu();
   aczoSetAccountMode('login');updateAnglingMainMenuUi();aczoMainNavigate('profile');aczoStatus('Abgemeldet. Dein Cloud-Spielstand bleibt erhalten.');
   }finally{button.disabled=false;aczoAccountBusy=false;}
 }
-async function aczoResumeSession(){
-  if(!aczoSessionToken||aczoAccountBusy)return;
+function aczoResumeSession({force=false}={}){
+  if(aczoResumePromise)return aczoResumePromise;
+  if(!aczoSessionToken||aczoAccountBusy)return Promise.resolve(false);
+  if(!force&&aczoResumeAttemptAt&&Date.now()-aczoResumeAttemptAt<(aczoResumeState==='verified'?60000:5000))return Promise.resolve(false);
+  if(aczoCloudSyncBusyWithFish()){
+    if(!aczoResumeDeferredTimer)aczoResumeDeferredTimer=setTimeout(()=>{aczoResumeDeferredTimer=null;if(document.visibilityState!=='hidden')aczoResumeSession();},1800);
+    return Promise.resolve(false);
+  }
   const token=aczoSessionToken,generation=aczoAuthGeneration;
   const current=()=>token===aczoSessionToken&&generation===aczoAuthGeneration;
-  try{
-    const data=await aczoApi('sessionAccount',{sessionToken:token});
-    if(!current())return;
-    if(await aczoFinishAccountLogin(data,generation))aczoRenderAccount();
-  }catch(err){
-    if(!current())return;
-    if(['Sitzung abgelaufen.','Spielerkonto nicht gefunden.','Spieler nicht gefunden.'].includes(err?.message)){
-      aczoAuthGeneration++;aczoInvalidatePublicData();
-      aczoSessionToken='';aczoAccount=null;anglingSetupComplete=false;
-      try{localStorage.removeItem(ACZO_SESSION_KEY);localStorage.removeItem(ANGLING_SETUP_COMPLETE_KEY);}catch(e){}
-      aczoSetAccountMode('login');aczoStatus('Bitte erneut anmelden. Dein Spielstand bleibt erhalten.');
-    }else aczoStatus('Konto derzeit nicht erreichbar. Die gespeicherte Sitzung bleibt erhalten. Bitte Verbindung prüfen.');
-  }
+  aczoResumeAttemptAt=Date.now();aczoResumeState='checking';
+  aczoRenderAccount();if(!aczoAccount)aczoStatus('Gespeicherte Anmeldung wird geprüft …');
+  const task=(async()=>{
+    try{
+      const data=await aczoApi('sessionAccount',{sessionToken:token});
+      if(!current())return false;
+      if(!await aczoFinishAccountLogin(data,generation)){
+        if(current()){aczoResumeState='idle';aczoResumeAttemptAt=0;aczoResumeDeferredTimer=setTimeout(()=>{aczoResumeDeferredTimer=null;aczoResumeSession();},1800);}return false;
+      }
+      if(current()){aczoResumeState='verified';aczoStatus('');aczoRenderAccount();}
+      return true;
+    }catch(err){
+      if(!current())return false;
+      if(['Sitzung abgelaufen.','Spielerkonto nicht gefunden.','Spieler nicht gefunden.'].includes(err?.message)){
+        aczoAuthGeneration++;aczoInvalidatePublicData();
+        aczoSessionToken='';aczoAccount=null;anglingSetupComplete=false;aczoResumeState='idle';aczoSessionStorageWarning='';
+        try{localStorage.removeItem(ACZO_SESSION_KEY);localStorage.removeItem(ANGLING_SETUP_COMPLETE_KEY);}catch(e){}
+        aczoSetAccountMode('login');aczoStatus('Bitte erneut anmelden. Dein Spielstand bleibt erhalten.');
+      }else{
+        aczoResumeState='error';
+        aczoStatus('Konto derzeit nicht erreichbar. Die gespeicherte Anmeldung bleibt erhalten. Du kannst die Verbindung erneut prüfen.');
+        aczoRenderAccount();
+      }
+      return false;
+    }
+  })();
+  aczoResumePromise=task;
+  return task.finally(()=>{if(aczoResumePromise===task)aczoResumePromise=null;});
 }
+aczoEl('aczoRetrySession').addEventListener('click',()=>aczoResumeSession({force:true}));
+function aczoResumeOnReturn(){
+  if(document.visibilityState==='hidden')return;
+  aczoResumeSession();
+}
+window.addEventListener('pageshow',aczoResumeOnReturn);
+window.addEventListener('online',aczoResumeOnReturn);
+document.addEventListener('visibilitychange',aczoResumeOnReturn);
 function aczoSetCommunityView(view){
   for(const [v,id] of [['pond','aczoCommunityPond'],['all','aczoCommunityAll'],['rank','aczoCommunityRank']])aczoEl(id).hidden=v!==view;
   document.querySelectorAll('[data-community-view]').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.communityView===view)));
@@ -45391,6 +45549,7 @@ async function aczoLoadAnglers(reset=false){
 aczoEl('aczoLoadMore').addEventListener('click',()=>aczoLoadAnglers(false));
 aczoEl('aczoCommunitySearch').addEventListener('input',()=>{clearTimeout(aczoCommunityTimer);aczoCommunityTimer=setTimeout(()=>aczoLoadAnglers(true),350);});
 function aczoInvalidatePublicData(){
+  aczoRecentPlayersCache=null;aczoRecentPlayersPromise=null;anglingCommunityLoadInFlight=null;
   aczoPublicRevision++;aczoPublicCache=null;aczoPublicLastAttempt=0;aczoPublicLoadPromise=null;
   aczoCardCache.clear();aczoCardLoads.clear();aczoDirectoryGeneration++;
   if(!aczoEl('aczoAnglerCard').hidden)aczoCloseAnglerCard();
@@ -48234,60 +48393,32 @@ document.addEventListener('visibilitychange',tournamentOnResume);
 </style>
 
 <script id="aczoV31ObservedLoadingJs">
-/* Ladeaktivität ergänzen, ohne Konten-/Cloud-/Community-Handler zu verändern. */
+/* TEST07: One loading indicator per operation; no duplicate account loader. */
 (()=>{
   const styles=document.createElement('style');styles.id='aczoV31ObservedLoadingCss';
-  styles.textContent=`
-  .aczo-v31-observed-loading{display:inline-block;width:13px;height:13px;margin:3px 6px 3px 0;border:2px solid #c6c6c650;border-top-color:#e5cc83;border-radius:50%;animation:aczoV31ObservedSpin .8s linear infinite;vertical-align:middle;box-sizing:border-box}
-  .aczo-v31-observed-loading[hidden],#aczoV31AccountLoading[hidden]{display:none!important}
-  .aczo-v31-loading-delay{display:block;margin:3px 0;color:#eedca3;font-size:12px;line-height:1.4}
-  .aczo-v31-loading-delay[hidden]{display:none!important}
-  #aczoV31AccountLoading{margin-top:7px;color:#eedca3;font-size:12px;line-height:1.4}
-  @keyframes aczoV31ObservedSpin{to{transform:rotate(360deg)}}
-  `;document.head.append(styles);
-  const observed=[];
-  function observeLoading(id){
-    const node=document.getElementById(id);if(!node)return;
+  styles.textContent=`.aczo-v31-observed-loading{display:inline-block;width:13px;height:13px;margin:3px 6px 3px 0;border:2px solid #c6c6c650;border-top-color:#e5cc83;border-radius:50%;animation:aczoV31ObservedSpin .8s linear infinite;vertical-align:middle;box-sizing:border-box}.aczo-v31-observed-loading[hidden],.aczo-v31-loading-delay[hidden]{display:none!important}.aczo-v31-loading-delay{display:block;margin:3px 0;color:#eedca3;font-size:12px;line-height:1.4}@keyframes aczoV31ObservedSpin{to{transform:rotate(360deg)}}`;
+  document.head.append(styles);
+  const updates=[];
+  for(const id of ['anglingMainCloudState','anglingLeaderboardState','aczoHofLoadStatus','aczoAllAnglers','aczoAnglerCardBody','anglingRecoveryStatus','aczoRecoveryLookupResult','aczoResetLookupResult','aczoAttachRecoveryStatus','aczoAccountStatus']){
+    const node=document.getElementById(id);if(!node)continue;
     const spinner=document.createElement('i');spinner.className='aczo-v31-observed-loading';spinner.hidden=true;spinner.setAttribute('aria-hidden','true');
-    node.insertAdjacentElement('beforebegin',spinner);
     const delayed=document.createElement('span');delayed.className='aczo-v31-loading-delay';delayed.hidden=true;delayed.setAttribute('role','status');delayed.textContent='Die Verbindung dauert etwas länger …';
-    node.insertAdjacentElement('beforebegin',delayed);
-    let since=0,busy=false;
-    const refresh=()=>{const long=busy&&performance.now()-since>4500;if(delayed.hidden!==!long)delayed.hidden=!long;};
+    node.before(spinner,delayed);let since=0,busy=false;
     const update=()=>{
-      const next=!node.hidden&&/wird geladen|werden geladen|synchronisiere|abgleich läuft|lade vollständige|code wird geprüft|wird geprüft|wird gespeichert/i.test(node.textContent||'');
+      const modal=document.getElementById('aczoBusyOverlay')?.classList.contains('show');
+      const accountSaving=id==='anglingMainCloudState'&&typeof aczoAccountBusy!=='undefined'&&aczoAccountBusy;
+      const next=!modal&&!accountSaving&&/wird geladen|werden geladen|synchronisiere|abgleich läuft|lade vollständige|wird geprüft|wird erneut geprüft|wird gespeichert|wird angelegt|wird aktualisiert|wird wiederhergestellt/i.test(node.textContent||'')&&!node.closest('[hidden]')&&node.getClientRects().length>0;
       if(next&&!busy)since=performance.now();busy=next;
       if(spinner.hidden!==!busy)spinner.hidden=!busy;
-      refresh();
+      const hideDelay=!(busy&&performance.now()-since>4500);if(delayed.hidden!==hideDelay)delayed.hidden=hideDelay;
     };
-    new MutationObserver(update).observe(node,{childList:true,subtree:true,characterData:true,attributes:true,attributeFilter:['hidden']});update();observed.push(refresh);
+    new MutationObserver(update).observe(node,{childList:true,subtree:true,characterData:true,attributes:true,attributeFilter:['hidden']});updates.push(update);update();
   }
-  for(const id of ['anglingMainCloudState','anglingLeaderboardState','aczoHofLoadStatus','aczoAllAnglers','aczoAnglerCardBody','anglingRecoveryStatus','aczoRecoveryLookupResult','aczoResetLookupResult','aczoAttachRecoveryStatus','aczoAccountStatus'])observeLoading(id);
-  const area=document.getElementById('aczoAccountArea');if(!area)return;
-  const status=document.createElement('div');status.id='aczoV31AccountLoading';status.hidden=true;status.setAttribute('role','status');
-  const spinner=document.createElement('i');spinner.className='aczo-v31-observed-loading';spinner.setAttribute('aria-hidden','true');
-  const label=document.createElement('span');status.append(spinner,label);area.append(status);
-  let since=0;
-  const update=()=>{
-    const busy=typeof aczoAccountBusy!=='undefined'&&aczoAccountBusy&&!document.getElementById('aczoBusyOverlay')?.classList.contains('show');
-    if(status.hidden!==!busy)status.hidden=!busy;
-    if(!busy){since=0;return;}
-    if(!since)since=performance.now();
-    const form=area.querySelector('form:not([hidden])');
-    const text=performance.now()-since>4500?'Die Verbindung dauert etwas länger …':
-      form?.id==='aczoLoginForm'?'Anmeldung wird geprüft …':
-      form?.id==='aczoRegisterForm'?'Spielerkonto wird angelegt …':
-      form?.id==='aczoResetForm'?'Konto wird wiederhergestellt …':
-      form?.id==='aczoPasswordForm'?'Passwort wird aktualisiert …':'Spielerdaten werden geladen …';
-    if(label.textContent!==text)label.textContent=text;
-  };
-  new MutationObserver(update).observe(area,{attributes:true,attributeFilter:['disabled','hidden'],subtree:true});
-  const accountOverlay=document.getElementById('aczoBusyOverlay');
-  if(accountOverlay)new MutationObserver(update).observe(accountOverlay,{attributes:true,attributeFilter:['class']});
-  // Nach Abschluss zeigt das vorhandene Formular die Fehlermeldung bzw. den Erfolg.
-  setInterval(()=>{if(!status.hidden)update();observed.forEach(refresh=>refresh());},350);
+  const refresh=()=>updates.forEach(update=>update());
+  const overlay=document.getElementById('aczoBusyOverlay');if(overlay)new MutationObserver(refresh).observe(overlay,{attributes:true,attributeFilter:['class']});
+  document.addEventListener('visibilitychange',refresh);
+  setInterval(()=>{if(document.visibilityState!=='hidden')refresh();},350);
 })();
-
 </script>
 <style id="aczoUiMotionStyle">
 /* Nur Navigation: Farben weich wechseln, Größen und Schriften beibehalten. */
