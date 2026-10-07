@@ -4839,6 +4839,89 @@ body.aczo-share-preview-open{overflow:hidden!important}
 .aczo-tournament-active .angling-item-card.aczo-tournament-disabled-item{filter:grayscale(.92) saturate(.2)!important;opacity:.38!important;position:relative!important;pointer-events:none!important}
 .aczo-tournament-active .angling-item-card.aczo-tournament-disabled-item::after{content:"IM WETTANGELN GESPERRT";position:absolute;inset:auto 8px 8px 8px;padding:6px 8px;border-radius:8px;background:rgba(22,22,24,.86);border:1px solid rgba(255,255,255,.18);color:#f1eee6;font-size:8px;font-weight:1000;letter-spacing:.06em;text-align:center;z-index:8}
 </style>
+<style id="aczoFangbuchPresentationCss">
+/* Nur die Darstellung des Fangbuchs; keine Speicher- oder Spielregeln. */
+#anglingLogPanel{
+  box-sizing:border-box;width:min(560px,calc(100% - 24px));
+  max-height:calc(100% - 24px);padding:0 18px 16px;
+  overflow-x:hidden;overflow-y:auto;overscroll-behavior:contain;
+  -webkit-overflow-scrolling:touch;scrollbar-width:thin;
+  scrollbar-color:rgba(183,216,194,.42) transparent;
+  border-radius:18px;border-color:rgba(191,227,205,.72);
+  background:rgba(6,32,24,.97);text-align:left;
+}
+#anglingLogPanel .angling-log-head{
+  margin:0 -18px 14px;padding:14px 18px 12px;gap:12px;
+  background:rgba(6,32,24,.99);
+}
+#anglingLogPanel .angling-log-title{font-size:21px;font-weight:700;line-height:1.25}
+#anglingLogPanel #anglingLogTopCloseBtn{
+  width:36px!important;height:36px!important;min-width:36px!important;min-height:36px!important;
+  font-size:22px!important;font-weight:500!important;
+}
+#anglingLogPanel .angling-log-summary{
+  margin:0 0 14px;font-size:13px!important;font-weight:400!important;
+  line-height:1.5;color:#c3d9cb;
+}
+#anglingLogPanel .angling-log-total{
+  display:block;margin-bottom:3px;color:#f4fff8;font-size:25px;font-weight:700;line-height:1.2;
+}
+#anglingLogPanel .angling-log-summary-detail{display:block}
+#anglingLogPanel #anglingKoiBadge{
+  margin-bottom:14px;padding:11px 13px;font-size:13px;font-weight:700;line-height:1.4;
+  background:linear-gradient(115deg,rgba(94,72,8,.52),rgba(41,57,29,.55));
+}
+#anglingLogPanel #anglingKoiBadge small{font-size:11.5px;font-weight:400;line-height:1.45;margin-top:4px}
+#anglingLogPanel .angling-log-records{gap:8px;margin-bottom:14px}
+#anglingLogPanel .angling-log-record{
+  min-width:0;padding:11px 12px;border-radius:11px;text-align:left;
+  background:rgba(255,255,255,.055);border:1px solid rgba(210,238,220,.11);
+  font-size:13px!important;font-weight:400!important;line-height:1.45!important;
+  overflow-wrap:anywhere;
+}
+#anglingLogPanel .angling-log-record strong{
+  margin-bottom:5px;color:#e5dba7;font-size:11.5px!important;font-weight:600!important;line-height:1.3;
+}
+#anglingLogPanel .angling-log-record-value{display:block;color:#f4fff8;font-size:13.5px;font-weight:600}
+#anglingLogPanel .angling-log-species{
+  display:grid;grid-template-columns:repeat(8,minmax(0,1fr));gap:7px;
+  overflow:visible;padding:1px;margin:0 0 15px;
+}
+#anglingLogPanel .angling-log-species i{
+  display:block;min-width:0;width:auto;height:44px;border-radius:9px;
+  background-color:rgba(255,255,255,.055);
+}
+#anglingLogPanel .angling-log-list{gap:7px;margin-bottom:14px}
+#anglingLogPanel .angling-log-sync-note{
+  margin:0 0 5px;padding:0 0 10px;border:0;border-radius:0;
+  border-bottom:1px solid rgba(210,238,220,.13);background:transparent;
+  color:#c3d9cb;font-size:12px;font-weight:400;line-height:1.5;
+}
+#anglingLogPanel .angling-log-entry{
+  grid-template-columns:minmax(0,1fr) auto;align-items:start;gap:4px 12px;padding:11px 12px;
+  border-radius:10px;background:rgba(255,255,255,.065);
+  font-size:14px!important;font-weight:400!important;line-height:1.4!important;
+}
+#anglingLogPanel .angling-log-entry>span:first-child{min-width:0;font-weight:600;overflow-wrap:anywhere}
+#anglingLogPanel .angling-log-entry>span:nth-child(2){font-size:13px;font-weight:500;white-space:nowrap;text-align:right}
+#anglingLogPanel .angling-log-entry>span:nth-child(3){grid-column:1/-1;font-size:11.5px;font-weight:400;color:#b9cfc2}
+#anglingLogPanel .angling-log-empty{padding:12px 0;font-size:13px!important;font-weight:400!important;line-height:1.5}
+#anglingLogPanel #anglingLogCloseBtn{
+  display:block;min-height:40px;min-width:130px;margin:4px auto 0!important;
+  padding:8px 18px!important;font-size:13px!important;font-weight:600!important;
+}
+@media(max-width:520px){
+  #anglingLogPanel{width:calc(100% - 20px);max-height:calc(100% - 20px);padding:0 14px 14px}
+  #anglingLogPanel .angling-log-head{margin:0 -14px 12px;padding:12px 14px 10px}
+  #anglingLogPanel .angling-log-title{font-size:19px}
+  #anglingLogPanel .angling-log-total{font-size:23px}
+  #anglingLogPanel .angling-log-record{padding:10px}
+  #anglingLogPanel .angling-log-species{grid-template-columns:repeat(4,minmax(0,1fr));gap:7px}
+  #anglingLogPanel .angling-log-species i{height:44px}
+  #anglingLogPanel .angling-log-entry{gap:4px 8px;padding:10px}
+  #anglingLogPanel .angling-log-entry>span:nth-child(2){font-size:12px}
+}
+</style>
 </head>
 <body>
 <div class="wrap">
@@ -13006,6 +13089,55 @@ const aczoBoatReflectionRaycaster=new THREE.Raycaster();
 const aczoBoatReflectionRayDir=new THREE.Vector3();
 const aczoBoatReflectionTarget=new THREE.Vector3();
 const aczoBoatReflectionHits=[];
+// Statische Kronen: Weltmatrizen und grobe Grenzen einmal vorberechnen.
+// Die genaue Dreiecksprüfung bleibt dieselbe wie in Three.js r128.
+const aczoBoatReflectionBoundsCache=new WeakMap();
+const aczoBoatReflectionBoundsStack=[];
+const aczoBoatReflectionBoundsHit=new THREE.Vector3();
+function aczoBoatReflectionBoundsTree(bounds,indices){
+  const box=new THREE.Box3();
+  for(const i of indices){
+    const at=i*4,x=bounds[at],y=bounds[at+1],z=bounds[at+2],r=bounds[at+3]+1e-7;
+    box.min.x=Math.min(box.min.x,x-r);box.min.y=Math.min(box.min.y,y-r);box.min.z=Math.min(box.min.z,z-r);
+    box.max.x=Math.max(box.max.x,x+r);box.max.y=Math.max(box.max.y,y+r);box.max.z=Math.max(box.max.z,z+r);
+  }
+  if(indices.length<=8)return {box,indices};
+  const x=box.max.x-box.min.x,y=box.max.y-box.min.y,z=box.max.z-box.min.z;
+  const axis=x>=y&&x>=z?0:y>=z?1:2;
+  indices.sort((a,b)=>bounds[a*4+axis]-bounds[b*4+axis]);
+  const middle=Math.floor(indices.length/2);
+  return {box,left:aczoBoatReflectionBoundsTree(bounds,indices.slice(0,middle)),
+    right:aczoBoatReflectionBoundsTree(bounds,indices.slice(middle))};
+}
+function aczoBoatReflectionInstanceBounds(mesh){
+  const geometry=mesh.geometry;
+  if(!geometry.boundingSphere)geometry.computeBoundingSphere();
+  const sphere=geometry.boundingSphere,world=mesh.matrixWorld.elements,count=mesh.count;
+  let cached=aczoBoatReflectionBoundsCache.get(mesh);
+  let valid=!!cached&&cached.geometry===geometry&&cached.instanceMatrix===mesh.instanceMatrix
+    &&cached.instanceVersion===mesh.instanceMatrix.version&&cached.count>=count
+    &&cached.radius===sphere.radius&&cached.centerX===sphere.center.x
+    &&cached.centerY===sphere.center.y&&cached.centerZ===sphere.center.z;
+  if(valid)for(let i=0;i<16;i++)if(cached.world[i]!==world[i]){valid=false;break;}
+  if(valid){cached.proxy.material=mesh.material;return cached;}
+
+  const matrices=new Float64Array(count*16),bounds=new Float64Array(count*4);
+  const localMatrix=new THREE.Matrix4(),instanceWorld=new THREE.Matrix4(),worldSphere=new THREE.Sphere();
+  for(let i=0;i<count;i++){
+    mesh.getMatrixAt(i,localMatrix);instanceWorld.multiplyMatrices(mesh.matrixWorld,localMatrix);
+    instanceWorld.toArray(matrices,i*16);
+    worldSphere.copy(sphere).applyMatrix4(instanceWorld);
+    const at=i*4;bounds[at]=worldSphere.center.x;bounds[at+1]=worldSphere.center.y;
+    bounds[at+2]=worldSphere.center.z;bounds[at+3]=worldSphere.radius;
+  }
+  const proxy=cached?.proxy||new THREE.Mesh(geometry,mesh.material);
+  proxy.geometry=geometry;proxy.material=mesh.material;proxy.matrixAutoUpdate=false;
+  cached={geometry,instanceMatrix:mesh.instanceMatrix,instanceVersion:mesh.instanceMatrix.version,
+    count,world:world.slice(),radius:sphere.radius,centerX:sphere.center.x,centerY:sphere.center.y,
+    centerZ:sphere.center.z,matrices,bounds,proxy,
+    tree:aczoBoatReflectionBoundsTree(bounds,Array.from({length:count},(_,i)=>i))};
+  aczoBoatReflectionBoundsCache.set(mesh,cached);return cached;
+}
 function aczoBoatReflectionProxyMeshes(){
   if(typeof aczoSurveyedNatureGroup==='undefined'||!aczoSurveyedNatureGroup)return [];
   // PERFORMANCE-FIX: Im Bootsmodus nur die bereits vorhandenen groben
@@ -13033,8 +13165,32 @@ function aczoBoatCelestialReflectionOccluded(x,y,z=.70){
     // Die Proxies sind absichtlich fuer normale Maus-Raycast-Abfragen gesperrt.
     // Fuer diese reine Sichtlinienpruefung verwenden wir gezielt die native
     // InstancedMesh-Raycast-Routine, ohne das Objekt oder seine Layer zu aendern.
-    if(mesh.isInstancedMesh)THREE.InstancedMesh.prototype.raycast.call(mesh,aczoBoatReflectionRaycaster,aczoBoatReflectionHits);
-    else if(typeof mesh.raycast==='function')mesh.raycast(aczoBoatReflectionRaycaster,aczoBoatReflectionHits);
+    if(mesh.isInstancedMesh){
+      const cached=aczoBoatReflectionInstanceBounds(mesh),origin=aczoBoatReflectionRaycaster.ray.origin;
+      const direction=aczoBoatReflectionRaycaster.ray.direction,bounds=cached.bounds;
+      const stack=aczoBoatReflectionBoundsStack,farSq=aczoBoatReflectionRaycaster.far*aczoBoatReflectionRaycaster.far;
+      stack.length=0;stack.push(cached.tree);
+      while(stack.length){
+        const node=stack.pop();
+        if(!node.box.containsPoint(origin)){
+          if(!aczoBoatReflectionRaycaster.ray.intersectBox(node.box,aczoBoatReflectionBoundsHit)
+            ||origin.distanceToSquared(aczoBoatReflectionBoundsHit)>farSq+1e-6)continue;
+        }
+        if(!node.indices){stack.push(node.right,node.left);continue;}
+        for(const i of node.indices){
+          if(i>=mesh.count)continue;
+          const at=i*4,dx=bounds[at]-origin.x,dy=bounds[at+1]-origin.y,dz=bounds[at+2]-origin.z;
+          const radius=bounds[at+3],along=dx*direction.x+dy*direction.y+dz*direction.z;
+          const distanceSq=dx*dx+dy*dy+dz*dz,tolerance=1e-8*Math.max(1,distanceSq,radius*radius);
+          if(along<aczoBoatReflectionRaycaster.near-radius-tolerance
+            ||along>aczoBoatReflectionRaycaster.far+radius+tolerance
+            ||distanceSq-along*along>radius*radius+tolerance)continue;
+          cached.proxy.matrixWorld.fromArray(cached.matrices,i*16);
+          THREE.Mesh.prototype.raycast.call(cached.proxy,aczoBoatReflectionRaycaster,aczoBoatReflectionHits);
+          if(aczoBoatReflectionHits.length){stack.length=0;return true;}
+        }
+      }
+    }else if(typeof mesh.raycast==='function')mesh.raycast(aczoBoatReflectionRaycaster,aczoBoatReflectionHits);
     if(aczoBoatReflectionHits.length)return true;
   }
   return false;
@@ -32233,7 +32389,8 @@ function formatAnglingLength(cm){
 function addAnglingRecordCard(title,value){
   const card=document.createElement('div');card.className='angling-log-record';
   const strong=document.createElement('strong');strong.textContent=title;
-  card.append(strong,document.createTextNode(value));anglingLogRecords.appendChild(card);
+  const detail=document.createElement('span');detail.className='angling-log-record-value';detail.textContent=value;
+  card.append(strong,detail);anglingLogRecords.appendChild(card);
 }
 
 function renderAnglingLog(){
@@ -32243,9 +32400,13 @@ function renderAnglingLog(){
   const recordFish=Object.values(anglingProgress.records);
   const speciesCount=recordFish.length;
 
-  anglingLogSummary.textContent=
-    totalCatchCount+' Fänge gesamt · '+speciesCount+' von '+Object.keys(ANGLING_POPULATION).length+
+  anglingLogSummary.textContent='';
+  const totalLabel=document.createElement('strong');totalLabel.className='angling-log-total';
+  totalLabel.textContent=totalCatchCount+' '+(totalCatchCount===1?'Fang':'Fänge')+' insgesamt';
+  const summaryDetail=document.createElement('span');summaryDetail.className='angling-log-summary-detail';
+  summaryDetail.textContent=speciesCount+' von '+Object.keys(ANGLING_POPULATION).length+
     ' Arten · Anglerstufe '+anglingLevelForXp(anglingProgress.lifetimeXp);
+  anglingLogSummary.append(totalLabel,summaryDetail);
 
   const hasCaughtKoi=!!anglingProgress.records.koi||catches.some(c=>c.species==='koi');
   anglingKoiBadge.classList.toggle('show',hasCaughtKoi);
@@ -32280,10 +32441,8 @@ function renderAnglingLog(){
   if(localCatchCount<totalCatchCount){
     const note=document.createElement('div');
     note.className='angling-log-sync-note';
-    note.innerHTML=
-      '<strong>'+totalCatchCount+' Fänge gehören zu deinem Cloud-Spielstand.</strong> '+
-      'Die einzelnen Fangbuch-Zeilen werden in der bisherigen Sheets-Version nicht gespeichert. '+
-      'Auf diesem Gerät sind '+localCatchCount+' einzelne '+(localCatchCount===1?'Fang':'Fänge')+' vorhanden.';
+    note.textContent=totalCatchCount+' '+(totalCatchCount===1?'Fang':'Fänge')+' insgesamt · '+
+      localCatchCount+' '+(localCatchCount===1?'Fangbucheintrag':'Fangbucheinträge')+' auf diesem Gerät.';
     anglingLogList.appendChild(note);
   }
 
@@ -41257,6 +41416,8 @@ function finishAnglingCatch(){
   // Tagesquests beobachten ausschließlich den bereits sicher gelandeten Fang.
   // Sie verändern weder Fischwahl noch Biss-, Drill- oder Kescherlogik.
   processAnglingDailyQuestCatch(caught);
+  // Flüchtige Community-Fangmeldung; Spielstand und Fangablauf bleiben unabhängig.
+  try{window.dispatchEvent(new CustomEvent('aczo-live-catch',{detail:catchRecord}));}catch(_e){}
   if(newLevel>oldLevel){
     const levelInfo=anglingLevelInfo();
     queueAnglingPostCatchNotice('⬆ Stufe '+newLevel+' · '+levelInfo.current.title,2100,true);
@@ -47977,5 +48138,174 @@ document.addEventListener('visibilitychange',tournamentOnResume);
   window.addEventListener('resize',stopMotion,{passive:true});
 })();
 </script>
+<style id="aczoLiveCatchStyle">
+#aczoLiveCatchToast{position:absolute;z-index:1211;left:50%;top:max(166px,env(safe-area-inset-top,0px));transform:translateX(-50%);width:max-content;max-width:calc(100% - 32px);box-sizing:border-box;padding:9px 13px;border-radius:12px;border:1px solid rgba(174,238,207,.36);background:rgba(4,35,31,.64);color:#eafff5;font-size:12px;font-weight:700;line-height:1.45;text-align:center;overflow-wrap:anywhere;pointer-events:none;box-shadow:0 4px 18px rgba(0,0,0,.2)}
+#aczoLiveCatchToast[hidden]{display:none!important}
+#aczoLiveCatchToast:not([hidden]){animation:aczoLiveCatchIn .18s ease-out both}
+.aczo-phone-layout #aczoLiveCatchToast{top:max(150px,env(safe-area-inset-top,0px));font-size:11px;max-width:calc(100% - 24px)}
+@media(max-height:500px){#aczoLiveCatchToast,.aczo-phone-layout #aczoLiveCatchToast{top:max(88px,env(safe-area-inset-top,0px))}}
+@keyframes aczoLiveCatchIn{from{opacity:0;transform:translate(-50%,5px)}to{opacity:1;transform:translate(-50%,0)}}
+@media(prefers-reduced-motion:reduce){#aczoLiveCatchToast:not([hidden]){animation:none}}
+</style>
+<script id="aczoLiveCatchScript">
+(function(){
+  'use strict';
+  if(window.__aczoLiveCatchesInstalled)return;
+  const wrap=document.querySelector('.wrap'),ui=document.getElementById('anglingUi');
+  if(!wrap||!ui)return;
+  window.__aczoLiveCatchesInstalled=true;
+  const POLL_MS=45000,TTL_MS=300000;
+  const quietStates=new Set(['ready','waiting','lure-waiting','lure-retrieving','deeper-waiting','boat-driving','selecting']);
+  const toast=document.createElement('div');toast.id='aczoLiveCatchToast';toast.hidden=true;
+  toast.setAttribute('role','status');toast.setAttribute('aria-live','polite');toast.setAttribute('aria-atomic','true');wrap.appendChild(toast);
+  let actor=null,generation=0,cursor=0,primed=false,supported=null,pagePaused=false;
+  let pollTimer=null,displayTimer=null,readController=null,reading=false,publishing=false;
+  let queue=[],outgoing=[],current=null,shownUntil=0;
+  const seen=new Map();
+  const landedRecords=new WeakSet();
+
+  function identity(){
+    if(typeof anglingCloudEnabled==='undefined'||!anglingCloudEnabled||typeof anglingSetupComplete==='undefined'||!anglingSetupComplete
+      ||typeof ANGLING_LEADERBOARD_ENDPOINT==='undefined'||!ANGLING_LEADERBOARD_ENDPOINT
+      ||typeof anglingPlayerProfile==='undefined'||!anglingPlayerProfile?.id)return null;
+    const token=typeof aczoSessionToken==='string'?aczoSessionToken:'';
+    const recovery=typeof anglingRecoveryCode==='string'?anglingRecoveryCode:'';
+    return {playerId:anglingPlayerProfile.id,sessionToken:token,recoveryCode:recovery,
+      key:anglingPlayerProfile.id+'|'+(token||recovery)};
+  }
+  function normalFishing(){
+    return typeof anglingMode!=='undefined'&&anglingMode
+      &&!ui.classList.contains('aczo-tournament-active')&&!ui.classList.contains('aczo-tournament-cinematic');
+  }
+  function quiet(){
+    if(!normalFishing()||document.hidden||pagePaused||typeof anglingState==='undefined'||!quietStates.has(anglingState))return false;
+    if(ui.classList.contains('main-menu-open')||ui.classList.contains('game-panel-open')||ui.classList.contains('is-drilling')
+      ||ui.classList.contains('is-landing')||ui.classList.contains('is-catch-sequence')||ui.classList.contains('is-caught'))return false;
+    if(typeof anglingHallOfFameActive!=='undefined'&&anglingHallOfFameActive)return false;
+    if(typeof anglingTimeShiftActive!=='undefined'&&anglingTimeShiftActive)return false;
+    if(typeof aczoBoatNoteOpen==='function'&&aczoBoatNoteOpen())return false;
+    if(typeof anglingPostCatchNoticeNextAt==='number'&&performance.now()<anglingPostCatchNoticeNextAt)return false;
+    // Unterwasseransicht ist ausdrücklich erlaubt. Eigene Kurzmeldungen haben Vorrang.
+    return !['anglingToast','anglingCommunityToast','anglingDailyQuestToast','anglingEpPopup']
+      .some(id=>document.getElementById(id)?.classList.contains('show'));
+  }
+  function hideCurrent(requeue){
+    if(current&&requeue)queue.unshift(current);
+    current=null;shownUntil=0;toast.hidden=true;toast.textContent='';
+  }
+  function showNext(){
+    if(displayTimer!==null){window.clearTimeout(displayTimer);displayTimer=null;}
+    if(!actor)return;
+    if(identity()?.key!==actor.key){syncSession();return;}
+    if(!quiet())hideCurrent(true);
+    else {
+      if(current&&performance.now()>=shownUntil)hideCurrent(false);
+      if(!current&&queue.length){
+        current=queue.shift();shownUntil=performance.now()+5000;
+        toast.textContent=current.name+' hat gerade '+current.species+' gefangen · '+Number(current.cm).toFixed(1).replace('.',',')+' cm';
+        toast.hidden=false;
+      }
+    }
+    // Kein Renderloop: diese kurze Prüfung läuft nur, solange Meldungen warten.
+    if(!document.hidden&&!pagePaused&&(current||queue.length))displayTimer=window.setTimeout(showNext,500);
+  }
+  function stopSession(){
+    generation++;actor=null;
+    if(pollTimer!==null)window.clearTimeout(pollTimer);pollTimer=null;
+    if(displayTimer!==null)window.clearTimeout(displayTimer);displayTimer=null;
+    if(readController)readController.abort();readController=null;
+    reading=false;publishing=false;cursor=0;primed=false;supported=null;
+    queue=[];outgoing=[];seen.clear();hideCurrent(false);
+  }
+  function schedulePoll(delay=POLL_MS){
+    if(pollTimer!==null)window.clearTimeout(pollTimer);pollTimer=null;
+    if(actor&&!document.hidden&&!pagePaused&&supported!==false)pollTimer=window.setTimeout(()=>{pollTimer=null;poll();},delay);
+  }
+  function syncSession(){
+    const next=normalFishing()?identity():null;
+    if(!next){if(actor)stopSession();return;}
+    if(!actor||actor.key!==next.key){stopSession();actor=next;schedulePoll(1200);}
+    showNext();
+  }
+  async function poll(){
+    if(!actor||reading||document.hidden||pagePaused||!normalFishing())return;
+    if(identity()?.key!==actor.key){syncSession();return;}
+    const ownGeneration=generation,owner=actor;reading=true;
+    const controller=new AbortController();readController=controller;
+    const timeout=window.setTimeout(()=>controller.abort(),18000);
+    try{
+      const base=ANGLING_LEADERBOARD_ENDPOINT+(ANGLING_LEADERBOARD_ENDPOINT.includes('?')?'&':'?');
+      const response=await fetch(base+'action=liveCatches&since='+cursor+'&exclude='+encodeURIComponent(owner.playerId),
+        {method:'GET',cache:'no-store',signal:controller.signal});
+      if(!response.ok)throw new Error('Live-Fangmeldungen vorübergehend nicht erreichbar.');
+      const data=await response.json();
+      if(generation!==ownGeneration||actor?.key!==owner.key||identity()?.key!==owner.key)return;
+      // Alte Google-Versionen dürfen niemals eine unbekannte POST-Action erhalten.
+      if(data?.liveCatchVersion!==1){supported=false;outgoing=[];return;}
+      if(data.ok!==true||!Number.isFinite(data.serverNow)||!Array.isArray(data.events))throw new Error('Ungültige Fangmeldungen.');
+      supported=true;
+      if(primed){
+        for(const event of data.events){
+          if(!event||typeof event.id!=='string'||event.id.length>160||seen.has(event.id)||event.playerId===data.viewerId
+            ||typeof event.name!=='string'||event.name.length<2||event.name.length>30
+            ||typeof event.species!=='string'||event.species.length>30||!Number.isFinite(event.cm)||event.cm<=0
+            ||!Number.isFinite(event.at)||event.at<cursor||event.at>data.serverNow||event.at<data.serverNow-TTL_MS)continue;
+          seen.set(event.id,event.at);queue.push({name:event.name,species:event.species,cm:event.cm});
+        }
+      }
+      cursor=Math.max(cursor,data.serverNow);primed=true;
+      for(const [id,time] of seen)if(time<cursor-TTL_MS)seen.delete(id);
+      showNext();flushOutgoing();
+    }catch(_err){/* Bestehendes Spiel und Cloud-Speichern bleiben unabhängig. */}
+    finally{
+      window.clearTimeout(timeout);
+      if(generation===ownGeneration){reading=false;if(readController===controller)readController=null;schedulePoll();}
+    }
+  }
+  async function flushOutgoing(){
+    if(publishing||supported!==true||!actor)return;
+    const ownGeneration=generation;publishing=true;
+    try{
+      while(generation===ownGeneration&&actor&&outgoing.length){
+        const event=outgoing.shift(),owner=identity();
+        if(!owner||owner.key!==actor.key||!normalFishing()||!anglingPresenceNamed||performance.now()-event.queuedAt>TTL_MS)continue;
+        if(!(owner.sessionToken||owner.recoveryCode))continue;
+        try{
+          await anglingLeaderboardJson(ANGLING_LEADERBOARD_ENDPOINT,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},
+            body:JSON.stringify({action:'publishLiveCatch',playerId:owner.playerId,sessionToken:owner.sessionToken,recoveryCode:owner.recoveryCode,
+              presenceNameVisible:true,eventId:event.id,species:event.species,cm:event.cm})},18000);
+        }catch(_err){/* Flüchtige Live-Meldung: kein Speicherdialog und keine dauerhafte Wiederholungsdatei. */}
+      }
+    }finally{if(generation===ownGeneration)publishing=false;}
+  }
+  function landed(event){
+    syncSession();
+    const caught=event.detail;
+    if(!actor||!normalFishing()||typeof anglingPresenceNamed==='undefined'||!anglingPresenceNamed||supported===false
+      ||!caught||typeof caught!=='object'||landedRecords.has(caught)||typeof ANGLING_LEADERBOARD_SPECIES_TO_API==='undefined')return;
+    const species=ANGLING_LEADERBOARD_SPECIES_TO_API[caught.species],cm=Number(caught.cm);
+    if(!species||!Number.isFinite(cm)||cm<=0)return;
+    landedRecords.add(caught);
+    let random='';
+    if(window.crypto?.getRandomValues){const bytes=new Uint32Array(2);window.crypto.getRandomValues(bytes);random=Array.from(bytes,n=>n.toString(36)).join('_');}
+    else random=Math.random().toString(36).slice(2)+'_'+Math.random().toString(36).slice(2);
+    outgoing.push({id:'live_'+Date.now().toString(36)+'_'+random,species,cm,queuedAt:performance.now()});
+    flushOutgoing();
+  }
+  new MutationObserver(syncSession).observe(ui,{attributes:true,attributeFilter:['class']});
+  new MutationObserver(syncSession).observe(wrap,{attributes:true,attributeFilter:['class']});
+  window.addEventListener('aczo-live-catch',landed);
+  document.addEventListener('visibilitychange',()=>{
+    syncSession();
+    if(document.hidden){if(pollTimer!==null)window.clearTimeout(pollTimer);pollTimer=null;if(readController)readController.abort();hideCurrent(true);}
+    else{showNext();schedulePoll(1200);}
+  });
+  window.addEventListener('pagehide',()=>{pagePaused=true;if(pollTimer!==null)window.clearTimeout(pollTimer);pollTimer=null;if(displayTimer!==null)window.clearTimeout(displayTimer);displayTimer=null;if(readController)readController.abort();hideCurrent(true);});
+  window.addEventListener('pageshow',()=>{pagePaused=false;syncSession();schedulePoll(1200);});
+  window.addEventListener('online',()=>{syncSession();if(supported===false)supported=null;schedulePoll(1200);});
+  syncSession();
+})();
+</script>
+
 </body>
 </html>
