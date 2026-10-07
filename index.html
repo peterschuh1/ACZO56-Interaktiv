@@ -30019,6 +30019,8 @@ function aczoBoatDriving(){return aczoBoatActive()&&aczoBoatRuntime.phase!=='anc
 function aczoBoatLineBusy(){return anglingUi.classList.contains('line-active')||['drilling','landing','catch-reveal','caught','obstacle-snag'].includes(anglingState);}
 function aczoBoatDirection(heading=aczoBoatRuntime.heading){return new THREE.Vector3(Math.sin(heading),Math.cos(heading),0);}
 function aczoBoatModelYaw(heading){const d=aczoBoatDirection(heading);return Math.atan2(d.y,d.x)-Math.PI;}
+// Navigation follows the water plane; wave height is not distance to a waypoint.
+function aczoBoatPlanarDistance(a,b){return Math.hypot(a.x-b.x,a.y-b.y);}
 function aczoBoatClippedObstacle(seg,minZ,maxZ,p,q){
  const r=seg.r||.04,dz=seg.end.z-seg.start.z;let lo=0,hi=1;
  if(Math.abs(dz)<1e-8){if(seg.start.z<minZ-r||seg.start.z>maxZ+r)return false;}
@@ -30111,7 +30113,7 @@ function aczoBoatReturnRoute(){
  const rt=aczoBoatRuntime,points=[eastBoatModel.position.clone(),...rt.trail.slice().reverse().map(v=>v.position.clone())],route=[];
  let at=0;
  while(at<points.length-1){let end=at+1;for(let i=points.length-1;i>at+1;i--)if(aczoBoatWaterSegment(points[at],points[i])){end=i;break;}
-  if(points[at].distanceTo(points[end])>.035)route.push(points[end]);at=end;
+  if(aczoBoatPlanarDistance(points[at],points[end])>.035)route.push(points[end]);at=end;
  }
  return route;
 }
@@ -30257,10 +30259,10 @@ function aczoBoatTick(dt){
   if(!aczoBoatMotion(dt,throttle,turn)&&rt.time-(rt.lastBlocked||-10)>2){rt.lastBlocked=rt.time;showAnglingToast('Ufer, Flachwasser oder Hindernis · bitte abdrehen.',1450);}
   aczoBoatCamera();
  }else if(rt.phase==='returning'){
-  while(rt.returnPath.length&&eastBoatModel.position.distanceTo(rt.returnPath[0])<.20)rt.returnPath.shift();
+  while(rt.returnPath.length&&aczoBoatPlanarDistance(eastBoatModel.position,rt.returnPath[0])<.20)rt.returnPath.shift();
   const next=rt.returnPath[0];
   if(next){
-   const delta=next.clone().sub(eastBoatModel.position);delta.z=0;const distance=delta.length(),bearing=Math.atan2(delta.x,delta.y);if(rt.returnReversing&&eastBoatModel.position.distanceTo(rt.reverseStart)>2.8&&aczoBoatRotationClear(eastBoatModel.position,rt.heading,bearing)){rt.returnReversing=false;rt.speed=0;}const desired=bearing+(rt.returnReversing?Math.PI:0),error=Math.atan2(Math.sin(desired-rt.heading),Math.cos(desired-rt.heading));
+   const delta=next.clone().sub(eastBoatModel.position);delta.z=0;const distance=delta.length(),bearing=Math.atan2(delta.x,delta.y);if(rt.returnReversing&&aczoBoatPlanarDistance(eastBoatModel.position,rt.reverseStart)>2.8&&aczoBoatRotationClear(eastBoatModel.position,rt.heading,bearing)){rt.returnReversing=false;rt.speed=0;}const desired=bearing+(rt.returnReversing?Math.PI:0),error=Math.atan2(Math.sin(desired-rt.heading),Math.cos(desired-rt.heading));
    const turn=THREE.MathUtils.clamp(error,-.85*dt,.85*dt),heading=rt.heading+turn;
    const targetSpeed=Math.abs(error)>.35?0:(rt.returnReversing?-1:1)*Math.min(rt.returnReversing?1.4:3.5,Math.sqrt(distance*1.6));rt.speed+=THREE.MathUtils.clamp(targetSpeed-rt.speed,-1.3*dt,.75*dt);
    const p=eastBoatModel.position.clone().addScaledVector(aczoBoatDirection(heading),Math.sign(rt.speed)*Math.min(distance,Math.abs(rt.speed)*dt));
@@ -30468,16 +30470,87 @@ function aczoBoatApplyCloudFinds(player,force=false){
 }
 async function aczoBoatClaimReward(key){
  if(!anglingCloudEnabled)return null;
- const rt=aczoBoatRuntime,playerId=anglingPlayerProfile.id;rt.claimPending=true;rt.speed=0;rt.turnRate=0;rt.input={};aczoBoatStopMotor();aczoBoatRefreshUi();
+ const rewards={
+  'east-predatorpit':[['east-predatorpit','predatorpit_softbait']],
+  'west-predatorpit':[['west-predatorpit','predatorpit_spinner']],
+  'tin-sabrina':[['east-pike','pike_special'],['east-zander','zander_special'],['west-perch','perch_special']]
+ }[key];
+ if(!rewards)throw new Error('Unbekannter Bootsfund.');
+ const rt=aczoBoatRuntime;
+ if(rt.claimPending)throw new Error('Der Fund wird bereits gesichert.');
+ const playerId=anglingPlayerProfile.id;
+ const access={playerId,recoveryCode:anglingRecoveryCode||'',sessionToken:aczoSessionToken};
+ let shared=null,syncedSignature=null;
+ rt.claimPending=true;rt.speed=0;rt.turnRate=0;rt.input={};aczoBoatStopMotor();aczoBoatRefreshUi();
+ function samePlayer(){if(anglingPlayerProfile.id!==playerId)throw new Error('Spielerkonto wurde gewechselt.');}
  try{
-  if(!await syncAnglingPlayerCloud())throw new Error('Spielstand konnte nicht gesichert werden. Bitte erneut versuchen.');
-  if(anglingPlayerProfile.id!==playerId)throw new Error('Spielerkonto wurde gewechselt.');
-  const data=await aczoApi('claimBoatFind',{playerId,recoveryCode:anglingRecoveryCode||'',sessionToken:aczoSessionToken,findKey:key,revision:anglingProgress.xpRevision});
-  if(!data?.player||Number(data.apiVersion)<21)throw new Error('Für die Funde bitte den Google-Code V3.0 veröffentlichen.');
-  if(anglingPlayerProfile.id!==playerId)throw new Error('Spielerkonto wurde gewechselt.');
-  if(!applyAnglingCloudPlayer(data.player))throw new Error('Spielstand hat sich geändert. Bitte erneut versuchen.');
-  return data;
- }finally{rt.claimPending=false;aczoBoatRefreshUi();}
+  // Drain an existing save before taking a fresh snapshot. A true result from
+  // that save alone does not guarantee that its snapshot is still current.
+  if(anglingCloudSyncPromise)await anglingCloudSyncPromise;
+  samePlayer();
+  if(anglingCloudSyncTimer){window.clearTimeout(anglingCloudSyncTimer);anglingCloudSyncTimer=null;}
+  const revision=anglingProgress.xpRevision,signature=anglingCloudSignature(),payload=anglingCloudSyncPayload();
+  const run=(async()=>{
+   // Keep the existing error details instead of reducing every failure to false.
+   const saved=await anglingLeaderboardJson(ANGLING_LEADERBOARD_ENDPOINT,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify(payload)},30000);
+   samePlayer();
+   if(!saved?.player)throw new Error('Unvollständige Antwort beim Sichern des Spielstands.');
+   if(anglingProgress.xpRevision!==revision||anglingCloudSignature()!==signature){anglingCloudSyncPending=true;throw new Error('Spielstand hat sich während der Fundaufnahme geändert. Bitte erneut versuchen.');}
+   captureAnglingRecoveryCode(saved);
+   if(!applyAnglingCloudPlayer(saved.player))throw new Error('Spielstand hat sich geändert. Bitte erneut versuchen.');
+   syncedSignature=anglingCloudSignature();
+   const previousClaims=aczoBoatNormalizeClaims(saved.player.boatFinds),previousStock={...saved.player.lureInventory};
+   let data;
+   try{
+    data=await aczoApi('claimBoatFind',{...access,findKey:key,revision:saved.player.revision});
+    samePlayer();
+    if(!data?.player||Number(data.apiVersion)<21)throw new Error('Für die Funde bitte den Google-Code V3.0 veröffentlichen.');
+   }catch(err){
+    samePlayer();
+    if(!anglingCloudErrorIsTransient(err))throw err;
+    // A lost response does not mean that the server failed to save the find.
+    // Confirm once by reading; do not repeat the reward write blindly.
+    if(rt.saving)rt.saving.textContent='Fund wird geprüft …';
+    let checked;
+    try{checked=await anglingLeaderboardJson(ANGLING_LEADERBOARD_ENDPOINT,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify({action:'getPlayer',...access})},15000);}catch(checkErr){samePlayer();throw err;}
+    samePlayer();
+    if(checked?.player?.boatFinds?.[key]!==true)throw err;
+    data={player:checked.player,confirmed:true,awarded:rewards.filter(([claim,id])=>!previousClaims[claim]&&Number(checked.player.lureInventory?.[id]||0)>Number(previousStock[id]||0)).map(pair=>pair[1])};
+   }
+   samePlayer();
+   if(anglingProgress.xpRevision!==saved.player.revision||anglingCloudSignature()!==syncedSignature){
+    // Preserve a newer local change (including XP). Merge only this confirmed
+    // boat reward, then let the existing save mechanism send the newer state.
+    const localClaims=aczoBoatNormalizeClaims(anglingProgress.boatFinds),cloudClaims=aczoBoatNormalizeClaims(data.player.boatFinds);
+    for(const [claim,id]of rewards){
+     if(!cloudClaims[claim])continue;
+     const stock=Number(data.player.lureInventory?.[id]||0);
+     if(ANGLING_LURE_CATALOG[id]?.unique)anglingProgress.lureInventory[id]=Math.max(anglingLureStock(id),stock);
+     else if(!localClaims[claim]&&!previousClaims[claim])anglingProgress.lureInventory[id]=anglingLureStock(id)+Math.max(0,stock-Number(previousStock[id]||0));
+    }
+    aczoBoatApplyCloudFinds({boatFinds:{...localClaims,...cloudClaims}});
+    anglingProgress.xpRevision=Math.max(Number(anglingProgress.xpRevision)||0,Number(data.player.revision)||0)+1;
+    saveAnglingProgress({preserveXpRevision:true,skipCloudSync:true,skipEpSync:true});anglingCloudSyncPending=true;
+   }else{
+    if(!applyAnglingCloudPlayer(data.player)){anglingCloudSyncPending=true;throw new Error('Spielstand hat sich geändert. Bitte erneut versuchen.');}
+    syncedSignature=anglingCloudSignature();
+   }
+   anglingLastCloudSuccessAt=Date.now();anglingLastCloudMessage='Gespeichert';updateAnglingCloudStatus();
+   return data;
+  })();
+  // Share a boolean save promise with existing callers. This also keeps a
+  // delayed background save from racing between the two boat-only requests.
+  shared=run.then(()=>true,()=>false);anglingCloudSyncPromise=shared;anglingCloudSyncInFlight=true;
+  return await run;
+ }finally{
+  if(shared&&anglingCloudSyncPromise===shared){
+   anglingCloudSyncPromise=null;anglingCloudSyncInFlight=false;
+   const pending=anglingCloudSyncPending;anglingCloudSyncPending=false;
+   if(pending&&anglingCloudSignature()!==syncedSignature)scheduleAnglingCloudSync(900);
+  }
+  if(rt.saving)rt.saving.textContent='Fund wird gesichert …';
+  rt.claimPending=false;aczoBoatRefreshUi();
+ }
 }
 
 // V2.1: Two independent bottom rigs use the existing shore, fight and net systems.
