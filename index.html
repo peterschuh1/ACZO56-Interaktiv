@@ -6890,12 +6890,14 @@ function aczoSetSoundEnabled(enabled,{persist=true}={}){
   if(persist)try{localStorage.setItem(ACZO_SOUND_ENABLED_KEY,aczoSoundEnabled?'1':'0');}catch(_e){}
   aczoSyncSoundButtons();
 }
+let aczoSoundRequestSerial=0;
 function aczoSoundPlay(key,opts={}){
   // Harte Trennung: 2D-/3D-Karte bleibt vollständig stumm.
   if(!aczoSoundEnabled||typeof anglingMode==='undefined'||!anglingMode)return false;
   if((key==='fishJump'||key==='fishSurface')&&typeof anglingTimeShiftActive!=='undefined'&&anglingTimeShiftActive)return false;
   const ambient=ACZO_AMBIENT_SOUND_KEYS.has(key);
-  if(key==='infoTick'&&(['bite','bite-focus','strike','drilling','landing'].includes(anglingState)||aczoLineRunSoundActive))return false;
+  if(key==='infoTick'&&!opts.uiClick&&(['bite','bite-focus','strike','drilling','landing'].includes(anglingState)||aczoLineRunSoundActive))return false;
+  aczoSoundRequestSerial++;
   const now=performance.now(),minGap=Math.max(0,Number(opts.minGap)||0),quietGap=Math.max(0,Number(opts.onlyIfQuiet)||0);
   if(minGap&&now-(aczoSoundLastPlay[key]||0)<minGap)return false;
   if(quietGap&&now-aczoSoundLastAnyAt<quietGap)return false;
@@ -34175,7 +34177,10 @@ function aczoInvokeCommerceAction(o,button){
   // Fehlende Produkte öffnen direkt die passende Shop-Kategorie.
   if(o.unavailable)aczoCommerceState.shop.category=aczoCommerceCategory(o.itemType,o.itemId);
   aczoCloseProductDetails(false);
+  // Vorhandene Kauf-/Montagetöne behalten Vorrang; sonst derselbe Menüklick.
+  const soundSerial=aczoSoundRequestSerial;
   o.onClick();
+  if(soundSerial===aczoSoundRequestSerial)aczoSoundPlay('infoTick',{volume:.055,rate:1.08,uiClick:true});
   const gained=aczoCommerceStock(o)-stock;
   if(gained>0&&anglingProgress.xp<xp)aczoCommercePurchaseEffect(o,gained,from);
 }
@@ -48613,7 +48618,7 @@ document.addEventListener('visibilitychange',tournamentOnResume);
   if(!ui||!main||window.__aczoUiMotionInstalled)return;
   window.__aczoUiMotionInstalled=true;
   const reduced=window.matchMedia?window.matchMedia('(prefers-reduced-motion: reduce)'):null;
-  const animations=new Map();let gestureAt=-Infinity;
+  const animations=new Map();
   const visible=node=>!!node&&node.isConnected&&!node.hidden&&node.getClientRects().length>0;
   const mainOpen=()=>ui.classList.contains('main-menu-open');
   const byId=id=>document.getElementById(id);
@@ -48645,9 +48650,9 @@ document.addEventListener('visibilitychange',tournamentOnResume);
     }catch(_e){}
   }
   function tick(){
-    if(document.hidden||performance.now()-gestureAt>650)return;
+    if(document.hidden)return;
     if(typeof aczoSoundEnabled==='undefined'||!aczoSoundEnabled||typeof anglingMode==='undefined'||!anglingMode)return;
-    if(typeof aczoSoundPlay==='function')aczoSoundPlay('infoTick',{volume:.055,rate:1.08,minGap:220});
+    if(typeof aczoSoundPlay==='function')aczoSoundPlay('infoTick',{volume:.055,rate:1.08,uiClick:true});
   }
   const pressSelector=[
     '#anglingMainMenu .aczo-main-nav button','#anglingMainMenu [data-community-view]',
@@ -48661,15 +48666,27 @@ document.addEventListener('visibilitychange',tournamentOnResume);
     const button=event.target?.closest?.('button');
     if(!button||button.disabled||button.closest('#aczoAccountArea,#aczo-main-profile,#anglingRecoveryPanel'))return;
     if(!button.closest('#anglingUi'))return;
-    gestureAt=performance.now();
     if(button.matches(pressSelector))motion(button,true);
   }
   // Pointer umfasst Maus, Stift und Touch; alte Browser behalten ihren Touchpfad.
   document.addEventListener('PointerEvent' in window?'pointerdown':'touchstart',gesture,{capture:true,passive:true});
   document.addEventListener('keydown',gesture,{capture:true});
+  // Navigation wird am tatsächlichen Klick vertont, auch bei dynamischen
+  // Tabs und gestopptem Bubbling. Pointerdown dient nur der Druckanimation.
+  const soundScope=[
+    '#anglingMainMenu','.angling-game-panel','#anglingLogPanel',
+    '#anglingHallOfFame','#aczoAnglerCard','#aczoSharePreview',
+    '#anglingOnlinePrompt','#anglingDailyQuestIntro','#aczo-product-overlay',
+    '#aczoTournamentEntry','#aczoTournamentOverlay','.aczo-sabrina-note'
+  ].join(',');
   document.addEventListener('click',event=>{
     const button=event.target?.closest?.('button');
-    if(button&&!button.disabled&&button.closest('#anglingUi')&&!button.closest('#aczoAccountArea,#aczo-main-profile,#anglingRecoveryPanel'))gestureAt=performance.now();
+    if(!event.isTrusted||!visible(button)||button.disabled||button.getAttribute('aria-disabled')==='true'
+      ||button.closest('[inert]')||button.matches('[data-aczo-sound]'))return;
+    if(!button.closest(soundScope)&&!button.matches(pressSelector+',#anglingFixedMenuBtn,[data-boat="anchor"],[data-boat="return"]'))return;
+    // Produktaktionen ergänzen den Ton nach ihrer vorhandenen Kauf-/Montagelogik.
+    if(button.matches('.angling-item-action,#aczo-product-dialog .aczo-product-actions button'))return;
+    tick();
   },{capture:true,passive:true});
 
   const lists=['anglingRecentPlayers','anglingActivePlayers','aczoAllAnglers','anglingLeaderboardList']
@@ -48701,7 +48718,7 @@ document.addEventListener('visibilitychange',tournamentOnResume);
   const mainObserver=new MutationObserver(()=>{
     const open=mainOpen();if(open===wasOpen)return;wasOpen=open;
     cancelInside(main);resetLists();page=currentPage();view=currentView();
-    if(open){motion(main.querySelector('.angling-main-card'));tick();revealLists();}
+    if(open){motion(main.querySelector('.angling-main-card'));revealLists();}
   });
   mainObserver.observe(ui,{attributes:true,attributeFilter:['class']});
   const pageObserver=new MutationObserver(()=>{
@@ -48709,8 +48726,8 @@ document.addEventListener('visibilitychange',tournamentOnResume);
     if(!mainOpen()){page=next;view=nextView;return;}
     if(next!==page){
       cancelInside(main.querySelector('.angling-main-grid'));page=next;view=nextView;
-      motion(next);tick();
-    }else if(nextView!==view){if(view)cancelInside(view);view=nextView;motion(nextView);tick();}
+      motion(next);
+    }else if(nextView!==view){if(view)cancelInside(view);view=nextView;motion(nextView);}
     revealLists();
   });
   [...pages,...views].forEach(node=>pageObserver.observe(node,{attributes:true,attributeFilter:['hidden']}));
@@ -48727,7 +48744,7 @@ document.addEventListener('visibilitychange',tournamentOnResume);
       const entry=panels.find(value=>value.node===node);if(!entry)continue;
       const open=panelOpen(entry);if(open===entry.open)continue;entry.open=open;
       cancelInside(node);
-      if(open){motion(node);tick();revealLists();}
+      if(open){motion(node);revealLists();}
       else lists.forEach(list=>{if(node.contains(list.node))list.shown=false;});
     }
   });
