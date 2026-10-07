@@ -13956,12 +13956,125 @@ function clearDepthPin(){
   depthPinLabel.style.display='none';
 }
 
+// MAP-01: Nur die Maus-/Pin-Trefferabfrage auf der bestehenden Kartenflaeche.
+// Private Indexbereiche bleiben ausserhalb der Szene. Positionen, UVs, Dreiecke,
+// Material und Weltmatrix bleiben original; den Endtest macht Three.js r128.
+const aczoMapPondNativeRaycast=THREE.Mesh.prototype.raycast;
+let aczoMapPondRayCache=null;
+function aczoMapPondRaycastSupported(){
+  const g=pond.geometry,p=g&&g.attributes&&g.attributes.position,i=g&&g.index;
+  if(!g||g!==ACZO_MAP_GEO||!g.isBufferGeometry||g.isInstancedBufferGeometry
+    ||pond.isInstancedMesh||pond.isSkinnedMesh||pond.raycast!==aczoMapPondNativeRaycast
+    ||!pond.material||Array.isArray(pond.material)||g.groups.length
+    ||g.drawRange.start!==0||g.drawRange.count!==Infinity
+    ||!p||p.isInterleavedBufferAttribute||p.itemSize!==3||p.normalized
+    ||!(p.array instanceof Float32Array)||p.array.length!==p.count*3
+    ||!i||i.isInterleavedBufferAttribute||i.itemSize!==1||i.normalized
+    ||!(i.array instanceof Uint16Array||i.array instanceof Uint32Array)
+    ||i.count!==i.array.length||!i.count||i.count%3)return false;
+  for(const key in g.morphAttributes)return false;
+  return true;
+}
+function aczoPrepareMapPondRaycast(){
+  if(!aczoMapPondRaycastSupported()){aczoMapPondRayCache=null;return null;}
+  const g=pond.geometry,p=g.attributes.position,i=g.index;
+  const old=aczoMapPondRayCache;
+  if(old&&old.geometry===g&&old.position===p&&old.positionArray===p.array
+    &&old.positionVersion===p.version&&old.positionCount===p.count
+    &&old.index===i&&old.indexArray===i.array&&old.indexVersion===i.version
+    &&old.indexCount===i.count)return old;
+  // Zusammenhaengende Original-Indexbereiche erhalten auch faceIndex und
+  // Dreiecksreihenfolge. Eine konservative Box umfasst immer ganze Dreiecke.
+  const leafTriangles=256,faces=i.count/3;
+  let leafCapacity=1;while(leafCapacity*leafTriangles<faces)leafCapacity*=2;
+  const capacity=leafCapacity*2-1,bounds=new Float64Array(capacity*6);
+  const left=new Int32Array(capacity),right=new Int32Array(capacity);
+  const starts=new Int32Array(capacity),counts=new Int32Array(capacity);
+  const positions=p.array,indices=i.array,isFiniteNumber=Number.isFinite;
+  let nodes=0,valid=true;
+  function build(first,last){
+    const n=nodes++,b=n*6;
+    if(last-first<=leafTriangles){
+      const start=first*3,end=last*3;
+      let x0=Infinity,y0=Infinity,z0=Infinity,x1=-Infinity,y1=-Infinity,z1=-Infinity;
+      for(let k=start;k<end;k++){
+        const at=indices[k]*3,x=positions[at],y=positions[at+1],z=positions[at+2];
+        if(!isFiniteNumber(x)||!isFiniteNumber(y)||!isFiniteNumber(z)){valid=false;continue;}
+        if(x<x0)x0=x;if(y<y0)y0=y;if(z<z0)z0=z;
+        if(x>x1)x1=x;if(y>y1)y1=y;if(z>z1)z1=z;
+      }
+      const ex=1e-7*Math.max(1,Math.abs(x0),Math.abs(x1));
+      const ey=1e-7*Math.max(1,Math.abs(y0),Math.abs(y1));
+      const ez=1e-7*Math.max(1,Math.abs(z0),Math.abs(z1));
+      bounds[b]=x0-ex;bounds[b+1]=y0-ey;bounds[b+2]=z0-ez;
+      bounds[b+3]=x1+ex;bounds[b+4]=y1+ey;bounds[b+5]=z1+ez;
+      starts[n]=start;counts[n]=end-start;
+    }else{
+      const mid=first+Math.floor((last-first)/2),l=build(first,mid),r=build(mid,last);
+      left[n]=l;right[n]=r;
+      for(let axis=0;axis<3;axis++){
+        bounds[b+axis]=Math.min(bounds[l*6+axis],bounds[r*6+axis]);
+        bounds[b+axis+3]=Math.max(bounds[l*6+axis+3],bounds[r*6+axis+3]);
+      }
+    }
+    return n;
+  }
+  build(0,faces);
+  if(!valid){aczoMapPondRayCache=null;return null;}
+  const proxyGeometry=new THREE.BufferGeometry();
+  // Nur Referenzen auf CPU-Attribute. Niemals renderer.render oder scene.add.
+  proxyGeometry.attributes=g.attributes;proxyGeometry.index=i;
+  const proxy=new THREE.Mesh(proxyGeometry,pond.material);proxy.matrixAutoUpdate=false;
+  aczoMapPondRayCache={geometry:g,position:p,positionArray:p.array,
+    positionVersion:p.version,positionCount:p.count,index:i,indexArray:i.array,
+    indexVersion:i.version,indexCount:i.count,bounds,left,right,starts,counts,nodes,
+    stack:new Int32Array(capacity),inverse:new THREE.Matrix4(),localRay:new THREE.Ray(),
+    box:new THREE.Box3(),boxHit:new THREE.Vector3(),proxy,proxyGeometry,hits:[]};
+  return aczoMapPondRayCache;
+}
+function aczoRaycastMapPondFirstHit(raycaster){
+  // intersectObject prueft Layer, aber absichtlich nicht object.visible.
+  if(!raycaster.layers.test(pond.layers))return null;
+  const cache=aczoPrepareMapPondRaycast();
+  if(!cache||pond.matrixWorld.determinant()===0)
+    return raycaster.intersectObject(pond,false)[0]||null;
+  const g=pond.geometry;
+  if(g.boundingSphere===null)g.computeBoundingSphere();
+  const proxy=cache.proxy,proxyGeometry=cache.proxyGeometry,hits=cache.hits;
+  proxy.material=pond.material;proxy.matrixWorld.copy(pond.matrixWorld);
+  proxyGeometry.attributes=g.attributes;proxyGeometry.index=g.index;
+  // Die originale native Kugel-/Box-Pruefung bleibt auch im Endtest erhalten.
+  proxyGeometry.boundingSphere=g.boundingSphere;proxyGeometry.boundingBox=g.boundingBox;
+  cache.inverse.copy(pond.matrixWorld).invert();
+  cache.localRay.copy(raycaster.ray).applyMatrix4(cache.inverse);
+  const bounds=cache.bounds,stack=cache.stack;let size=1;stack[0]=0;hits.length=0;
+  while(size){
+    const n=stack[--size],b=n*6;
+    cache.box.min.set(bounds[b],bounds[b+1],bounds[b+2]);
+    cache.box.max.set(bounds[b+3],bounds[b+4],bounds[b+5]);
+    if(!cache.localRay.intersectBox(cache.box,cache.boxHit))continue;
+    if(cache.counts[n]){
+      proxyGeometry.setDrawRange(cache.starts[n],cache.counts[n]);
+      aczoMapPondNativeRaycast.call(proxy,raycaster,hits);
+    }else{
+      // Linken Originalbereich zuerst pruefen; gleiche Entfernung behält die
+      // urspruengliche Reihenfolge. far/near und den Eingabestrahl nie aendern.
+      stack[size++]=cache.right[n];stack[size++]=cache.left[n];
+    }
+  }
+  for(const hit of hits)hit.object=pond;
+  hits.sort((a,b)=>a.distance-b.distance||a.faceIndex-b.faceIndex);
+  const first=hits[0]||null;hits.length=0;
+  return first;
+}
+// Einmal vor der ersten Eingabe aufbauen; keine Zusatzarbeit im Renderloop.
+aczoPrepareMapPondRaycast();
 function raycastPondFromClient(clientX,clientY){
   const rect=renderer.domElement.getBoundingClientRect();
   mouse.x=(clientX-rect.left)/rect.width*2-1;
   mouse.y=-(clientY-rect.top)/rect.height*2+1;
   ray.setFromCamera(mouse,camera);
-  const hit=ray.intersectObject(pond,false)[0] || null;
+  const hit=aczoRaycastMapPondFirstHit(ray);
   if(!hit||!aczoPointInsideMasterPond(hit.point.x,hit.point.y))return null;
   return hit;
 }
@@ -22321,6 +22434,10 @@ function aczoSurveyBuildColored(items,geometry,material,name,seasonal,cast=true,
 // mitteln. Zugleich kostet ein Jahreszeitenwechsel nur noch wenige Material-
 // Updates statt einer Schleife über jedes einzelne Blatt.
 function aczoSurveyBuildFoliageBatches(items,geometry,name,cast=false,receive=false,fineLod=false){
+  // VEG-02: Nur gleiche Sektormaterialien dieser Geometriefamilie teilen.
+  // Artenidentitaet und exakte Farbverschiebungen bleiben getrennt.
+  // Der lokale Pool lebt nur waehrend dieses unveraenderten Profilaufbaus.
+  const materialPool=new WeakMap();
   // PERF11: grosse Blatt-Batches werden raeumlich geteilt. Ein einziger
   // InstancedMesh ueber den ganzen Weiher verhindert wirksames Frustum-Culling,
   // weil er als Ganzes sichtbar bleibt. Kleine Batches bleiben unveraendert,
@@ -22344,15 +22461,23 @@ function aczoSurveyBuildFoliageBatches(items,geometry,name,cast=false,receive=fa
     }else spatial.set('all',baseBatch);
     let ci=0;
     for(const batch of spatial.values()){
-      const first=batch[0],dayColor=new THREE.Color(first.species.summer);
-      dayColor.offsetHSL(first.hueShift||0,first.satShift||0,first.lightShift||0);
-      const material=new THREE.MeshLambertMaterial({
-        color:dayColor,side:THREE.DoubleSide,
-        emissive:dayColor,emissiveIntensity:.075
-      });
-      material.userData.aczoDayColor=dayColor.clone();
-      material.userData.aczoDayEmissiveIntensity=.075;
-      aczoSurveyFoliageMaterials.push(material);
+      const first=batch[0];
+      let tones=materialPool.get(first.species);
+      if(!tones){tones=new Map();materialPool.set(first.species,tones);}
+      const toneKey=[first.hueShift||0,first.satShift||0,first.lightShift||0].join('|');
+      let material=tones.get(toneKey);
+      if(!material){
+        const dayColor=new THREE.Color(first.species.summer);
+        dayColor.offsetHSL(first.hueShift||0,first.satShift||0,first.lightShift||0);
+        material=new THREE.MeshLambertMaterial({
+          color:dayColor,side:THREE.DoubleSide,
+          emissive:dayColor,emissiveIntensity:.075
+        });
+        material.userData.aczoDayColor=dayColor.clone();
+        material.userData.aczoDayEmissiveIntensity=.075;
+        tones.set(toneKey,material);
+        aczoSurveyFoliageMaterials.push(material);
+      }
       const mesh=new THREE.InstancedMesh(geometry,material,batch.length),dummy=new THREE.Object3D();
       let minX=Infinity,minY=Infinity,minZ=Infinity,maxX=-Infinity,maxY=-Infinity,maxZ=-Infinity;
       batch.forEach((item,i)=>{
@@ -32243,13 +32368,30 @@ function anglingClockHour(){const d=viewerNow();return d.getHours()+d.getMinutes
 const anglingClockDisplay=document.getElementById('anglingClockDisplay');
 const anglingClockDisplayValue=anglingClockDisplay?.querySelector('.angling-clock-time');
 let anglingClockDisplayLast='';
+// Reuse formatting work while the displayed minute and clock mode are unchanged.
+let anglingClockDisplayFormatter=null;
+let anglingClockDisplayCachedMinute=null;
+let anglingClockDisplayCachedMode=null;
+let anglingClockDisplayCachedOffset=null;
 function updateAnglingClockDisplay(){
   if(!anglingClockDisplayValue)return;
   const now=viewerNow();
-  const value=seasonTestMode
-    ?String(now.getHours()).padStart(2,'0')+':'+String(now.getMinutes()).padStart(2,'0')
-    :new Intl.DateTimeFormat('de-DE',{timeZone:'Europe/Berlin',hour:'2-digit',minute:'2-digit',hourCycle:'h23'}).format(now);
+  const mode=!!seasonTestMode;
+  const minute=mode?now.getHours()*60+now.getMinutes():Math.floor(now.getTime()/60000);
+  const offset=mode?now.getTimezoneOffset():0;
+  if(mode===anglingClockDisplayCachedMode&&minute===anglingClockDisplayCachedMinute
+    &&offset===anglingClockDisplayCachedOffset)return;
+  let value;
+  if(mode){
+    value=String(now.getHours()).padStart(2,'0')+':'+String(now.getMinutes()).padStart(2,'0');
+  }else{
+    if(!anglingClockDisplayFormatter)anglingClockDisplayFormatter=new Intl.DateTimeFormat('de-DE',{timeZone:'Europe/Berlin',hour:'2-digit',minute:'2-digit',hourCycle:'h23'});
+    value=anglingClockDisplayFormatter.format(now);
+  }
   if(value!==anglingClockDisplayLast){anglingClockDisplayLast=value;anglingClockDisplayValue.textContent=value;}
+  anglingClockDisplayCachedMode=mode;
+  anglingClockDisplayCachedMinute=minute;
+  anglingClockDisplayCachedOffset=offset;
 }
 function anglingHourDistance(a,b){let d=Math.abs(a-b)%24;return Math.min(d,24-d);}
 function anglingTimePeak(hour,center,width){const d=anglingHourDistance(hour,center);return Math.exp(-(d*d)/(2*width*width));}
@@ -46233,6 +46375,91 @@ renderer.domElement.addEventListener('webglcontextrestored',()=>{
 });
 anglingBankPrewarm();
 
+// PERFORMANCE-04: Nur den nachweislich beitragslosen Zusatz-Lichtpass sparen.
+// Keine Lichtwerte, Shader, Aktualisierungstakte oder Szenenzustaende aendern.
+function aczoRenderMainView(){
+  const light=pondCelestialDepthLift,material=light.material;
+  const skip=!anglingMode&&!fishMode&&!skyLookMode&&!scene.overrideMaterial
+    &&light.visible&&!light.castShadow&&light.children.length===0
+    &&material===celestialDepthMat&&material.blending===THREE.AdditiveBlending
+    &&!material.premultipliedAlpha&&!material.depthWrite&&!material.stencilWrite
+    &&(celestialDepthUniforms.sourceStrength.value===0
+      ||celestialDepthUniforms.sourceScreen.value.z===0
+      ||celestialDepthUniforms.transitionFade.value===0);
+  if(!skip)return renderer.render(scene,camera);
+  // Das Originalflag muss fuer Nebenansichten und Kamera-Uebergaenge bestehen.
+  const visible=light.visible;
+  light.visible=false;
+  try{return renderer.render(scene,camera);}
+  finally{light.visible=visible;}
+}
+
+// PERF06: consolidate only explicitly selected rigid decorative leaf meshes.
+// Moving parents, materials, triangle topology and collision records are retained.
+function aczoPerf6BatchRigidChildren(parent,observeBatch){
+  if(!parent)return {sources:0,batches:0,triangles:0};
+  const groups=new Map(),stats={sources:0,batches:0,triangles:0};
+  for(const mesh of parent.children){
+    const geo=mesh.geometry,mat=mesh.material;
+    if(!mesh.isMesh||mesh.isInstancedMesh||mesh.isSkinnedMesh||mesh.children.length||!mesh.visible
+      ||!geo||!mat||Array.isArray(mat)||mat.transparent||!mat.depthWrite||!mat.depthTest
+      ||!(mat.isMeshStandardMaterial||mat.isMeshLambertMaterial||mat.isMeshPhongMaterial||mat.isMeshBasicMaterial)
+      ||mat.onBeforeCompile!==THREE.Material.prototype.onBeforeCompile
+      ||mat===aczoFenceGridMat||mat===aczoBuildingBlackMeshMat||!mesh.matrixAutoUpdate
+      ||mesh.onBeforeRender!==THREE.Object3D.prototype.onBeforeRender
+      ||mesh.onAfterRender!==THREE.Object3D.prototype.onAfterRender
+      ||Object.keys(geo.morphAttributes).length||geo.drawRange.start!==0||geo.drawRange.count!==Infinity
+      ||mesh.customDepthMaterial||mesh.customDistanceMaterial)continue;
+    const names=Object.keys(geo.attributes).sort();
+    if(!geo.attributes.position||names.some(n=>geo.attributes[n].isInterleavedBufferAttribute||geo.attributes[n].isInstancedBufferAttribute))continue;
+    mesh.updateMatrix();
+    if(mesh.matrix.determinant()<=0)continue;
+    const signature=names.map(n=>{const a=geo.attributes[n];return n+':'+a.itemSize+':'+a.normalized+':'+a.array.constructor.name;}).join(',');
+    const key=[mat.uuid,mesh.castShadow,mesh.receiveShadow,mesh.renderOrder,mesh.layers.mask,
+      !!mesh.userData.aczoNoShadow,!!mesh.userData.aczoNoReceiveShadow,signature].join('|');
+    if(!groups.has(key))groups.set(key,[]);groups.get(key).push(mesh);
+  }
+  for(const meshes of groups.values()){
+    if(meshes.length<2)continue;
+    const first=meshes[0],names=Object.keys(first.geometry.attributes).sort();
+    const vertices=meshes.reduce((s,m)=>s+m.geometry.attributes.position.count,0);
+    const indexCount=meshes.reduce((s,m)=>s+(m.geometry.index?m.geometry.index.count:m.geometry.attributes.position.count),0);
+    const geo=new THREE.BufferGeometry();
+    for(const name of names){const src=first.geometry.attributes[name];geo.setAttribute(name,new THREE.BufferAttribute(new src.array.constructor(vertices*src.itemSize),src.itemSize,src.normalized));}
+    const indices=new (vertices>65535?Uint32Array:Uint16Array)(indexCount);
+    let vertexOffset=0,indexOffset=0;
+    for(const mesh of meshes){
+      const transformed=mesh.geometry.clone();transformed.applyMatrix4(mesh.matrix);
+      for(const name of names)geo.attributes[name].array.set(transformed.attributes[name].array,vertexOffset*transformed.attributes[name].itemSize);
+      const index=transformed.index,n=transformed.attributes.position.count;
+      for(let i=0,count=index?index.count:n;i<count;i++)indices[indexOffset++]=vertexOffset+(index?index.getX(i):i);
+      vertexOffset+=n;transformed.dispose();
+    }
+    geo.setIndex(new THREE.BufferAttribute(indices,1));geo.computeBoundingBox();geo.computeBoundingSphere();
+    const batch=new THREE.Mesh(geo,first.material);
+    batch.name='ACZO_PERF6_RIGID_BATCH_'+stats.batches;
+    batch.castShadow=first.castShadow;batch.receiveShadow=first.receiveShadow;batch.renderOrder=first.renderOrder;
+    batch.layers.mask=first.layers.mask;
+    batch.userData.aczoNoShadow=!!first.userData.aczoNoShadow;
+    batch.userData.aczoNoReceiveShadow=!!first.userData.aczoNoReceiveShadow;
+    batch.userData.aczoPerf6Rigid=true;batch.userData.sourceCount=meshes.length;
+    batch.updateMatrix();batch.matrixAutoUpdate=false;
+    if(observeBatch)observeBatch(parent,meshes,batch);
+    for(const mesh of meshes)parent.remove(mesh);
+    parent.add(batch);stats.sources+=meshes.length;stats.batches++;stats.triangles+=indexCount/3;
+  }
+  return stats;
+}
+function aczoPerf6PrepareRigidBatches(observeBatch){
+  const parents=[aczoSmallPierGroup,northPierGroup,eastBoatPierGroup];
+  for(const gate of aczoConstructionGates){if(gate.leafA)parents.push(gate.leafA);if(gate.leafB)parents.push(gate.leafB);if(gate.gate)parents.push(gate.gate);}
+  for(const child of aczoSurveyedNatureGroup.children)if(child.name==='ALTE_MORSCHE_HUETTE_NACH_REFERENZFOTOS')parents.push(child);
+  for(const actor of aczoWildBoarActors)parents.push(actor);
+  return parents.map(parent=>({name:parent.name||parent.type,...aczoPerf6BatchRigidChildren(parent,observeBatch)}));
+}
+
+const aczoPerf6RigidStats=aczoPerf6PrepareRigidBatches();
+
 (function loop(frameNow=performance.now()){
  requestAnimationFrame(loop);
  if(aczoPerf4Hidden||document.visibilityState!=='visible')return;
@@ -46596,7 +46823,7 @@ anglingBankPrewarm();
      &&!fishMode&&!(anglingMode&&anglingCinematicView==='underwater');
    aczoShoreSeal.visible=regularSurface||fishDiveTransition;
  }
- renderer.render(scene,camera);
+ aczoRenderMainView();
  aczoRenderRodOverlay();
  restoreCelestialDiscWorldPositions();
  if(window.__markMapStartupFirstFrame){
