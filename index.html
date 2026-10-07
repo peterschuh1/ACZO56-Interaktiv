@@ -45429,12 +45429,24 @@ async function aczoSaveStableCloud(){
   }
   return false;
 }
+function aczoPrivacySelectionText(shareRecords,presenceNamed){
+  return 'Rekordfreigabe: '+(shareRecords?'an':'aus')+'. Online mit Namen: '+(presenceNamed?'an':'aus')+'.';
+}
+for(const input of [anglingMainHighscorePublic,anglingMainPresenceNamed]){
+  input.addEventListener('change',()=>{
+    if(aczoAccountBusy||!aczoAccount)return;
+    aczoStatus('Noch nicht gespeichert. '+aczoPrivacySelectionText(!!anglingMainHighscorePublic.checked,!!anglingMainPresenceNamed.checked));
+  });
+}
 async function aczoSavePrivacy(){
   if(aczoAccountBusy||!aczoAccount)return;
   if(aczoCloudSyncBusyWithFish()){aczoStatus('Bitte zuerst den laufenden Fang beenden.');return;}
   const shareRecords=!!anglingMainHighscorePublic.checked,presenceNamed=!!anglingMainPresenceNamed.checked;
   aczoAccountBusy=true;aczoAuthGeneration++;
   const button=aczoEl('aczoSavePrivacy');button.disabled=true;aczoStatus('Privatsphäre wird gespeichert …');
+  const options=[anglingMainHighscorePublic,anglingMainPresenceNamed];
+  const disabledBefore=options.map(input=>input.disabled);
+  options.forEach(input=>{input.disabled=true;});
   try{
     if(anglingCloudPlayerLoadPromise)await anglingCloudPlayerLoadPromise;
     if(anglingCloudSyncPromise)await anglingCloudSyncPromise;
@@ -45442,14 +45454,16 @@ async function aczoSavePrivacy(){
     const profileSaved=saveAnglingPlayerProfile();
     const presenceSaved=aczoStorageWrite(ANGLING_PRESENCE_NAMED_KEY,presenceNamed?'1':'0');
     aczoInvalidatePublicData();
-    if(!await aczoSaveStableCloud())throw new Error('Lokal gespeichert; die Cloud hat die Freigabe noch nicht bestätigt. Bitte erneut speichern.');
+    if(!await aczoSaveStableCloud())throw new Error(profileSaved&&presenceSaved
+      ?'Lokal gespeichert; die Cloud hat die Freigabe noch nicht bestätigt. Bitte erneut speichern.'
+      :'Die Freigabe konnte auf diesem Gerät nicht vollständig gespeichert werden; auch die Cloud hat sie noch nicht bestätigt. Bitte erneut speichern.');
     aczoInvalidatePublicData();updateAnglingMainMenuUi();
     if(shareRecords)syncAnglingExistingPersonalBests();
     aczoStatus(profileSaved&&presenceSaved
-      ?'Namensfreigabe in der Cloud gespeichert. Rekordfreigabe auf diesem Gerät gespeichert; veröffentlichte Rekorde bleiben öffentlich.'
+      ?'Gespeichert. '+aczoPrivacySelectionText(shareRecords,presenceNamed)+(shareRecords?'':' Bereits veröffentlichte Rekorde bleiben öffentlich.')
       :'Cloud-Abgleich bestätigt. Die Freigabe konnte auf diesem Gerät aber nicht dauerhaft gespeichert werden. Bitte den Browserspeicher prüfen und erneut speichern.');
   }catch(err){aczoStatus(err?.message||'Privatsphäre konnte nicht bestätigt werden. Bitte erneut speichern.');}
-  finally{button.disabled=false;aczoAccountBusy=false;}
+  finally{button.disabled=false;aczoAccountBusy=false;options.forEach((input,index)=>{input.disabled=disabledBefore[index];});}
 }
 async function aczoLogout(){
   const button=aczoEl('aczoLogout');if(button.disabled||aczoAccountBusy)return;
