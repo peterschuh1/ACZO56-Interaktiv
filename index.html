@@ -5858,7 +5858,7 @@ Bitte gefundene Darstellungs-, Steuerungs- oder Spielfehler mit Gerät, Browser 
          <summary style="font-weight:800">Update-Historie</summary>
          <div style="margin-top:8px;cursor:default;overflow-wrap:anywhere">
            <strong>Version V.3.2 · 07.10.2026</strong>
-           <ul style="padding-left:20px"><li>Wettangeln direkt aus Hauptmenü und Stellenauswahl; Hausfahrt und Auslosung erst nach bestätigter Teilnahme. Keine zweite Teilnahmespeicherung am Angelplatz.</li><li>Kompakte Bootsbedienung mit Acht-Richtungs-Steuerkreis, Ankern, Blicksteuerung und Rückfahrt; sichtbar erst nach dem Einstieg. Cursor-Tasten erhalten.</li><li>Baumdetails nach Saisonwechsel, Messlinien und stillstehendes Boot entlastet.</li><li>Tauchtasten bei Fokuswechsel zurückgesetzt; Tastaturfokus im Hauptmenü gehalten.</li><li>Warnung bei fehlgeschlagenem lokalen Speichern, korrekte Live-Schneedarstellung sowie Kalenderberechnung für Sommerzeit und Schaltjahre.</li><li>Hilfe und Versionsangaben aktualisiert.</li></ul>
+           <ul style="padding-left:20px"><li>Wettangeln direkt aus Hauptmenü und Stellenauswahl; Hausfahrt und Auslosung erst nach bestätigter Teilnahme. Keine zweite Teilnahmespeicherung am Angelplatz.</li><li>Kompakte Bootsbedienung mit Acht-Richtungs-Steuerkreis, Ankern, Blicksteuerung und Rückfahrt; sichtbar erst nach dem Einstieg. Wurfziele und Futter bleiben außerhalb des Rumpfs. Cursor-Tasten erhalten.</li><li>Baumdetails nach Saisonwechsel, Messlinien und stillstehendes Boot entlastet.</li><li>Tauchtasten bei Fokuswechsel zurückgesetzt; Tastaturfokus im Hauptmenü gehalten.</li><li>Warnung bei fehlgeschlagenem lokalen Speichern, korrekte Live-Schneedarstellung sowie Kalenderberechnung für Sommerzeit und Schaltjahre.</li><li>Hilfe und Versionsangaben aktualisiert.</li></ul>
          </div>
          <div style="margin-top:8px;cursor:default;overflow-wrap:anywhere">
            <strong>Version V.3.1 · 06.10.2026</strong>
@@ -34016,6 +34016,25 @@ function anglingCurrentDirection(out=new THREE.Vector3()){
   return out.set(Math.sin(yaw),Math.cos(yaw),0).normalize();
 }
 
+// Die Montage braucht freie Wasserfläche neben dem Rumpf, inklusive Platz für den Zielring und freie Sicht über den Bug.
+function aczoBoatFishingTargetBlocked(x,y){
+ if(!eastBoatModel.visible)return false;
+ const dx=x-eastBoatModel.position.x,dy=y-eastBoatModel.position.y;
+ if(Math.abs(dx)>4.2||Math.abs(dy)>4.2)return false;
+ const c=Math.cos(eastBoatModel.rotation.z),s=Math.sin(eastBoatModel.rotation.z),lx=dx*c+dy*s,ly=-dx*s+dy*c;
+ return lx>=-3.95&&lx<=2.82&&Math.abs(ly)<=1.22;
+}
+function aczoBoatSafeFishingDistance(distance,yaw,shore,maxDistance){
+ const d=THREE.MathUtils.clamp(distance,ANGLING_MIN_CAST_DISTANCE,maxDistance),dx=Math.sin(yaw),dy=Math.cos(yaw);
+ if(!aczoBoatFishingTargetBlocked(shore.x+dx*d,shore.y+dy*d))return d;
+ const c=Math.cos(eastBoatModel.rotation.z),s=Math.sin(eastBoatModel.rotation.z),ox=shore.x-eastBoatModel.position.x,oy=shore.y-eastBoatModel.position.y;
+ const lx=ox*c+oy*s,ly=-ox*s+oy*c,ux=dx*c+dy*s,uy=-dx*s+dy*c;
+ const exitX=ux>1e-8?(2.82-lx)/ux:ux< -1e-8?(-3.95-lx)/ux:Infinity;
+ const exitY=uy>1e-8?(1.22-ly)/uy:uy< -1e-8?(-1.22-ly)/uy:Infinity;
+ const safe=Math.min(exitX,exitY)+.02;
+ return Number.isFinite(safe)&&safe>=d&&safe<=maxDistance&&pondDepthAt(shore.x+dx*safe,shore.y+dy*safe)!=null?safe:null;
+}
+
 function anglingMaxCastDistance(yaw=anglingBaseYaw+anglingYawOffset,shoreOverride=null){
   const shore=shoreOverride||(anglingSelection&&anglingSelection.shore);
   if(!shore) return 10;
@@ -37799,7 +37818,10 @@ function updateAnglingSetupUi(){
 function updateAnglingAimFromSettings(forceLook=true){
   if(!anglingSelection) return;
   const maxDistance=anglingMaxCastDistance();
-  anglingCastDistance=THREE.MathUtils.clamp(anglingCastDistance,ANGLING_MIN_CAST_DISTANCE,Math.min(ANGLING_MAX_CAST_DISTANCE,Math.max(ANGLING_MIN_CAST_DISTANCE,maxDistance)));
+  const limit=Math.min(ANGLING_MAX_CAST_DISTANCE,Math.max(ANGLING_MIN_CAST_DISTANCE,maxDistance));
+  const safeDistance=aczoBoatSafeFishingDistance(anglingCastDistance,anglingBaseYaw+anglingYawOffset,anglingSelection.shore,limit);
+  if(safeDistance===null){anglingAimLocked=false;return false;}
+  anglingCastDistance=safeDistance;
   const dir=anglingCurrentDirection(anglingTmpC);
   const aimX=anglingSelection.shore.x+dir.x*anglingCastDistance;
   const aimY=anglingSelection.shore.y+dir.y*anglingCastDistance;
@@ -40223,6 +40245,7 @@ function setAnglingBobberRestPose(biteDip=0,biteWobble=0,biteSlide=0,biteLean=0,
   const steerSlide=anglingFloatRodX*.11+anglingFloatNudgeSide*anglingFloatNudge;
   anglingBobber.position.x=anglingCastEnd.x+biteSide.x*(biteSlide+steerSlide)+biteDir.x*biteForward;
   anglingBobber.position.y=anglingCastEnd.y+biteSide.y*(biteSlide+steerSlide)+biteDir.y*biteForward;
+  if(aczoBoatFishingTargetBlocked(anglingBobber.position.x,anglingBobber.position.y)){anglingBobber.position.x=anglingCastEnd.x;anglingBobber.position.y=anglingCastEnd.y;}
   const info=getAnglingRigInfo(anglingBobber.position.x,anglingBobber.position.y);
   // Auch ein sehr kräftiger Biss darf die Pose optisch nicht unter den lokal
   // vorhandenen Gewässerboden ziehen. In tiefem Wasser bleibt rund ein Meter
@@ -40958,7 +40981,7 @@ function setAnglingFeedAimFromPointer(clientX,clientY){
  anglingFeedPointerNdc.set(anglingFeedPointerX*2-1,-(anglingFeedPointerY*2-1));
  anglingFeedRaycaster.setFromCamera(anglingFeedPointerNdc,camera);
  const hit=new THREE.Vector3();
- if(!anglingFeedRaycaster.ray.intersectPlane(anglingFeedWaterPlane,hit)||pondDepthAt(hit.x,hit.y)==null)return false;
+ if(!anglingFeedRaycaster.ray.intersectPlane(anglingFeedWaterPlane,hit)||pondDepthAt(hit.x,hit.y)==null||aczoBoatFishingTargetBlocked(hit.x,hit.y))return false;
  hit.z=anglingSurfaceZ(hit.x,hit.y);anglingFeedAimBase.copy(hit);return true;
 }
 function updateAnglingFeedAim(dt){
@@ -40971,6 +40994,7 @@ function updateAnglingFeedAim(dt){
    anglingFeedAimBase.y+Math.cos(t*4.4)*wobble+Math.sin(t*8.3)*wobble*.28,
    anglingSurfaceZ(anglingFeedAimBase.x,anglingFeedAimBase.y)+.015
  );
+ if(aczoBoatFishingTargetBlocked(anglingFeedAimVisual.x,anglingFeedAimVisual.y))anglingFeedAimVisual.copy(anglingFeedAimBase);
  anglingFeedAim3DGroup.visible=true;
  anglingFeedAim3DGroup.position.copy(anglingFeedAimVisual);
  anglingFeedAim3DGroup.position.z=anglingSurfaceZ(anglingFeedAimVisual.x,anglingFeedAimVisual.y)+.030;
@@ -40991,6 +41015,7 @@ function throwAnglingFeed(){
    showAnglingToast('Maximal zwei aktive Futterplätze gleichzeitig.',1700);
    cancelAnglingFeedTargeting();return;
  }
+ if(aczoBoatFishingTargetBlocked(anglingFeedAimVisual.x,anglingFeedAimVisual.y)){showAnglingToast('Futter außerhalb des Boots auf freie Wasserfläche werfen.',1800);return;}
  const id=anglingFeedSelected;if(anglingFeedStock(id)<1){cancelAnglingFeedTargeting();return;}
  anglingProgress.feedInventory[id]=anglingFeedStock(id)-1;saveAnglingProgress();
  anglingFeedMode='throw';anglingUi.classList.remove('feed-targeting');anglingUi.classList.add('feed-throwing');
@@ -41160,7 +41185,7 @@ function startAnglingCast(){
     setAnglingStatus('Kein Köderfisch','Zuerst einen geeigneten Köderfisch fangen.');
     return;
   }
-  updateAnglingAimFromSettings(true);
+  if(updateAnglingAimFromSettings(true)===false||aczoBoatFishingTargetBlocked(anglingSelection.aim.x,anglingSelection.aim.y)){showAnglingToast('Das Wurfziel muss auf freier Wasserfläche außerhalb des Boots liegen.',2200);return;}
   anglingCandidateEntries=anglingUsesDeeper()?[]:buildAnglingCandidates();
   const total=anglingCandidateEntries.reduce((sum,e)=>sum+e.weight,0);
   if(!anglingUsesDeeper()&&total<.01){showAnglingToast('Diese Köder- und Tiefenkombination passt hier zu keinem Fisch.');return;}
@@ -41184,7 +41209,7 @@ function startAnglingCast(){
   const side=anglingCurrentDirection(new THREE.Vector3()).applyAxisAngle(anglingUp,Math.PI/2);
   const offset=(Math.random()-.5)*1.4;
   const candidate=anglingCastEnd.clone().addScaledVector(side,offset);
-  if(pondDepthAt(candidate.x,candidate.y)!=null) anglingCastEnd.copy(candidate);
+  if(pondDepthAt(candidate.x,candidate.y)!=null&&!aczoBoatFishingTargetBlocked(candidate.x,candidate.y)) anglingCastEnd.copy(candidate);
   anglingCastEnd.z=anglingSurfaceZ(anglingCastEnd.x,anglingCastEnd.y);
   // Derselbe Punkt wird bei häufigen Würfen oder verlorenen Fischen für einige
   // Minuten vorsichtiger. Ein Stellenwechsel beseitigt diesen Nachteil.
