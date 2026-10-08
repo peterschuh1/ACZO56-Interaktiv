@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
-<title>ACZO56-Interaktiv-V.3.2</title>
+<title>ACZO56-Interaktiv-V.3.3</title>
 <!-- ACZO56 BETA 1.2: Hänger-, Fischkontakt-, Touch- und Idle-Korrekturen auf bestehender Basis. -->
 <!-- ACZO56 V.2.1: Neues Anmeldesystem mit Benutzername und Passwort. -->
 <!-- 02.10.2026 PATCH 5: Welssetup + Köderfisch = 75 % Wels / 25 % Hecht-Zander-Aal-Beifang. Karpfensetup + Köderfisch nutzt unverändert die normale Einzelruten-/Posen-Köderfischlogik. -->
@@ -4922,6 +4922,59 @@ body.aczo-share-preview-open{overflow:hidden!important}
   #anglingLogPanel .angling-log-entry>span:nth-child(2){font-size:12px}
 }
 </style>
+<style id="aczoRankV33Css">
+/* V3.3: kompakter Anglerrang; reine Darstellung aus vorhandenen Gesamt-EP. */
+#aczoProfileRank{display:grid;gap:5px;margin:9px 0 11px;padding:0;min-width:0;border:0;background:none}
+#aczoProfileRank[hidden]{display:none!important}
+#aczoProfileRank .aczo-profile-rank-line{display:flex;flex-wrap:wrap;align-items:baseline;justify-content:space-between;gap:3px 12px;min-width:0}
+#aczoProfileRankTitle{font-size:11.5px!important;font-weight:700!important;line-height:1.3!important;color:#e9deb2;min-width:0;overflow-wrap:anywhere}
+#aczoProfileRankNext{font-size:10px!important;font-weight:400!important;line-height:1.3!important;color:#adc8b9;min-width:0;overflow-wrap:anywhere}
+#aczoProfileRankTrack{height:4px;border-radius:99px;background:rgba(211,236,220,.12);overflow:hidden;min-width:0}
+#aczoProfileRankFill{display:block;height:100%;width:100%;transform:scaleX(0);transform-origin:left;border-radius:inherit;background:linear-gradient(90deg,#9e8e55,#dfcc87);transition:transform .45s ease}
+#aczoAnglerCard .aczo-card-rank{display:block;margin:0 0 8px;color:#e9d99a;font-size:11.5px;font-weight:600;line-height:1.35;overflow-wrap:anywhere}
+
+/* Ereignisgebundene Aufstiegsfeier: keine WebGL-Partikel, kein zusätzlicher Renderloop. */
+#aczoLevelUp{position:absolute;inset:0;z-index:1585;display:grid;place-items:center;pointer-events:none!important;color:#fff7d5;overflow:hidden;contain:layout paint}
+#aczoLevelUp[hidden]{display:none!important}
+#aczoLevelUp *{pointer-events:none!important;box-sizing:border-box}
+#aczoLevelUp .aczo-levelup-card{position:relative;isolation:isolate;width:min(382px,calc(100% - 32px));padding:19px 22px 18px;border:1px solid rgba(233,202,112,.76);border-radius:22px;background:linear-gradient(145deg,rgba(29,65,45,.97),rgba(5,32,26,.98) 58%,rgba(34,39,21,.98));box-shadow:0 16px 44px rgba(0,0,0,.38),inset 0 1px rgba(255,241,185,.1);text-align:center;animation:aczoLevelUpScene 5.2s ease both}
+#aczoLevelUp .aczo-levelup-card::before{content:'';position:absolute;inset:-30px;z-index:-1;border-radius:50%;background:radial-gradient(ellipse,rgba(232,187,73,.2),transparent 68%);animation:aczoLevelUpHalo 1.2s ease-out both}
+#aczoLevelUp .aczo-levelup-kicker{display:block;margin:0 0 12px;color:#e7cf83;font:800 10px/1.2 Arial,Helvetica,sans-serif;letter-spacing:.17em}
+#aczoLevelUp .aczo-levelup-medal{position:relative;display:grid;place-items:center;width:76px;height:76px;margin:0 auto 11px;border-radius:50%;border:2px solid #fae49a;background:linear-gradient(135deg,#fff1a8,#ddba58 45%,#a67b28 100%);box-shadow:inset 0 0 0 5px #876b2838,inset 0 0 0 7px #fff0b584,0 5px 18px #0005;color:#24432c;animation:aczoLevelUpMedal .75s .08s cubic-bezier(.2,.85,.25,1.15) both}
+#aczoLevelUp .aczo-levelup-medal::before{content:'';position:absolute;inset:-8px;border:1px solid rgba(241,207,111,.8);border-radius:50%;animation:aczoLevelUpRing 1.2s .12s ease-out both}
+#aczoLevelUp .aczo-levelup-medal::after{content:'';position:absolute;inset:3px;border-radius:50%;background:linear-gradient(115deg,transparent 35%,#fff7cb90 49%,transparent 64%);opacity:0;animation:aczoLevelUpShine 1.1s .35s ease-out both}
+#aczoLevelUpNumber{font-size:34px;font-weight:800;line-height:1;text-shadow:0 1px #fff3bb77}
+#aczoLevelUpTitle{display:block;margin:0;color:#fff0b4;font-size:clamp(23px,4.5vw,30px);line-height:1.13;font-weight:800;overflow-wrap:anywhere}
+#aczoLevelUpStep{display:block;margin-top:6px;color:#cfdfc9;font-size:12px;font-weight:600;line-height:1.3}
+#aczoLevelUp .aczo-levelup-progress{margin:16px 0 0;padding-top:12px;border-top:1px solid rgba(235,220,160,.17)}
+#aczoLevelUpTarget{display:block;color:#d7e4d1;font-size:11px;line-height:1.35;font-weight:500}
+#aczoLevelUp .aczo-levelup-track{height:5px;border-radius:99px;background:rgba(238,239,206,.13);overflow:hidden;margin:8px 0 6px}
+#aczoLevelUpFill{display:block;width:100%;height:100%;transform-origin:left;transform:scaleX(var(--rank-progress,0));background:linear-gradient(90deg,#c09b44,#fff0a1);animation:aczoLevelUpFill 1.35s .5s ease both}
+#aczoLevelUpRemaining{display:block;font-size:10px;line-height:1.25;color:#b9cdb4;font-variant-numeric:tabular-nums}
+#aczoLevelUp .aczo-levelup-sparks{position:absolute;inset:0;z-index:-1;overflow:hidden;border-radius:inherit}
+#aczoLevelUp .aczo-levelup-sparks i{position:absolute;left:50%;top:36%;display:block;width:4px;height:4px;border-radius:1px;background:#ffe59c;opacity:0;animation:aczoLevelUpSpark 1.2s var(--spark-delay,0s) ease-out both}
+#aczoLevelUp.is-max .aczo-levelup-card{border-color:#ffe79b;background:linear-gradient(145deg,rgba(66,61,23,.98),rgba(8,40,28,.99) 60%,rgba(34,34,14,.98))}
+#aczoLevelUp.is-max .aczo-levelup-medal{box-shadow:inset 0 0 0 5px #876b2838,inset 0 0 0 7px #fff0b584,0 0 26px #e4bf5b55}
+#aczoLevelUp.is-paused{visibility:hidden!important}
+#aczoLevelUp.is-paused *,#aczoLevelUp.is-paused *::before,#aczoLevelUp.is-paused *::after{animation-play-state:paused!important}
+/* Wichtige Spielzustände blenden die Feier sofort aus, noch vor dem nächsten Timer. */
+#anglingUi.is-drilling #aczoLevelUp,#anglingUi.is-landing #aczoLevelUp,
+#anglingUi.is-caught #aczoLevelUp,#anglingUi.is-catch-sequence #aczoLevelUp,
+#anglingUi.bite-alert #aczoLevelUp,#anglingUi.bite-focus #aczoLevelUp,
+#anglingUi.main-menu-open #aczoLevelUp,#anglingUi.game-panel-open #aczoLevelUp,
+#anglingUi.time-shifting #aczoLevelUp,#anglingUi.hof-hidden #aczoLevelUp,
+#anglingUi.aczo-tournament-cinematic #aczoLevelUp,#anglingUi.aczo-tournament-overlay-open #aczoLevelUp{visibility:hidden!important}
+@keyframes aczoLevelUpScene{0%{opacity:0;transform:translateY(14px) scale(.94)}10%,91%{opacity:1;transform:translateY(0) scale(1)}100%{opacity:0;transform:translateY(-6px) scale(.985)}}
+@keyframes aczoLevelUpMedal{0%{opacity:0;transform:scale(.55) rotate(-12deg)}70%{opacity:1;transform:scale(1.06) rotate(2deg)}100%{opacity:1;transform:scale(1) rotate(0)}}
+@keyframes aczoLevelUpRing{0%{opacity:0;transform:scale(.7)}25%{opacity:.9}100%{opacity:0;transform:scale(1.75)}}
+@keyframes aczoLevelUpHalo{0%{opacity:0;transform:scale(.7)}45%{opacity:1}100%{opacity:.25;transform:scale(1.1)}}
+@keyframes aczoLevelUpShine{0%{opacity:0;transform:translateX(-22px)}35%{opacity:.8}100%{opacity:0;transform:translateX(22px)}}
+@keyframes aczoLevelUpFill{from{transform:scaleX(0)}to{transform:scaleX(var(--rank-progress,0))}}
+@keyframes aczoLevelUpSpark{0%{opacity:0;transform:translate(0,0) scale(.5) rotate(0)}18%{opacity:.9}100%{opacity:0;transform:translate(var(--spark-x),var(--spark-y)) scale(.2) rotate(120deg)}}
+@media(max-width:450px){#aczoLevelUp .aczo-levelup-card{width:calc(100% - 36px);max-width:342px;padding:16px 18px;border-radius:19px}#aczoLevelUp .aczo-levelup-medal{width:68px;height:68px}#aczoLevelUpNumber{font-size:30px}#aczoLevelUpTitle{font-size:25px}#aczoLevelUpStep{font-size:11px}#aczoLevelUp .aczo-levelup-kicker{font-size:9px}}
+@media(max-height:450px){#aczoLevelUp .aczo-levelup-card{padding:10px 18px;width:min(370px,calc(100% - 30px))}#aczoLevelUp .aczo-levelup-kicker{margin-bottom:7px}#aczoLevelUp .aczo-levelup-medal{width:48px;height:48px;margin-bottom:6px}#aczoLevelUpNumber{font-size:23px}#aczoLevelUpTitle{font-size:22px}#aczoLevelUpStep{margin-top:3px}#aczoLevelUp .aczo-levelup-progress{margin-top:9px;padding-top:8px}}
+@media(prefers-reduced-motion:reduce){#aczoProfileRankFill{transition:none}#aczoLevelUp *,#aczoLevelUp *::before,#aczoLevelUp *::after{animation:none!important}#aczoLevelUp .aczo-levelup-sparks,#aczoLevelUp .aczo-levelup-card::before,#aczoLevelUp .aczo-levelup-medal::before,#aczoLevelUp .aczo-levelup-medal::after{display:none}}
+</style>
 </head>
 <body>
 <div class="wrap">
@@ -5306,6 +5359,10 @@ function aczoSetIconText(element,value){
 
              <div id="aczoAccountArea" class="aczo-account-area">
                <div id="aczoAccountSummary"></div>
+               <div id="aczoProfileRank" hidden>
+                 <div class="aczo-profile-rank-line"><strong id="aczoProfileRankTitle"></strong><span id="aczoProfileRankNext"></span></div>
+                 <div id="aczoProfileRankTrack" role="progressbar" aria-label="Fortschritt zur nächsten Anglerstufe" aria-valuemin="0" aria-valuemax="1000" aria-valuenow="0"><span id="aczoProfileRankFill"></span></div>
+               </div>
                <div id="aczoAccountChoices" class="aczo-account-actions">
                  <button type="button" id="aczoShowRegister" class="angling-main-btn primary">🔐 Spielerkonto erstellen</button>
                  <button type="button" id="aczoShowLogin" class="angling-main-btn">🔑 Mit bestehendem Konto anmelden</button>
@@ -5505,7 +5562,7 @@ function aczoSetIconText(element,value){
        <div id="anglingLevelProgress" class="angling-level-progress" aria-label="Anglerstufe und Fortschritt">
          <strong id="anglingLevelTitle">Stufe 1 · Einsteiger</strong>
          <span class="angling-level-track"><span id="anglingLevelFill" class="angling-level-fill"></span></span>
-         <small id="anglingLevelNext">0 / 250</small>
+         <small id="anglingLevelNext">0 / 1.000 EP</small>
        </div>
        <div class="angling-setup-row">
          <span class="angling-setup-label">Angeltiefe</span>
@@ -5575,7 +5632,7 @@ function aczoSetIconText(element,value){
          <section><h3>⏱️ Zeitwechsel</h3><p>Der Zeitwechsel steht ausschließlich in der Ufer-Angelperspektive bereit, solange die Angel noch nicht ausgeworfen wurde und du den Auswurfpunkt wählen kannst. In Stellenauswahl, Unterwasseransicht, nach dem Auswurf, bei Biss, Drill und Keschern ist die Funktion ausgeblendet. Du kannst die Spielzeit in 1-Stunden-Schritten bis maximal 24 Stunden vor- oder zurückspulen. Jede Stunde kostet 1 EP und läuft in 0,65 Sekunden ab. Einsteiger besitzen pro Sitzung einen Vorwärts- und einen Rückwärtswechsel; höhere Anglerstufen erhalten zusätzliche Wechsel. Bei eingeschaltetem Ton begleitet die leise Kescher-Musik den Zeitraffer. Fischsprünge bleiben sichtbar, ihre Geräusche sind während des Spulens stumm.</p></section>
          <section><h3>🌗 Aktivitätszeiten</h3><p>Die Fischaktivität verändert sich mit der Tageszeit. Hecht und Barsch profitieren vor allem von Morgen- und Abendphasen. Zander wird besonders in Dämmerung, Nacht und bei Bewölkung aktiv; Aal und Wels bevorzugen überwiegend Abend und Nacht. Zwischen ungefähr 13 und 15 Uhr tritt eine allgemeine, leicht schwankende Mittags-Beißflaute auf. Sie reduziert die Bisschance deutlich, aber niemals auf null.</p></section>
          <section><h3>📏 Fischgrößen &amp; Gewichte</h3><p>Fischgrößen und Gewichte werden artspezifisch berechnet. Besonders große Exemplare bleiben selten und können sich im Drill deutlich von durchschnittlichen Fischen unterscheiden. Persönliche Rekorde, Highscore und Online-Bestenliste verwenden dieselbe Bewertung.</p></section>
-         <section><h3>⭐ EP &amp; Shop</h3><p>Gefangene Fische bringen EP; größere, seltenere und besonders sauber gelandete Fänge können zusätzliche Belohnungen erhalten. EP sind die ausgebbare Währung im Tackle-Shop. Gesamt-EP bestimmen dauerhaft deine Anglerstufe und werden durch Einkäufe nicht reduziert.</p></section>
+         <section><h3>⭐ EP &amp; Shop</h3><p>Gefangene Fische bringen EP; größere, seltenere und besonders sauber gelandete Fänge können zusätzliche Belohnungen erhalten. EP sind die ausgebbare Währung im Tackle-Shop. Gesamt-EP bestimmen dauerhaft deine Anglerstufe und werden durch Einkäufe nicht reduziert. Es gibt 20 Stufen bis 80.000 Gesamt-EP: Die Höchststufe heißt ACZO56-Legende. Im Profil siehst du deinen Titel, den schmalen Fortschrittsbalken und die fehlenden EP; öffentliche Anglerkarten zeigen Stufe und Titel. Echte Stufenaufstiege werden mit einer goldenen Einblendung und einem kurzen Klang bei eingeschaltetem Ton gefeiert. Die Feier wartet auf freie Sicht nach Fangkarte, Hinweisen oder Siegerehrung und wird bei Biss, Drill und Menüs zurückgestellt. Mehrere gleichzeitig erreichte Stufen werden gemeinsam angezeigt.</p></section>
          <section><h3>🎯 Tagesaufgaben</h3><p>Jeden Spieltag warten drei Aufgaben mit unterschiedlicher Schwierigkeit. Jede erledigte Aufgabe bringt EP; wer alle drei schafft, erhält den zusätzlichen Tagesbonus. Nach der kurzen Einblendung bleiben die Aufgaben jederzeit im Hauptmenü abrufbar.</p></section>
          <section><h3>🏆 Highscore &amp; Bestenliste</h3><p>Deine persönlichen Bestfänge stehen im Highscore. Mit Anzeigename und aktivierter Veröffentlichung können deine freigegebenen Artenrekorde automatisch mit der öffentlichen Bestenliste abgeglichen werden. Die Liste lädt beim Öffnen selbstständig.</p></section>
          <section><h3>✨ Hall of Fame</h3><p>Die Hall of Fame zeigt Gesamtwertung, Artenrekorde, Vielfalt, Erfahrung, Aktivität und besondere Ehrenfänge. Ihre Daten werden im Hintergrund vorgeladen. Nach der Kamerafahrt zur Hütte erscheint die Begrüßung; die Ranglisten folgen, sobald die Online-Daten bereitstehen. Während der Präsentation pausiert das Spiel. „Produced by Predatorpit“ öffnet ein zusätzliches Porträt; „Zurück“ führt zur Hall of Fame beziehungsweise zur zuvor gespeicherten Angelansicht.</p></section>
@@ -5856,6 +5913,10 @@ Bitte gefundene Darstellungs-, Steuerungs- oder Spielfehler mit Gerät, Browser 
 </div>
        <details class="help-note" style="cursor:pointer">
          <summary style="font-weight:800">Update-Historie</summary>
+          <div style="margin-top:8px;cursor:default;overflow-wrap:anywhere">
+            <strong>Version V.3.3 · 08.10.2026</strong>
+            <ul style="padding-left:20px"><li>20 Erfahrungsstufen mit glatten Grenzen bis 80.000 Gesamt-EP.</li><li>Dezenter Rangfortschritt im Profil und aktuelle Titel auf öffentlichen Anglerkarten.</li><li>Goldene Aufstiegsanimation mit eigenem kurzem Klang; auch bei Wettbewerbspreisen, ohne Fangkarte oder Siegerehrung zu überdecken.</li><li>EP-Guthaben, Gesamt-EP, bestehende Zeitwechsel-Regeln sowie Konto- und Cloud-System unverändert.</li></ul>
+          </div>
          <div style="margin-top:8px;cursor:default;overflow-wrap:anywhere">
            <strong>Version V.3.2 · 07.10.2026</strong>
            <ul style="padding-left:20px"><li>Wettangeln direkt aus Hauptmenü und Stellenauswahl; Hausfahrt und Auslosung erst nach bestätigter Teilnahme. Keine zweite Teilnahmespeicherung am Angelplatz.</li><li>Kompakte Bootsbedienung mit Acht-Richtungs-Steuerkreis, Ankern, Blicksteuerung und Rückfahrt; sichtbar erst nach dem Einstieg. Wurfziele und Futter bleiben außerhalb des Rumpfs. Cursor-Tasten erhalten.</li><li>Baumdetails nach Saisonwechsel, Messlinien und stillstehendes Boot entlastet.</li><li>Tauchtasten bei Fokuswechsel zurückgesetzt; Tastaturfokus im Hauptmenü gehalten.</li><li>Warnung bei fehlgeschlagenem lokalen Speichern, korrekte Live-Schneedarstellung sowie Kalenderberechnung für Sommerzeit und Schaltjahre.</li><li>Hilfe und Versionsangaben aktualisiert.</li></ul>
@@ -6002,8 +6063,8 @@ Wetterdaten: Open-Meteo · Astronomische Berechnungen: SunCalc<br>
 <script>
 // V7.75: Der Startlayer ist bereits durch HTML/CSS sichtbar, bevor dieser schwere
 // Three.js-Block ausgeführt wird. Er wird erst nach einem echten Renderbild freigegeben.
-// Öffentliche Version V.3.2: Bootsbedienung, bestätigter Wettkampfstart und begrenzte Abschlusskorrekturen.
-const VIEWER_VERSION='ACZO56-Interaktiv-V.3.2';
+// Version V.3.3: Erfahrungsstufen bis 80.000 EP, Profilränge und ereignisgebundene Aufstiegsfeier.
+const VIEWER_VERSION='ACZO56-Interaktiv-V.3.3';
 const ACZO_INTERNAL_BUILD='1.38';
 const helpVersion=document.getElementById('helpVersion');
 if(helpVersion) helpVersion.textContent=VIEWER_VERSION;
@@ -32453,15 +32514,25 @@ function saveAnglingProgress(options={}){
 }
 const ANGLING_LEVELS=[
   {level:1,title:'Einsteiger',xp:0},
-  {level:2,title:'Uferangler',xp:250},
-  {level:3,title:'Gewässerkenner',xp:600},
-  {level:4,title:'Erfahrener Angler',xp:1200},
-  {level:5,title:'Spezialist',xp:2000},
-  {level:6,title:'Profi',xp:3200},
-  {level:7,title:'Großfischjäger',xp:4800},
-  {level:8,title:'Meisterangler',xp:7000},
-  {level:9,title:'Vereinslegende',xp:10000},
-  {level:10,title:'Weihermeister',xp:15000}
+  {level:2,title:'Uferangler',xp:1000},
+  {level:3,title:'Gewässerkenner',xp:3000},
+  {level:4,title:'Erfahrener Angler',xp:5000},
+  {level:5,title:'Spezialist',xp:8000},
+  {level:6,title:'Profi',xp:12000},
+  {level:7,title:'Großfischjäger',xp:16000},
+  {level:8,title:'Meisterangler',xp:20000},
+  {level:9,title:'Vereinsprofi',xp:25000},
+  {level:10,title:'Revierexperte',xp:30000},
+  {level:11,title:'Trophäenjäger',xp:35000},
+  {level:12,title:'Rekordangler',xp:40000},
+  {level:13,title:'Angelveteran',xp:45000},
+  {level:14,title:'Weihermeister',xp:50000},
+  {level:15,title:'Großmeister',xp:55000},
+  {level:16,title:'Ausnahmeangler',xp:60000},
+  {level:17,title:'Weiherlegende',xp:65000},
+  {level:18,title:'Vereinsikone',xp:70000},
+  {level:19,title:'ACZO56-Elite',xp:75000},
+  {level:20,title:'ACZO56-Legende',xp:80000}
 ];
 function anglingLevelInfo(totalXp=anglingProgress.lifetimeXp){
   const xp=Math.max(0,Math.floor(Number(totalXp)||0));
@@ -32473,6 +32544,184 @@ function anglingLevelInfo(totalXp=anglingProgress.lifetimeXp){
   return {current,next,xp,within,span,progress:next?THREE.MathUtils.clamp(within/span,0,1):1};
 }
 function anglingLevelForXp(xp){return anglingLevelInfo(xp).current.level;}
+
+// V3.3: Der Rang ist ausschließlich eine Ansicht der vorhandenen lifetimeXp.
+// Keine zusätzlichen Speicherfelder, Kontoänderungen oder Server-Anfragen.
+function aczoUpdateProfileRank(){
+  const root=document.getElementById('aczoProfileRank');if(!root)return;
+  const raw=anglingProgress.lifetimeXp;
+  const available=anglingSetupComplete&&!aczoSessionUnverified()&&raw!=null&&Number.isFinite(Number(raw));
+  root.hidden=!available;
+  if(!available){root.dataset.rankSignature='';return;}
+  const info=anglingLevelInfo(),signature=String(anglingPlayerProfile.id||'')+'|'+info.xp;
+  if(root.dataset.rankSignature===signature)return;
+  root.dataset.rankSignature=signature;
+  const title='Stufe '+info.current.level+' · '+info.current.title;
+  const remaining=info.next?(info.span-info.within).toLocaleString('de-DE')+' EP bis '+info.next.title:'MAX · Höchststufe erreicht';
+  document.getElementById('aczoProfileRankTitle').textContent=title;
+  document.getElementById('aczoProfileRankNext').textContent=remaining;
+  document.getElementById('aczoProfileRankFill').style.transform='scaleX('+info.progress+')';
+  const track=document.getElementById('aczoProfileRankTrack');
+  track.setAttribute('aria-valuenow',String(info.next?info.within:1));
+  track.setAttribute('aria-valuemax',String(info.next?info.span:1));
+  track.setAttribute('aria-valuetext',title+'. '+remaining+'. '+info.xp.toLocaleString('de-DE')+' Gesamt-EP.');
+  root.title=info.xp.toLocaleString('de-DE')+' Gesamt-EP · Einkäufe senken den Rang nicht.';
+}
+
+// Nur reale EP-Vergaben lösen die Feier aus, niemals Laden, Login oder Cloudabgleich.
+// Ein einzelner Timer läuft ausschließlich, solange ein echter Aufstieg aussteht.
+const aczoLevelUpRuntime={pending:null,active:null,timer:0,root:null,quietSince:0,audio:new Set(),blockers:null};
+function aczoStopLevelUpSound(){
+  for(const voice of aczoLevelUpRuntime.audio){
+    try{voice.osc.stop();}catch(_e){}
+    try{voice.osc.disconnect();voice.gain.disconnect();}catch(_e){}
+  }
+  aczoLevelUpRuntime.audio.clear();
+}
+function aczoPlayLevelUpSound(isMax=false){
+  if(!aczoSoundEnabled||document.hidden||!anglingMode)return;
+  const ctx=aczoAudioCtx;if(!ctx||ctx.state!=='running')return;
+  aczoStopLevelUpSound();
+  // Kurzer, eigener Glocken-Akkord aus dem bestehenden Audiokontext. Keine Audiodatei.
+  const notes=isMax?[523.25,659.25,783.99,1046.5,1318.51]:[523.25,659.25,783.99,1046.5];
+  const start=ctx.currentTime+.02;
+  try{
+    for(let i=0;i<notes.length;i++){
+      const at=start+i*.13;
+      for(const harmonic of [1,2]){
+        const osc=ctx.createOscillator(),gain=ctx.createGain(),voice={osc,gain};
+        osc.type='sine';osc.frequency.value=notes[i]*harmonic;
+        const volume=harmonic===1?.065:.013;
+        gain.gain.setValueAtTime(0,at);
+        gain.gain.linearRampToValueAtTime(volume,at+.012);
+        gain.gain.exponentialRampToValueAtTime(.0001,at+.63);
+        gain.gain.linearRampToValueAtTime(0,at+.7);
+        osc.connect(gain);gain.connect(ctx.destination);
+        aczoLevelUpRuntime.audio.add(voice);
+        osc.onended=()=>{aczoLevelUpRuntime.audio.delete(voice);try{osc.disconnect();gain.disconnect();}catch(_e){}};
+        osc.start(at);osc.stop(at+.72);
+      }
+    }
+    aczoSoundLastAnyAt=performance.now();
+  }catch(_e){aczoStopLevelUpSound();}
+}
+function aczoLevelUpClear(){
+  const rt=aczoLevelUpRuntime;window.clearTimeout(rt.timer);rt.timer=0;
+  rt.pending=null;rt.active=null;rt.quietSince=0;
+  if(rt.root){rt.root.hidden=true;rt.root.setAttribute('aria-hidden','true');rt.root.classList.remove('is-paused');}
+  aczoStopLevelUpSound();
+}
+function aczoLevelUpSchedule(delay=300){
+  const rt=aczoLevelUpRuntime;
+  if(rt.timer||document.hidden||(!rt.pending&&!rt.active))return;
+  rt.timer=window.setTimeout(aczoLevelUpPump,delay);
+}
+function aczoQueueLevelUp(fromLevel,toLevel){
+  const from=Math.floor(Number(fromLevel)||0),to=Math.floor(Number(toLevel)||0);
+  if(from<1||to<=from||!ANGLING_LEVELS.some(entry=>entry.level===to))return;
+  const rt=aczoLevelUpRuntime,owner=String(anglingPlayerProfile.id||'');
+  if(!owner||!anglingSetupComplete)return;
+  const previous=rt.pending||rt.active?.item;
+  if(previous&&previous.owner!==owner)aczoLevelUpClear();
+  const prior=rt.pending||rt.active?.item;
+  // Fang-EP und Tagesbonus derselben Fangaktion werden zu EINER Feier zusammengefasst.
+  rt.pending={owner,from:prior?Math.min(prior.from,from):from,to:prior?Math.max(prior.to,to):to,
+    xp:Math.max(Number(anglingProgress.lifetimeXp)||0,prior?.xp||0),soundPlayed:!!prior?.soundPlayed};
+  if(rt.active){rt.active=null;if(rt.root){rt.root.hidden=true;rt.root.setAttribute('aria-hidden','true');}aczoStopLevelUpSound();}
+  rt.quietSince=0;aczoLevelUpSchedule(350);
+}
+function aczoLevelUpBlocked(){
+  if(document.hidden||!anglingMode)return true;
+  if(!['ready','selecting','waiting','bank-waiting','deeper-waiting'].includes(anglingState))return true;
+  if(anglingCameraTransition||anglingTimeShiftActive||anglingHallOfFameActive||anglingCinematicView==='underwater'||anglingFeedMode)return true;
+  const classes=anglingUi.classList;
+  if(['main-menu-open','game-panel-open','is-drilling','is-landing','is-caught','is-catch-sequence','bite-alert','bite-focus',
+    'time-shifting','hof-hidden','aczo-tournament-cinematic','aczo-tournament-overlay-open'].some(name=>classes.contains(name)))return true;
+  if(anglingPostCatchNoticeQueue.length||anglingPostCatchNoticeNextAt>performance.now())return true;
+  const rt=aczoLevelUpRuntime;
+  if(!rt.blockers)rt.blockers=['anglingToast','anglingEpPopup','anglingDailyQuestToast','anglingDailyQuestIntro','anglingIntroSlogan',
+    'anglingOnlinePrompt','anglingLogPanel','anglingCatchCard','anglingWelcomeBack','aczoSharePreview',
+    'aczoTournamentToast','aczoTournamentOverlay','anglingSnagPrompt'].map(id=>document.getElementById(id)).filter(Boolean);
+  if(rt.blockers.some(node=>node.classList.contains('show')))return true;
+  if(document.getElementById('aczoAnglerCard')?.hidden===false)return true;
+  return false;
+}
+function aczoLevelUpBuild(){
+  const rt=aczoLevelUpRuntime;if(rt.root)return rt.root;
+  const root=document.createElement('div');root.id='aczoLevelUp';root.hidden=true;
+  root.setAttribute('role','status');root.setAttribute('aria-live','polite');root.setAttribute('aria-atomic','true');root.setAttribute('aria-hidden','true');
+  root.innerHTML='<div class="aczo-levelup-card"><div class="aczo-levelup-sparks" aria-hidden="true"></div>'+
+    '<small class="aczo-levelup-kicker" id="aczoLevelUpKicker"></small>'+
+    '<div class="aczo-levelup-medal" aria-hidden="true"><span id="aczoLevelUpNumber"></span></div>'+
+    '<strong id="aczoLevelUpTitle"></strong><span id="aczoLevelUpStep"></span>'+
+    '<div class="aczo-levelup-progress"><span id="aczoLevelUpTarget"></span>'+
+    '<div class="aczo-levelup-track" aria-hidden="true"><span id="aczoLevelUpFill"></span></div>'+
+    '<small id="aczoLevelUpRemaining"></small></div></div>';
+  const sparks=root.querySelector('.aczo-levelup-sparks');
+  [[-126,-45],[-95,-82],[-56,-101],[58,-98],[99,-76],[127,-35],[-120,52],[-76,83],[77,82],[118,48]].forEach(([x,y],i)=>{
+    const dot=document.createElement('i');dot.style.setProperty('--spark-x',x+'px');dot.style.setProperty('--spark-y',y+'px');
+    dot.style.setProperty('--spark-delay',(.15+(i%4)*.065)+'s');sparks.append(dot);
+  });
+  anglingUi.append(root);rt.root=root;return root;
+}
+function aczoLevelUpShow(item){
+  const rt=aczoLevelUpRuntime,root=aczoLevelUpBuild(),info=anglingLevelInfo(item.xp),isMax=!info.next;
+  root.hidden=true;root.classList.remove('is-paused');root.classList.toggle('is-max',isMax);
+  document.getElementById('aczoLevelUpKicker').textContent=isMax?'HÖCHSTSTUFE ERREICHT':'STUFENAUFSTIEG';
+  document.getElementById('aczoLevelUpNumber').textContent=String(info.current.level);
+  document.getElementById('aczoLevelUpTitle').textContent=info.current.title;
+  const count=info.current.level-item.from;
+  document.getElementById('aczoLevelUpStep').textContent=count>1
+    ?'Stufe '+item.from+' → '+info.current.level+' · '+count+' Stufen aufgestiegen'
+    :'Stufe '+info.current.level+' erreicht';
+  document.getElementById('aczoLevelUpTarget').textContent=info.next?'Nächstes Ziel: '+info.next.title:'Alle 20 Erfahrungsstufen gemeistert';
+  document.getElementById('aczoLevelUpRemaining').textContent=info.next
+    ?'Noch '+(info.span-info.within).toLocaleString('de-DE')+' Gesamt-EP'
+    :'80.000 Gesamt-EP · ACZO56-Legende';
+  document.getElementById('aczoLevelUpFill').style.setProperty('--rank-progress',String(info.progress));
+  // Nur einmal pro echtem Ereignis; beim Fortsetzen nach einem Biss kein zweiter Klang.
+  void root.offsetWidth;
+  root.hidden=false;root.setAttribute('aria-hidden','false');
+  rt.active={item,elapsed:0,lastAt:performance.now(),paused:false};rt.pending=null;rt.quietSince=0;
+  if(!item.soundPlayed){item.soundPlayed=true;aczoPlayLevelUpSound(isMax);}
+}
+function aczoLevelUpPump(){
+  const rt=aczoLevelUpRuntime;rt.timer=0;
+  const item=rt.pending||rt.active?.item;if(!item)return;
+  const threshold=ANGLING_LEVELS.find(entry=>entry.level===item.to)?.xp;
+  if(!anglingMode||!anglingSetupComplete||aczoSessionUnverified()||String(anglingPlayerProfile.id||'')!==item.owner||
+      !Number.isFinite(threshold)||Number(anglingProgress.lifetimeXp)<threshold){aczoLevelUpClear();return;}
+  const now=performance.now(),blocked=aczoLevelUpBlocked();
+  if(rt.active){
+    const active=rt.active;
+    if(!active.paused)active.elapsed+=Math.max(0,Math.min(250,now-active.lastAt));
+    active.lastAt=now;
+    if(blocked){
+      rt.quietSince=0;
+      if(!active.paused){active.paused=true;rt.root.classList.add('is-paused');rt.root.setAttribute('aria-hidden','true');aczoStopLevelUpSound();}
+    }else if(active.paused){
+      if(!rt.quietSince)rt.quietSince=now;
+      if(now-rt.quietSince>=450){active.paused=false;rt.root.classList.remove('is-paused');rt.root.setAttribute('aria-hidden','false');rt.quietSince=0;}
+    }else if(active.elapsed>=5200){
+      rt.root.hidden=true;rt.root.setAttribute('aria-hidden','true');rt.active=null;aczoStopLevelUpSound();
+      if(!rt.pending)return;
+    }
+  }else if(!blocked){
+    if(!rt.quietSince)rt.quietSince=now;
+    if(now-rt.quietSince>=500)aczoLevelUpShow(rt.pending);
+  }else rt.quietSince=0;
+  aczoLevelUpSchedule(rt.active&&!rt.active.paused?100:300);
+}
+window.addEventListener('aczo-sound-stop-all',aczoStopLevelUpSound);
+document.addEventListener('visibilitychange',()=>{
+  const rt=aczoLevelUpRuntime;if(!rt.pending&&!rt.active)return;
+  if(document.hidden){
+    window.clearTimeout(rt.timer);rt.timer=0;rt.quietSince=0;aczoStopLevelUpSound();
+    if(rt.active){rt.active.paused=true;rt.root.classList.add('is-paused');rt.root.setAttribute('aria-hidden','true');}
+  }else aczoLevelUpSchedule(200);
+});
+window.addEventListener('pagehide',aczoLevelUpClear);
+
 
 // V7.51: Zeitwechsel nur in der Uferperspektive vor dem Auswurf.
 const anglingTimeBtn=document.getElementById('anglingTimeBtn');
@@ -32519,7 +32768,8 @@ let anglingTimeUsedForward=0,anglingTimeUsedBackward=0;
 let anglingTimeShiftPending=null,anglingTimeShiftActive=null;
 let anglingTimeAstroAccumulator=0;
 let anglingMiddayCenter=14,anglingMiddayHalfWidth=1;
-function anglingTimeAllowance(){const level=anglingLevelForXp(anglingProgress.lifetimeXp);return Math.min(4,1+Math.floor((level-1)/3));}
+// V3.3: Bisherige Freischaltgrenzen beibehalten, unabhängig von neuen Rangtiteln.
+function anglingTimeAllowance(){const xp=Number(anglingProgress.lifetimeXp)||0;return 1+(xp>=1200?1:0)+(xp>=4800?1:0)+(xp>=15000?1:0);}
 function resetAnglingSessionTimeRules(){aczoStopTimeShiftMusic(true);anglingTimeUsedForward=0;anglingTimeUsedBackward=0;anglingTimeShiftPending=null;anglingTimeShiftActive=null;anglingMiddayCenter=14+(Math.random()-.5)*.8;anglingMiddayHalfWidth=.9+Math.random()*.3;resetAnglingSurfaceActivitySchedule();anglingUi?.classList.remove('time-shifting');anglingTimeOverlay?.classList.remove('show');updateAnglingTimeUi();}
 function anglingClockHour(){const d=viewerNow();return d.getHours()+d.getMinutes()/60+d.getSeconds()/3600;}
 const anglingClockDisplay=document.getElementById('anglingClockDisplay');
@@ -32732,6 +32982,7 @@ function anglingTimeLapseVisualScale(){return anglingTimeShiftActive?6:1;}
 
 
 function updateAnglingLevelUi(){
+  aczoUpdateProfileRank();
   if(typeof anglingLevelProgress==='undefined'||!anglingLevelProgress)return;
   const info=anglingLevelInfo();
   anglingLevelTitle.textContent='Stufe '+info.current.level+' · '+info.current.title;
@@ -35951,6 +36202,7 @@ function syncAnglingHallOfFameMenuAvailability(){
 }
 
 function updateAnglingMainMenuUi(){
+  aczoUpdateProfileRank();
   const active=!!anglingMode;
   anglingMainName.value=anglingPlayerProfile.name||'';
   anglingMainCloudEnabled.checked=!!anglingCloudEnabled;
@@ -39436,7 +39688,7 @@ function creditAnglingDailyQuestEp(amount){
   anglingProgress.xp+=amount;anglingProgress.lifetimeXp+=amount;
   const newLevel=anglingLevelInfo().current.level;
   saveAnglingProgress();updateAnglingSetupUi();updateAnglingDailyQuestMenuButton();
-  if(newLevel>oldLevel){const info=anglingLevelInfo();queueAnglingPostCatchNotice('⬆ Stufe '+newLevel+' · '+info.current.title,2100,true);}
+  if(newLevel>oldLevel)aczoQueueLevelUp(oldLevel,newLevel);
 }
 function showAnglingDailyQuestCompletion(completedDefs,totalReward,dailyBonus){
   if(!anglingDailyQuestToast||!completedDefs.length)return;
@@ -39513,7 +39765,7 @@ function awardAnglingBonusEp(amount,label){
   anglingProgress.xp+=amount;anglingProgress.lifetimeXp+=amount;
   const newXp=anglingProgress.xp,newLevel=anglingLevelInfo().current.level;
   saveAnglingProgress();updateAnglingSetupUi();showAnglingEpGain(amount,oldXp,newXp,false,label||'Bonus');
-  if(newLevel>oldLevel){const info=anglingLevelInfo();window.setTimeout(()=>showAnglingToast('⬆ Stufe '+newLevel+' · '+info.current.title,2100),1450);}
+  if(newLevel>oldLevel)aczoQueueLevelUp(oldLevel,newLevel);
 }
 
 let anglingOverviewCrossfadeState=null;
@@ -41896,10 +42148,7 @@ function finishAnglingCatch(){
   processAnglingDailyQuestCatch(caught);
   // Flüchtige Community-Fangmeldung; Spielstand und Fangablauf bleiben unabhängig.
   try{window.dispatchEvent(new CustomEvent('aczo-live-catch',{detail:catchRecord}));}catch(_e){}
-  if(newLevel>oldLevel){
-    const levelInfo=anglingLevelInfo();
-    queueAnglingPostCatchNotice('⬆ Stufe '+newLevel+' · '+levelInfo.current.title,2100,true);
-  }
+  if(newLevel>oldLevel)aczoQueueLevelUp(oldLevel,newLevel);
   if(isPersonalBest){
     // Der PB-Bonus soll nicht nur in einer langen Bonuszeile untergehen.
     queueAnglingPostCatchNotice('🏆 Persönlicher Rekord · +20 EP',1900,true);
@@ -45795,6 +46044,10 @@ function aczoRenderAnglerCard(p){
   const avatar=aczoTextNode('div','aczo-card-avatar',String(p.name||'A').slice(0,1).toLocaleUpperCase('de-DE'));
   const heading=aczoTextNode('div','aczo-card-heading','');
   heading.append(aczoTextNode('small','aczo-card-eyebrow','ANGLER AM VEREINSWEIHER'),aczoTextNode('h3','',p.name));
+  if(p.lifetimeXp!=null&&p.lifetimeXp!==''&&Number.isFinite(Number(p.lifetimeXp))){
+    const rank=anglingLevelInfo(p.lifetimeXp).current;
+    heading.append(aczoTextNode('span','aczo-card-rank','Stufe '+rank.level+' · '+rank.title));
+  }
   const status=aczoTextNode('span','aczo-card-status'+(p.active?' is-active':''),p.active?'Am Weiher aktiv':'Community-Profil');heading.append(status);hero.append(avatar,heading);body.append(hero);
   const stats=aczoTextNode('div','aczo-card-stats','');
   for(const [value,label] of [[p.lifetimeXp,'Gesamt-EP'],[p.totalCatches,'Fänge'],[p.speciesCount,'Entdeckte Arten'],[p.recordCount,'Artenrekorde']]){
@@ -48232,7 +48485,18 @@ function safelyEndFishing(){
   try{if(anglingUi.classList.contains('is-caught')||anglingUi.classList.contains('is-catch-sequence'))resetAnglingCast();else resetAnglingCast()}catch(_e){}
 }
 function grantPrize(){
-  if(S.prizeGranted)return 0;S.prizeGranted=true;const rank=S.resultOrder.findIndex(p=>p.isPlayer)+1,prize=T.prizes[rank-1]||0;if(prize>0){anglingProgress.xp+=prize;anglingProgress.lifetimeXp+=prize;saveAnglingProgress();updateAnglingSetupUi();if(typeof aczoSoundPlay==='function')aczoSoundPlay('xp',{minGap:120})}return prize
+  if(S.prizeGranted)return 0;S.prizeGranted=true;
+  const rank=S.resultOrder.findIndex(p=>p.isPlayer)+1,prize=T.prizes[rank-1]||0;
+  if(prize>0){
+    const oldLevel=anglingLevelInfo().current.level;
+    anglingProgress.xp+=prize;anglingProgress.lifetimeXp+=prize;
+    saveAnglingProgress();updateAnglingSetupUi();
+    if(typeof aczoSoundPlay==='function')aczoSoundPlay('xp',{minGap:120});
+    // Die Aufstiegsfeier wartet auf das Ende der Siegerehrung und der Kamerafahrt.
+    const newLevel=anglingLevelInfo().current.level;
+    if(newLevel>oldLevel)aczoQueueLevelUp(oldLevel,newLevel);
+  }
+  return prize;
 }
 function resultMarkup(){
   const rows=S.resultOrder.map((p,i)=>{const prize=T.prizes[i]||0;return '<div class="aczo-tournament-row result-hidden '+(p.isPlayer?'player':'')+'" data-result-row="'+i+'"><span class="aczo-tournament-rank">'+(i<3?['🥇','🥈','🥉'][i]:(i+1)+'.')+'</span><span class="name">'+escapeHtml(p.name)+(p.isPlayer?' ⭐':'')+'<small style="display:block;font-size:.8em;opacity:.72">'+p.fishCount+' Wertungsfisch'+(p.fishCount===1?'':'e')+'</small></span><span class="aczo-tournament-weight">'+kgText(p.totalKg)+'</span><span class="aczo-tournament-prize">'+(prize?prize.toLocaleString('de-DE')+' EP':'')+'</span></div>'}).join('');
