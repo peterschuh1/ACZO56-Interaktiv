@@ -6893,7 +6893,7 @@ function aczoSetSoundEnabled(enabled,{persist=true}={}){
 let aczoSoundRequestSerial=0;
 function aczoSoundPlay(key,opts={}){
   // Harte Trennung: 2D-/3D-Karte bleibt vollständig stumm.
-  if(!aczoSoundEnabled||typeof anglingMode==='undefined'||!anglingMode)return false;
+  if(!aczoSoundEnabled||typeof anglingMode==='undefined'||(!anglingMode&&!(opts.uiClick&&aczoMenuSoundAllowed())))return false;
   if((key==='fishJump'||key==='fishSurface')&&typeof anglingTimeShiftActive!=='undefined'&&anglingTimeShiftActive)return false;
   const ambient=ACZO_AMBIENT_SOUND_KEYS.has(key);
   if(key==='infoTick'&&!opts.uiClick&&(['bite','bite-focus','strike','drilling','landing'].includes(anglingState)||aczoLineRunSoundActive))return false;
@@ -6906,6 +6906,31 @@ function aczoSoundPlay(key,opts={}){
   const ok=aczoStartWebSound(key,opts);
   if(ok&&!ambient)aczoSoundLastAnyAt=now;
   return ok;
+}
+// Menüklicks müssen auch vor dem Spielstart und nach Safari-Pausen bereit sein.
+// Die normale Karte und sämtliche übrigen Spielsounds behalten ihre Sperren.
+let aczoMenuSoundGeneration=0;
+function aczoMenuSoundAllowed(){
+  return aczoSoundEnabled&&!document.hidden&&(anglingMode||document.getElementById('anglingUi')?.classList.contains('main-menu-open'));
+}
+function aczoPlayMenuClick(){
+  if(!aczoMenuSoundAllowed())return false;
+  const generation=++aczoMenuSoundGeneration,requestSerial=++aczoSoundRequestSerial;
+  const ctx=aczoEnsureAudioContext();if(!ctx)return false;
+  const play=()=>aczoSoundPlay('infoTick',{volume:.055,rate:1.08,uiClick:true});
+  if(ctx.state==='running'&&aczoAudioBuffers.infoTick)return play();
+  const startedAt=performance.now();
+  // resume direkt in der Benutzeraktion aufrufen; nur dieser kurze Clip wird
+  // benötigt. Weder Umgebungsgeräusche noch Musik für das Startmenü vorbereiten.
+  try{
+    const resume=ctx.state==='running'?Promise.resolve():ctx.resume();
+    Promise.all([resume,aczoDecodeSoundKey('infoTick')]).then(()=>{
+      if(generation!==aczoMenuSoundGeneration||requestSerial!==aczoSoundRequestSerial
+        ||performance.now()-startedAt>750||!aczoMenuSoundAllowed()||ctx.state!=='running')return;
+      play();
+    }).catch(()=>{});
+  }catch(_e){return false;}
+  return true;
 }
 function aczoSoundSetLineRun(active){
   active=!!active&&aczoSoundEnabled&&typeof anglingMode!=='undefined'&&anglingMode;
@@ -34180,7 +34205,7 @@ function aczoInvokeCommerceAction(o,button){
   // Vorhandene Kauf-/Montagetöne behalten Vorrang; sonst derselbe Menüklick.
   const soundSerial=aczoSoundRequestSerial;
   o.onClick();
-  if(soundSerial===aczoSoundRequestSerial)aczoSoundPlay('infoTick',{volume:.055,rate:1.08,uiClick:true});
+  if(soundSerial===aczoSoundRequestSerial)aczoPlayMenuClick();
   const gained=aczoCommerceStock(o)-stock;
   if(gained>0&&anglingProgress.xp<xp)aczoCommercePurchaseEffect(o,gained,from);
 }
@@ -48650,9 +48675,7 @@ document.addEventListener('visibilitychange',tournamentOnResume);
     }catch(_e){}
   }
   function tick(){
-    if(document.hidden)return;
-    if(typeof aczoSoundEnabled==='undefined'||!aczoSoundEnabled||typeof anglingMode==='undefined'||!anglingMode)return;
-    if(typeof aczoSoundPlay==='function')aczoSoundPlay('infoTick',{volume:.055,rate:1.08,uiClick:true});
+    if(typeof aczoPlayMenuClick==='function')aczoPlayMenuClick();
   }
   const pressSelector=[
     '#anglingMainMenu .aczo-main-nav button','#anglingMainMenu [data-community-view]',
