@@ -6579,7 +6579,7 @@ Wetterdaten: Open-Meteo · Astronomische Berechnungen: SunCalc<br>
 <script>
 // K22: preserve WebGL context-loss protection without a diagnostic panel or stored protocol.
 (function(){
- const state={contextLost:false,build:'4.0-K56-MOSEL-NEBELSICHT'};
+ const state={contextLost:false,build:'4.0-K57-MOSEL-UFERBLICK'};
  window.__aczoBootAudit={state,mark(){},sample(){},attach(renderer){
   renderer.domElement.addEventListener('webglcontextlost',e=>{e.preventDefault();state.contextLost=true;});
   renderer.domElement.addEventListener('webglcontextrestored',()=>{state.contextLost=false;});
@@ -42242,7 +42242,10 @@ function aczoK56RenderRiverScene(cam){
    if(!frustum.intersectsBox(box)){hidden.push(object);object.visible=false;return;}
    sphere.copy(bounds).applyMatrix4(object.matrixWorld);sphere.radius+=2; // conservative allowance for shader wind/sway
    sphere.center.applyMatrix4(cam.matrixWorldInverse);
-   if(-sphere.center.z-sphere.radius>distance){hidden.push(object);object.visible=false;}
+   // K57: the underwater visibility distance only applies to geometry wholly
+   // below the surface. Shore trees/buildings still form the view through the
+   // water surface; keep them whenever they intersect this camera's frustum.
+   if(box.max.z<ACZO_MOSEL_SURFACE_Z-.02&&-sphere.center.z-sphere.radius>distance){hidden.push(object);object.visible=false;}
   });
   aczoK56FogStats.passes++;aczoK56FogStats.lastCulled=hidden.length;aczoK56FogStats.culled+=hidden.length;
   return renderer.render(scene,cam);
