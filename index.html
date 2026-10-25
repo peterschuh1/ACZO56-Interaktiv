@@ -6579,7 +6579,7 @@ Wetterdaten: Open-Meteo · Astronomische Berechnungen: SunCalc<br>
 <script>
 // K22: preserve WebGL context-loss protection without a diagnostic panel or stored protocol.
 (function(){
- const state={contextLost:false,build:'4.0-K53-MOSEL-PEGELFARBEN'};
+ const state={contextLost:false,build:'4.0-K54-MOSEL-STREAMTAKT'};
  window.__aczoBootAudit={state,mark(){},sample(){},attach(renderer){
   renderer.domElement.addEventListener('webglcontextlost',e=>{e.preventDefault();state.contextLost=true;});
   renderer.domElement.addEventListener('webglcontextrestored',()=>{state.contextLost=false;});
@@ -20163,7 +20163,9 @@ function aczoK43QueueRiverPopulation(rt,center,options={}){
   const rare=aczoK42Rare(plan.species),reserved=new Set();
   if(rare)for(const actor of list)if(held(actor)&&actor.obj.userData.k42Section===next.section)reserved.add(actor.obj.userData.k42Slot);
   // Keep the closest actors if a bridge-related species count becomes smaller.
-  list.sort((a,b)=>Number(held(b))-Number(held(a))||a.obj.position.distanceToSquared(position)-b.obj.position.distanceToSquared(position));
+  // K54: sorting is needed only when a bridge adjustment removes individuals.
+  // Otherwise all actors are retained, so sorting the entire stock is wasted.
+  if(list.length>plan.count)list.sort((a,b)=>Number(held(b))-Number(held(a))||a.obj.position.distanceToSquared(position)-b.obj.position.distanceToSquared(position));
   for(let i=0;i<plan.count;i++){
    let actor=list.shift(),created=false;
    if(!actor){const at=fishActors.length;addFishPopulation(plan.species,1);actor=fishActors[at];created=true;}
@@ -20194,12 +20196,10 @@ function aczoK43PlaceStreamActor(rt,item,schools){
  // underwater view is visible, recycle only beyond the existing fade range.
  const hiddenPreflight=rt.k43Population?.preflight&&(!fishGroup.visible||anglingCinematicView!=='underwater');
  const minimumDistance2=hiddenPreflight?0:32*32;
- for(let attempt=0;attempt<8;attempt++){
-  aczoMoselRandomFish(candidate,name);
-  const distance=candidate.distanceToSquared(camera.position);
-  if(distance>bestDistance){best=candidate.clone();bestDistance=distance;}
-   if(distance>=minimumDistance2)break;
- }
+ // K54: reject the visible circle inside the habitat sampler itself. The old
+ // path could run eight complete 28-candidate searches for a single actor.
+ const point=hiddenPreflight?aczoMoselRandomFish(candidate,name):aczoK8hRiverPoint(candidate,name,{avoid:camera.position,radius2:minimumDistance2});
+ if(point){best=point;bestDistance=point.distanceToSquared(camera.position);}
  if(bestDistance<minimumDistance2){
   const minimum=Math.max(.9,(actor.obj.userData.baseFishHeight||.2)+.55);
   for(const radius of [35,45,55,65]){
@@ -20240,8 +20240,8 @@ function aczoK43StreamPopulation(rt){
  const pending=rt.k43Population;if(!pending)return;
  if(performance.now()<pending.retryAt)return;
  const started=performance.now();let count=0;
- const limit=pending.preflight?24:8;
- while(pending.index<pending.queue.length&&count<limit&&(count===0||performance.now()-started<3)){
+ const limit=pending.preflight?24:8,budget=pending.preflight?3:.8;
+ while(pending.index<pending.queue.length&&count<limit&&(count===0||performance.now()-started<budget)){
   const item=pending.queue[pending.index++];
    if(!aczoK43PlaceStreamActor(rt,item,pending.schools)){item.actor.k43PendingPlacement=true;pending.retry.push(item);}
   count++;
@@ -20358,10 +20358,12 @@ function aczoK8hCatchPopulation(){
  if(!aczoK8hCatchCache){aczoK8hCatchCache=Object.fromEntries(aczoK8hVisualPlan(aczoMoselFishing.center).map(p=>[p.species,p.count]));}
  return aczoK8hCatchCache;
 }
-function aczoK8hRiverPoint(out,name){
+function aczoK8hRiverPoint(out,name,options={}){
  const rt={...aczoMoselFishing,center:aczoMoselFishing.k42StockCenter||aczoMoselFishing.center},p=ACZO_MOSEL_SPECIES[name];if(!rt||!p)return null;let best=null,score=-1;
  for(let i=0;i<28;i++){
-  const x=Math.round(rt.center.x/25)*25+(aczoK8hRandom()-.5)*116,y=Math.round(rt.center.y/25)*25+(aczoK8hRandom()-.5)*116,d=aczoMoselDepth(x,y);
+  const x=Math.round(rt.center.x/25)*25+(aczoK8hRandom()-.5)*116,y=Math.round(rt.center.y/25)*25+(aczoK8hRandom()-.5)*116;
+  if(options.avoid&&(x-options.avoid.x)**2+(y-options.avoid.y)**2<options.radius2)continue;
+  const d=aczoMoselDepth(x,y);
   if(d==null||d<.9||!aczoK42InSection(x,y)||aczoK8eInsideFooting(x,y,.8))continue;
   const q=aczoK8hHabitat(name,x,y)*(.25+aczoK8hRandom());if(q<=score)continue;score=q;best={x,y,d};
  }
