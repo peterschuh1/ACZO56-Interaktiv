@@ -6579,7 +6579,7 @@ Wetterdaten: Open-Meteo · Astronomische Berechnungen: SunCalc<br>
 <script>
 // K22: preserve WebGL context-loss protection without a diagnostic panel or stored protocol.
 (function(){
- const state={contextLost:false,build:'4.0-K55-MOSEL-FRAMEARBEIT'};
+ const state={contextLost:false,build:'4.0-K56-MOSEL-NEBELSICHT'};
  window.__aczoBootAudit={state,mark(){},sample(){},attach(renderer){
   renderer.domElement.addEventListener('webglcontextlost',e=>{e.preventDefault();state.contextLost=true;});
   renderer.domElement.addEventListener('webglcontextrestored',()=>{state.contextLost=false;});
@@ -37695,7 +37695,7 @@ function aczoK25RenderAnglingInsetSource(cam,keepShoreNature=false){
     waterUniforms.viewportOrigin.value.set(ws.viewport.x,ws.viewport.y);
     setProjectedCelestialScreen(sunDisc,waterUniforms.sunScreen,simulationEnabled&&sun.visible,cam);
     setProjectedCelestialScreen(moonDisc,waterUniforms.moonScreen,simulationEnabled&&!!moonDisc.userData.astronomicallyVisible,cam);
-    renderer.render(scene,cam);
+    aczoK56RenderRiverScene(cam);
   }finally{
     waterSurface.material=savedPondMaterial;moselWaterSurface.material=savedRiverMaterial;
     waterUniforms.viewportSize.value.copy(ws.size);waterUniforms.viewportOrigin.value.copy(ws.origin);
@@ -42196,6 +42196,59 @@ function aczoK25MapDepthPrecision(){
 window.__aczoMobileMapNav.syncNear();
 }
 function aczoK35RenderPanoramaMain(){return aczoK35Panorama.draw();}
+// K56: r128 deliberately disables frustum culling on many instanced trees.
+// Their ordinary geometry bounds cover ONE instance, not the whole batch.
+// Cache conservative bounds for every instance before testing the SAME Exp2
+// fog used by its material. No fish simulation or source visibility is changed.
+const aczoK56FogBounds=new WeakMap(),aczoK56GeometryBounds=new WeakMap();
+const aczoK56FogStats={passes:0,culled:0,lastCulled:0};
+function aczoK56ObjectSphere(object){
+ const geometry=object.geometry,position=geometry?.attributes?.position;if(!position)return null;
+ const matrix=object.isInstancedMesh?object.instanceMatrix:null,count=object.isInstancedMesh?object.count:0;
+ let cached=aczoK56FogBounds.get(object);
+ if(!cached||cached.geometry!==geometry||cached.position!==position||cached.version!==position.version||cached.instances!==matrix||cached.instanceVersion!==matrix?.version||cached.count!==count){
+  let shared=aczoK56GeometryBounds.get(geometry);
+  if(!shared||shared.position!==position||shared.version!==position.version){geometry.computeBoundingSphere();geometry.computeBoundingBox();shared={position,version:position.version};aczoK56GeometryBounds.set(geometry,shared);}
+  if(!geometry.boundingSphere||!Number.isFinite(geometry.boundingSphere.radius))return null;
+  let sphere=geometry.boundingSphere.clone(),boundsBox=geometry.boundingBox.clone();
+  if(matrix){
+   const box=new THREE.Box3(),instanceBox=new THREE.Box3(),transform=new THREE.Matrix4();
+   for(let i=0;i<count;i++){object.getMatrixAt(i,transform);instanceBox.copy(geometry.boundingBox).applyMatrix4(transform);box.union(instanceBox);}
+   if(!count)return null;box.getBoundingSphere(sphere);boundsBox=box;
+  }
+  cached={geometry,position,version:position.version,instances:matrix,instanceVersion:matrix?.version,count,sphere,box:boundsBox};aczoK56FogBounds.set(object,cached);
+ }
+ return cached.sphere;
+}
+function aczoK56RenderRiverScene(cam){
+ const fog=scene.fog;
+ if(!aczoMoselFishing||fog!==fishUnderwaterFog||!fog?.isFogExp2||!(fog.density>0)||waterUniforms.underwaterView.value<.999||cam.position.z>ACZO_MOSEL_SURFACE_Z-.12||scene.overrideMaterial)return renderer.render(scene,cam);
+ const auto=scene.autoUpdate,hidden=[],sphere=new THREE.Sphere(),box=new THREE.Box3(),frustum=new THREE.Frustum(),viewProjection=new THREE.Matrix4();
+ // Exp2 fog leaves less than 1/16 million of the source colour here.
+ // Retain the opaque river floor/base as the fog-coloured horizon itself.
+ const distance=Math.sqrt(Math.log(16777216))/fog.density;
+ if(auto)scene.updateMatrixWorld();if(!cam.parent)cam.updateMatrixWorld();
+ frustum.setFromProjectionMatrix(viewProjection.multiplyMatrices(cam.projectionMatrix,cam.matrixWorldInverse));
+ try{
+  scene.autoUpdate=false;
+  scene.traverseVisible(object=>{
+   if(!object.isMesh||object.isSkinnedMesh||object.morphTargetInfluences?.length||object.children.length||object===aczoMoselFishing.bottom?.children[0]||object===aczoRiverBed||object===moselWaterBase)return;
+   // Dirty shadow maps still need distant casters whose shadows reach visible water.
+   if(object.castShadow&&(renderer.shadowMap.autoUpdate||renderer.shadowMap.needsUpdate))return;
+   const materials=Array.isArray(object.material)?object.material:[object.material];
+   if(!materials.length||materials.some(m=>!m||m.fog!==true||!m.depthTest||m.isShaderMaterial||m.isRawShaderMaterial))return;
+   const bounds=aczoK56ObjectSphere(object);if(!bounds)return;
+   box.copy(aczoK56FogBounds.get(object).box).applyMatrix4(object.matrixWorld).expandByScalar(2);
+   if(!frustum.intersectsBox(box)){hidden.push(object);object.visible=false;return;}
+   sphere.copy(bounds).applyMatrix4(object.matrixWorld);sphere.radius+=2; // conservative allowance for shader wind/sway
+   sphere.center.applyMatrix4(cam.matrixWorldInverse);
+   if(-sphere.center.z-sphere.radius>distance){hidden.push(object);object.visible=false;}
+  });
+  aczoK56FogStats.passes++;aczoK56FogStats.lastCulled=hidden.length;aczoK56FogStats.culled+=hidden.length;
+  return renderer.render(scene,cam);
+ }finally{for(const object of hidden)object.visible=true;scene.autoUpdate=auto;}
+}
+
 function aczoRenderMainView(){
   // Patrol and angling state finish after traffic; apply their final camera/state before this draw.
   aczoK34UpdateRoadBeaconLighting(simulationEnabled?THREE.MathUtils.clamp(sceneNightFactor,0,1):0);
@@ -52866,7 +52919,7 @@ const aczoK35Panorama=(()=>{
  function draw(){
   if(disposed)return renderer.render(scene,camera);
   const show=allowed(),warm2D=!warmed&&is2D&&!anglingMode&&!fishMode&&!skyLookMode&&!window.__aczoUnderwaterSceneActive&&waterUniforms.underwaterView.value<=.08&&!scene.overrideMaterial&&renderer.getRenderTarget()===null;
-  if(!show&&!warm2D)return renderer.render(scene,camera);
+  if(!show&&!warm2D)return aczoK56RenderRiverScene(camera);
   const oldTarget=renderer.getRenderTarget(),oldAuto=renderer.autoClear,oldColour=renderer.autoClearColor,oldDepth=renderer.autoClearDepth,oldStencil=renderer.autoClearStencil;
   const oldBackground=scene.background,oldSkyBackground=skyScene.background,oldSkyFog=skyScene.fog,oldShadowAuto=renderer.shadowMap.autoUpdate,oldShadowDirty=renderer.shadowMap.needsUpdate;
   const oldScissorTest=renderer.getScissorTest(),oldAlpha=renderer.getClearAlpha();renderer.getViewport(viewport);renderer.getScissor(scissor);renderer.getClearColor(clearColour);
