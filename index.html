@@ -6579,7 +6579,7 @@ Wetterdaten: Open-Meteo · Astronomische Berechnungen: SunCalc<br>
 <script>
 // K22: preserve WebGL context-loss protection without a diagnostic panel or stored protocol.
 (function(){
- const state={contextLost:false,build:'4.0-K54-MOSEL-STREAMTAKT'};
+ const state={contextLost:false,build:'4.0-K55-MOSEL-FRAMEARBEIT'};
  window.__aczoBootAudit={state,mark(){},sample(){},attach(renderer){
   renderer.domElement.addEventListener('webglcontextlost',e=>{e.preventDefault();state.contextLost=true;});
   renderer.domElement.addEventListener('webglcontextrestored',()=>{state.contextLost=false;});
@@ -20720,21 +20720,28 @@ function randomSpeciesPoint(name,out,options={}){
 }
 function keepFishAboveFloor(f){
   const obj=f.obj;
-  const d=pondDepthAt(obj.position.x,obj.position.y);
-  if(d==null||d<.38) return false;
   const width=Math.abs(obj.userData.baseFishWidth||obj.scale.x||.1);
   const height=Math.abs(obj.userData.baseFishHeight||obj.scale.y||.05);
+  const radius=Math.max(.04,width*.42),river=aczoMoselFishing;
+  // The surveyed river floor is static. Reuse only an EXACT same-position,
+  // same-footprint sample; swimming, resizing or switching waters invalidates it.
+  const cached=river&&f.k55FloorSample;
+  const same=!!cached&&cached.river===river&&cached.x===obj.position.x&&cached.y===obj.position.y&&cached.radius===radius;
+  const d=same?cached.centerDepth:pondDepthAt(obj.position.x,obj.position.y);
+  if(d==null||d<.38)return false;
   const pitchLimit=strictBottomFish.has(obj.userData.species)
     ? THREE.MathUtils.degToRad(8):MAX_FISH_PITCH;
   const clearance=Math.max(.055,height*.50+width*.50*Math.sin(pitchLimit)+.028);
   // Auf Böschungen zählt der höchste Bodenpunkt unter der gesamten Fischlänge,
   // nicht nur die Tiefe exakt unter dem Mittelpunkt.
-  let supportDepth=d;
-  const radius=Math.max(.04,width*.42);
-  [[radius,0],[-radius,0],[0,radius],[0,-radius]].forEach(([dx,dy])=>{
-    const sample=pondDepthAt(obj.position.x+dx,obj.position.y+dy);
-    if(sample!=null) supportDepth=Math.min(supportDepth,sample);
-  });
+  let supportDepth=same?cached.supportDepth:d;
+  if(!same){
+    [[radius,0],[-radius,0],[0,radius],[0,-radius]].forEach(([dx,dy])=>{
+      const sample=pondDepthAt(obj.position.x+dx,obj.position.y+dy);
+      if(sample!=null)supportDepth=Math.min(supportDepth,sample);
+    });
+    if(river){const sample=f.k55FloorSample||(f.k55FloorSample={});Object.assign(sample,{river,x:obj.position.x,y:obj.position.y,radius,centerDepth:d,supportDepth});}
+  }
   const floorZ=aczoDepthToWorldZ(supportDepth);
   if(obj.userData.species==='goby') obj.position.z=floorZ+clearance;
   else if(obj.userData.species==='eel'){
@@ -39647,12 +39654,20 @@ function aczoK12FloodElevation(x,y){
  const shear=.8*Math.sin(qx*.024+qy*.08)+.35*Math.sin(qx*.059-qy*.045),a=qx*.40+Math.sin(qy*.135+Math.sin(qx*.03)*.4)*.65,b=qx*.72+qy*.12+Math.sin(qy*.071-qx*.055)*.55+1.8;
  return brown*brown*(Math.sin(a)*.035+Math.sin(b)*.014+Math.sin(qx*.14-qy*.24+shear)*.012);
 }
+// Hidden pond actors keep their gameplay state, but need no scene matrices
+// while the independent river population is active. Restore their own parents.
+function aczoK55ParkPondActors(rt){
+ const parked=rt.k55ParkedActors||(rt.k55ParkedActors=new Map());
+ for(const f of rt.savedActors){const parent=f.obj.parent;if(parent&&!parked.has(f)){parked.set(f,parent);parent.remove(f.obj);}}
+}
 function aczoMoselFishingEnd(){
  const rt=aczoMoselFishing;if(!rt)return;aczoK34CancelMoselDetailRequest();
  clearTimeout(rt.k51PreflightTimer);
  cancelHuntEvent();
  for(const f of fishActors)fishGroup.remove(f.obj);
  fishActors.splice(0,fishActors.length,...rt.savedActors);
+ for(const f of rt.savedActors){const parent=rt.k55ParkedActors?.get(f);if(parent&&!f.obj.parent)parent.add(f.obj);}
+ rt.k55ParkedActors?.clear();
  rt.savedActors.forEach((f,i)=>{f.obj.visible=rt.savedVisibility[i];});
  if(rt.bottom){scene.remove(rt.bottom);rt.bottom.visible=false;if(!rt.cachedBed){rt.bottom.traverse(o=>{if(o.geometry)o.geometry.dispose();});for(const m of rt.materials)m.dispose();}}
  aczoRiverBed.visible=rt.savedBedVisible;
@@ -39665,6 +39680,7 @@ function aczoMoselFishingStart(shore,inward,mapCenter=null){
  const center=mapCenter?mapCenter.clone():shore.clone().addScaledVector(inward,24);center.z=-1.2;
  const stock=aczoK42StockCenter(center);
  const rt={center,k42Section:stock.section,k42StockCenter:stock.center,savedActors:fishActors.slice(),savedVisibility:fishActors.map(f=>f.obj.visible),savedBedVisible:aczoRiverBed.visible,bottom:null,materials:[]};
+ aczoK55ParkPondActors(rt);
  fishActors.forEach(f=>{f.obj.visible=false;});fishActors.length=0;aczoMoselFishing=rt;
  const focus=fishEntryFocus,entryLength=fishEntryTargets.length;
  // Independent river population; the original pond fish retain their positions and state.
@@ -39691,7 +39707,7 @@ function aczoK25EnsureMoselWorld(){
  // Preserve the live river population and its catch influence while creating the saved pond world.
  if(!anglingLureUnderwaterWorldReady){
   const river=fishActors.slice();fishActors.splice(0,fishActors.length,...rt.savedActors);
-  try{ensureAnglingLureUnderwaterWorld();rt.savedActors=fishActors.slice();rt.savedVisibility=rt.savedActors.map((f,i)=>i<rt.savedVisibility.length?rt.savedVisibility[i]:f.obj.visible);rt.savedActors.forEach(f=>f.obj.visible=false);}
+  try{ensureAnglingLureUnderwaterWorld();rt.savedActors=fishActors.slice();rt.savedVisibility=rt.savedActors.map((f,i)=>i<rt.savedVisibility.length?rt.savedVisibility[i]:f.obj.visible);rt.savedActors.forEach(f=>f.obj.visible=false);aczoK55ParkPondActors(rt);}
   finally{fishActors.splice(0,fishActors.length,...river);}
  }
  const entry=aczoMoselGetLocalBed(rt.pendingBedCenter);rt.bottom=entry.group;rt.materials=[];rt.cachedBed=true;rt.habitats=aczoK34HabitatsFor(rt.center);rt.bottom.visible=false;scene.add(rt.bottom);delete rt.pendingBedCenter;
