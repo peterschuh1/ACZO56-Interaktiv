@@ -11584,7 +11584,27 @@ function pointInPondWaterMask(x,y){
   return aczoPointInsideMasterPond(x,y);
 
 }
+// K102: fixed bridge footprint in the same coordinates as its 217 m model.
+// Keep the existing GPU depth test for foreground occlusion. This additional
+// sky-cover mask rejects water points beneath the deck and inside masonry.
+// No per-star scene traversal, raycast, allocation or GPU pass is added.
+function aczoWaterStarBridgeCovered(x,y){
+ const bridge=ACZO_KONZ_BRIDGE,dx=x-bridge.center.x,dy=y-bridge.center.y;
+ const along=dx*bridge.direction.x+dy*bridge.direction.y;
+ const across=-dx*bridge.direction.y+dy*bridge.direction.x;
+ if(Math.abs(along)<=bridge.length*.5+.25&&Math.abs(across)<=4.65)return true;
+ // The rounded pier bases project slightly beyond the bridge deck.
+ if(Math.abs(across)<=4.90){
+  const side=Math.max(0,Math.abs(across)-2.7*1.08),radius=1.65*1.08+.18;
+  for(const center of aczoMoselPierCenters){
+   const dy=along-center;if(side*side+dy*dy<=radius*radius)return true;
+  }
+ }
+ // Solid abutments at the two ends of the bridge.
+ return Math.abs(along)>=108.5&&Math.abs(along)<=113.7&&Math.abs(across)<=5.4;
+}
 function pointInWaterStarStructureMask(x,y){
+  if(aczoWaterStarBridgeCovered(x,y))return true;
   const northDx=x-NORTH_PIER_SHORE.x,northDy=y-NORTH_PIER_SHORE.y;
   const northAlong=northDx*NORTH_PIER_AXIS.x+northDy*NORTH_PIER_AXIS.y;
   const northSide=northDx*NORTH_PIER_SIDE.x+northDy*NORTH_PIER_SIDE.y;
@@ -11767,7 +11787,7 @@ function updateWaterStarReflectionPoints(dt){
   waterStarGeo.attributes.color.needsUpdate=true;
   const twinkle=.88+.12*Math.sin(waterStarPhase*2.15);
   waterStarHaloMat.opacity=opacity*.15*twinkle;
-  waterStarCoreMat.opacity=Math.min(.44,opacity*.40*twinkle);
+  waterStarCoreMat.opacity=Math.min(.48,opacity*.44*twinkle);
 }
 function updateAstronomicalStars(now,sunAltitude){
   const jd=now.getTime()/86400000+2440587.5;
@@ -30115,7 +30135,15 @@ function equipAnglingEquipment(id){
    showAnglingToast(e.name+' ausgerüstet.',1000);
    return;
  }
+ // K102: leave the two-rod method through its complete teardown first.
+ if(id==='deeper'&&anglingUsesBankSet()&&!anglingBankEquipMethod(''))return;
  anglingProgress.selectedEquipment=id;saveAnglingProgress();closeAnglingGamePanels();updateAnglingSetupUi();
+ if(id==='deeper'&&anglingMode&&anglingSelection&&anglingState==='ready'){
+  updateAnglingAimFromSettings(true);updateAnglingRodAnchor();updateAnglingDeeperReadyPose();
+  anglingFloatZoom.style.removeProperty('display');anglingFloatZoom.setAttribute('aria-hidden','false');
+  anglingActionBtn.disabled=!anglingAimLocked;anglingActionBtn.textContent=anglingAimLocked?'Auswerfen':'Ziel wählen';
+  anglingExitBtn.disabled=false;anglingExitBtn.textContent='Stelle wechseln';
+ }
  showAnglingToast(e.name+' montiert.',1000);
 }
 function auditAnglingCommerceCatalogs(){
@@ -45290,15 +45318,9 @@ const waterMat=new THREE.ShaderMaterial({
     }
 
 float reflectedStars(vec3 d){
-     float result=0.0;
-     // V8.81: Sterne duerfen nachts deutlicher als kleine Spiegelpunkte sichtbar sein.
-     // Sie bleiben gebrochen und punktfoermig, bekommen aber mehr Chance, sich gegen
-     // die Wasserfarbe und leichte Wellenmodulation durchzusetzen.
-     for(int i=0;i<32;i++){
-       float alignment=dot(d,realStarDirs[i]);
-       result+=smoothstep(.9954,.99920,alignment)*realStarBrightness[i]*1.02;
-     }
-     return min(result,1.10);
+     // K102: compact waterStarCores/Halos are the only star reflections.
+     // Broad angular lobes made metre-wide white disks on the pond.
+     return 0.0;
    }
 
    void main(){
@@ -46886,7 +46908,7 @@ const waterStarHaloMat=new THREE.PointsMaterial({
   depthTest:true,depthWrite:false,blending:THREE.AdditiveBlending
 });
 const waterStarCoreMat=new THREE.PointsMaterial({
-  size:1.3,sizeAttenuation:false,vertexColors:true,transparent:true,opacity:0,
+  size:1.4,sizeAttenuation:false,vertexColors:true,transparent:true,opacity:0,
   map:waterStarTexture,alphaMap:waterStarTexture,
   depthTest:true,depthWrite:false,blending:THREE.AdditiveBlending
 });
