@@ -7,6 +7,9 @@
 // only consumes dialog input; native scrolling and pointer button targets survive.
 for(const type of ['keydown','keyup'])window.addEventListener(type,event=>window.__aczoPitTalk?.captureKey(event),true);
 
+/* OPT-5: reuse one live MediaQueryList per query (matchMedia runs in per-frame paths). */
+(function(){const nativeMatch=window.matchMedia;if(typeof nativeMatch!=='function')return;const lists=new Map();
+ window.matchMedia=function(query){const key=String(query);let list=lists.get(key);if(!list){list=nativeMatch.call(window,key);lists.set(key,list);}return list;};})();
 /* K24: cooperative classic-script startup. Gameplay globals keep their original scope. */
 (function(){
  'use strict';
@@ -26,10 +29,37 @@ for(const type of ['keydown','keyup'])window.addEventListener(type,event=>window
  };
  window.addEventListener('error',e=>{if(!boot.firstFrame&&e.target===window){stageError=e.error||new Error(e.message||'JavaScript-Startfehler');boot.fail(stageError);}});
  window.addEventListener('unhandledrejection',e=>{if(!boot.firstFrame){stageError=e.reason||new Error('Startvorbereitung fehlgeschlagen');boot.fail(stageError);}});
+ // OPT-1/OPT-2 (Performance 2026-11): cheap synchronous budget check for tight
+ // build loops and frame-independent work slices. The loader still gets a real
+ // animation frame at least every 50 ms.
+ let lastPaintYield=performance.now();
  boot.yield=async function(force=false){
   if(boot.failed)throw stageError||new Error(boot.error);
   if(!force&&performance.now()-lastYield<(boot.initializing?10:6))return;
   await new Promise(resolve=>native.raf(()=>native.timeout(resolve,0)));
+  lastYield=lastPaintYield=performance.now();
+ };
+ const workChannel=typeof MessageChannel==='function'?new MessageChannel():null,workResolvers=[];
+ if(workChannel)workChannel.port1.onmessage=()=>{const resolve=workResolvers.shift();if(resolve)resolve();};
+ // The clock is read adaptively: for very cheap loop iterations only every
+ // few calls (at most 32), immediately every call again once work gets heavier.
+ let dueStride=1,dueLeft=1,dueCheckedAt=performance.now();
+ boot.due=function(){
+  if(--dueLeft>0)return false;
+  const now=performance.now(),span=now-dueCheckedAt;dueCheckedAt=now;
+  dueStride=span>1?1:span<.2?Math.min(32,dueStride*2):dueStride;dueLeft=dueStride;
+  return boot.failed||now-lastYield>=(boot.initializing?10:6);
+ };
+ // Stage boundaries always read the clock (stages can be long).
+ boot.dueNow=function(){dueStride=dueLeft=1;dueCheckedAt=performance.now();return boot.failed||dueCheckedAt-lastYield>=(boot.initializing?10:6);};
+ boot.yieldWork=async function(){
+  if(boot.failed)throw stageError||new Error(boot.error);
+  if(!workChannel||performance.now()-lastPaintYield>=50){
+   // Offer the loader a real frame, but do not idle behind a busy GPU process:
+   // continue after 24 ms if no animation frame arrived (CPU-only build work).
+   await new Promise(resolve=>{let open=true;const go=()=>{if(open){open=false;resolve();}};native.raf(()=>native.timeout(go,0));native.timeout(go,24);});
+   lastPaintYield=performance.now();
+  }else await new Promise(resolve=>{workResolvers.push(resolve);workChannel.port2.postMessage(0);});
   lastYield=performance.now();
  };
  window.setTimeout=function(fn,delay,...args){
@@ -151,7 +181,7 @@ for(const type of ['keydown','keyup'])window.addEventListener(type,event=>window
     const code=node.textContent;node.textContent='';node.remove();
     runClassic(code,label);
     if(boot.pending){const pending=boot.pending;boot.pending=null;await pending;}
-    boot.completed++;await boot.yield();
+    boot.completed++;if(boot.dueNow())await boot.yieldWork();
    }
    boot.show('Bilder und Grafik werden vorbereitet …');
    // One decode callback / texture upload per turn, instead of one simultaneous peak.
@@ -199,7 +229,6 @@ for(const type of ['keydown','keyup'])window.addEventListener(type,event=>window
 <link rel="preconnect" href="https://geo4.service24.rlp.de" crossorigin>
 <link rel="preconnect" href="https://script.google.com" crossorigin>
 <link rel="preload" as="script" href="https://cdn.jsdelivr.net/npm/suncalc@1.9.0/suncalc.js" crossorigin="anonymous">
-<link rel="preload" as="script" href="https://cdn.jsdelivr.net/npm/three@0.128.0/build/three.min.js" crossorigin="anonymous">
 <link rel="preload" as="script" href="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js" crossorigin="anonymous">
 <link rel="preload" as="image" href="https://geo4.service24.rlp.de/wms/rp_dop20.fcgi?SERVICE=WMS&amp;VERSION=1.1.1&amp;REQUEST=GetMap&amp;LAYERS=rp_dop20&amp;STYLES=&amp;SRS=EPSG:4326&amp;BBOX=6.5760811746,49.7090631509,6.5788421427,49.7108704740&amp;WIDTH=1600&amp;HEIGHT=1600&amp;FORMAT=image/jpeg" crossorigin="anonymous">
 
@@ -6110,16 +6139,16 @@ function aczoSetIconText(element,value){
          <section><h3>🖥️ Grafikqualität</h3><p>Ändert die Bildauflösung: Leistung, Standard oder Ultra.</p></section>
          <section><h3>🏁 Wettangeln</h3><p>Starte das Wettangeln im Hauptmenü oder bei der Stellenauswahl. Melde dich vorher an und hole alle Montagen ein.</p><p>Eine Teilnahme ist alle 24 Stunden möglich. Nach der Online-Bestätigung beginnt die Auslosung. Abbruch oder Neuladen setzen die Wartezeit nicht zurück.</p><p>8–12 Teilnehmer angeln 15 Minuten mit der Posenrute auf ausgelosten Plätzen. Das Gesamtgewicht zählt. Wertungsfische: Rotauge, Rotfeder, Flussbarsch, Sonnenbarsch, Grundel, Brasse und Schleie.</p><p>Ein vor Schluss gehakter Fisch zählt auch nach dem Signal. Die besten vier Plätze erhalten 2.000, 1.500, 1.000 und 500 EP. Der Wettkampf läuft auf diesem Gerät und lässt sich nach Neuladen nicht fortsetzen.</p></section>
          <section id="aczoZpcHelp"><h3>🏆 ZPC BANK · Zewen Predator Cup</h3>
-           <p>Starte den ZPC über die Stellenauswahl unten rechts. Die beiden Wettbewerbe stehen übereinander. Du spielst gegen sechs KI-Angler, insgesamt sind es sieben Teilnehmer. Die reine Angelzeit beträgt 20 Minuten. Nach der Teilnahme gilt eine kontogebundene Pause von fünf Tagen; Abbrechen setzt sie nicht zurück.</p>
+           <p>Starte den ZPC im Hauptmenü unter „Angeln“ oder über die Stellenauswahl unten rechts, wo beide Wettbewerbe übereinander stehen. Du spielst gegen sechs KI-Angler, insgesamt sind es sieben Teilnehmer. Die reine Angelzeit beträgt 20 Minuten. Nach der Teilnahme gilt eine kontogebundene Pause von fünf Tagen; Abbrechen setzt sie nicht zurück.</p>
            <p>Es gibt keine Auslosung: Du wählst und wechselst deine Plätze am Weiher und an der Mosel selbst. Erlaubt sind normale Einzelruten mit Kunstködern und Predatorpit-Lockpaste. Naturköder, Karpfen- und Welssetup, Deeper und Zeitraffer sind im ZPC gesperrt.</p>
-           <p><strong>Pflichtfische:</strong> Barsch ab 22 cm × 2, Zander ab 42 cm × 1,3 und Hecht ab 45 cm × 1. Die Fangreihenfolge ist frei. Dazu kommen drei weitere Fische dieser Arten. Ab 0,5 cm wird zur Punkteberechnung aufgerundet; ein Fisch unter dem Mindestmaß bleibt trotzdem zu klein.</p>
+           <p><strong>Pflichtfische:</strong> Barsch ab 22 cm × 2, Zander ab 42 cm × 1,3 und Hecht ab 45 cm × 1. Die Fangreihenfolge ist frei. Dazu kommen drei weitere Fische dieser Arten. Gewertet wird in ganzen Zentimetern: Ab ,5 wird aufgerundet, darunter abgerundet (62,4 cm = 62 cm, 62,5 cm = 63 cm). Zum Erreichen des Mindestmaßes wird nicht aufgerundet: Ein Barsch mit 21,6 cm bleibt zu klein.</p>
            <p>Ein besserer Fang ersetzt automatisch den schwächsten passenden Wertungsfisch. Die Pflichtarten bleiben dabei erhalten. Bei sechs besetzten Wertungsplätzen erscheint <strong>„Full Card!“</strong>; größere Fänge können die Karte weiter verbessern. Zu kleine oder schwächere Fänge werden ausdrücklich angezeigt. Normale Fang-EP erhältst du weiterhin.</p>
            <p><strong>Mosel-Bonus:</strong> Regenbogenforelle, Rapfen und Schwarzbarsch ab 40 cm bringen je 10 Punkte. Höchstens drei Bonusfische zählen, insgesamt maximal 30 Punkte; auch mehrere Exemplare derselben Bonusart sind möglich.</p>
            <p>Im kleinen Feld unten rechts siehst du Restzeit und anonyme Fangmeldungen. „Fangkarte öffnen“ zeigt den aktuellen Stand. Solange die Karte offen ist, pausieren Cup-Zeit, KI und Angelablauf; „Minimieren“ setzt sie fort. Nach einem gewerteten eigenen Fang erscheint die Karte kurz automatisch. Die Musik entspricht dem Wettangeln und beachtet deine Toneinstellung.</p>
            <p>Ein rechtzeitig begonnener letzter Drill darf nach dem Schlusssignal beendet werden. Danach folgt die Siegerehrung: Platz 1 erhält 4.000 EP, Platz 2 3.000 EP, Platz 3 2.000 EP und Platz 4 1.000 EP. Es zählen Punkte statt Gesamtgewicht; bei Gleichstand entscheiden die längsten Wertungsfische.</p>
          </section>
 
-         <section><h3>🎒 Köder- & Tacklebox</h3><p>Die Standardrute wirft 50 m; bessere Ruten erreichen 75 m oder 100 m. Kaufe Ausrüstung mit EP im Shop und rüste sie in der Tacklebox aus. Köder und Futter haben einen begrenzten Vorrat.</p><p>Neue Ausrüstung eröffnet weitere Angelmethoden und Bootsfahrten.</p></section>
+         <section><h3>🎒 Köder- & Tacklebox</h3><p>Die Standardrute wirft 50 m; bessere Ruten erreichen 75 m oder 100 m. Kaufe Ausrüstung mit EP im Shop und rüste sie in der Tacklebox aus. Köder und Futter haben einen begrenzten Vorrat. Köderbox und Shop erreichst du auch im Hauptmenü unter „Angeln“.</p><p>Neue Ausrüstung eröffnet weitere Angelmethoden und Bootsfahrten.</p></section>
          <section><h3>🌽 Naturköder</h3><p>Naturköder werden beim erfolgreichen Anhieb verbraucht; bei Fehlversuchen können sie verloren gehen. Einholen verbraucht keinen Köder. Ein Wurmbündel besteht aus 12 Tauwürmern und ist nur für Wels gedacht.</p></section>
          <section><h3>🐟 Köderfisch</h3><p>Auch Ukelei und Kaulbarsch liefern nach dem Fang jeweils einen Köderfisch. Die bisherigen Köderfischarten bleiben erhalten. Eine Raubfischattacke verbraucht einen Köderfisch; kaufen kannst du ihn nicht.</p></section>
          <section><h3>🌀 Kunstköder</h3><p>Blinker und Gummifische fangen in Bewegung. Tippen oder Klicken holt etwa 0,5 m ein, Halten kurbelt. Doppeltipp oder Rechtsklick holt schnell zurück. Rutenhöhe und seitliche Bewegung verändern die Führung; Hindernisse können Köder und Schnur festhalten.</p></section>
@@ -6140,7 +6169,7 @@ function aczoSetIconText(element,value){
          <section><h3>🌗 Aktivitätszeiten</h3><p>Hecht und Barsch sind morgens und abends aktiver, Zander auch bei Dunkelheit und Wolken. Aal und Wels bevorzugen Abend und Nacht. Zwischen 13 und 15 Uhr sinkt die allgemeine Beißlust.</p></section>
          <section><h3>📏 Fischgrößen &amp; Gewichte</h3><p>Große Fische sind selten und kämpfen stärker. Persönliche und öffentliche Rekorde werden gleich bewertet.</p></section>
          <section><h3>⭐ EP &amp; Shop</h3><p>Fänge bringen EP für den Shop. Deine Gesamt-EP bestimmen dauerhaft die Anglerstufe. Es gibt 20 Stufen bis 80.000 Gesamt-EP und zum Titel „ACZO56-Legende“. Den Fortschritt siehst du im Profil.</p></section>
-         <section><h3>🎯 Tagesaufgaben</h3><p>Jeden Spieltag warten drei Aufgaben mit EP-Belohnungen. Für alle drei gibt es einen Tagesbonus. Du findest sie jederzeit im Hauptmenü.</p></section>
+         <section><h3>🎯 Tagesaufgaben</h3><p>Jeden Spieltag warten drei Aufgaben mit EP-Belohnungen. Für alle drei gibt es einen Tagesbonus. Du findest sie jederzeit im Hauptmenü unter „Fortschritt“.</p></section>
          <section><h3>🏆 Highscore &amp; Bestenliste</h3><p>Bestfänge aus Weiher und Mosel zählen gemeinsam. Mit Anzeigename und Freigabe erscheinen deine Artenrekorde auch in der Online-Bestenliste.</p></section>
          <section><h3>✨ Hall of Fame</h3><p>Die Hall of Fame zeigt Ranglisten und besondere Ehrenfänge. Während der Präsentation pausiert das Spiel. „Zurück“ bringt dich wieder zum Angeln.</p></section>
          <section class="aczo-account-help"><h3>👤 Spielerkonto &amp; Gastspieler</h3><p>Starte als Gast oder sichere deinen Spielstand mit einem Konto. Name: 3 bis 30 Zeichen aus Buchstaben, Zahlen, Leerzeichen, Punkt, Unterstrich oder Bindestrich. Passwort: 12 bis 256 Zeichen.</p><p>Aktiviere deinen vorhandenen Gastspielstand als Konto, damit der Fortschritt erhalten bleibt. Für einen Gerätewechsel meldest du dich mit deinem bestehenden Konto an.</p></section>
@@ -6151,7 +6180,7 @@ function aczoSetIconText(element,value){
          <section class="aczo-account-help"><h3>👥 Community &amp; Privatsphäre</h3><p>In der Community findest du Angler und öffentliche Profile. Neue Konten geben Name und Rekorde zunächst frei; beides änderst du im Profil. Die Rekordfreigabe gilt auf diesem Gerät für neue Fänge. Bereits veröffentlichte Rekorde bleiben öffentlich.</p></section>
          <section><h3>🟢 Angler online</h3><p>Mit „Online mit Namen sichtbar“ erscheint dein Name für andere aktive Angler. Schalte die Freigabe im Profil ein oder aus.</p></section>
          <section><h3>☁️ Cloud-Spielstand</h3><p>EP, Ausrüstung, Vorräte und persönliche Rekorde werden mit deinem Konto online gesichert. Fangbuch und Tagesaufgaben bleiben auf diesem Gerät.</p></section>
-         <section><h3>🔊 Spieltöne</h3><p>Spieltöne begleiten Bisse, Drill und Fang. Du kannst sie in den Einstellungen ein- oder ausschalten.</p></section>
+         <section><h3>🔊 Spieltöne</h3><p>Spieltöne begleiten Bisse, Drill und Fang. Du kannst sie im Hauptmenü unter „Einstellungen“ ein- oder ausschalten.</p></section>
          <section><h3>🎵 Naturton-Quellen</h3><p>Vogel: „Birds singing in garden“ · Public Domain. Frosch: „Single Frog Croak“ – MichaeltheFox8621, CC BY-SA 4.0. Graureiher: bereitgestellte Flugruf-Aufnahme.</p></section>
          <details><summary>Bildnachweise</summary><p>Kaulbarsch: Edward Donovan / rawpixel.com, <a href="https://commons.wikimedia.org/wiki/File:Illustration_from_The_Natural_History_of_British_Fishes_(1802)_by_Edward_Donovan,_digitally_enhanced_by_rawpixel-com_34.jpg" target="_blank" rel="noopener">Vorlage</a>, <a href="https://creativecommons.org/licenses/by-sa/4.0/" target="_blank" rel="noopener">CC BY-SA 4.0</a>. Freigestellt und für das Spiel aufbereitet; diese Fischgrafik steht ebenfalls unter CC BY-SA 4.0.</p><p>Regenbogenforelle und Schwarzbarsch: Duane Raver / U.S. Fish and Wildlife Service. Quappe: Sam Stukel / U.S. Fish and Wildlife Service. Freigestellt, zugeschnitten und komprimiert; die Quappe wurde gespiegelt. Mandarin-Wels: bereitgestellte Bildvorlage, für das Spiel freigestellt.</p></details>
        </div>
@@ -6398,16 +6427,17 @@ function aczoSetIconText(element,value){
          <div class="help-item"><strong>🖱️ Desktop 3D</strong><span>Linke Maustaste dreht, rechte verschiebt, Mausrad zoomt. Ziehe am Horizont weiter nach oben, um in den Himmel zu schauen.</span></div>
          <div class="help-item"><strong>📱 Mobile 3D</strong><span>Ein Finger dreht, zwei Finger zoomen und verschieben. Wische am Horizont weiter nach oben, um in den Himmel zu schauen.</span></div>
          <div class="help-item"><strong>🌌 Himmelblick</strong><span>Schaue mit Maus oder Finger frei umher. Ziehe den Blick zum Horizont zurück, um zur Karte zu gelangen.</span></div>
-         <div class="help-item"><strong>☰ Menü & Werkzeuge</strong><span>Im Menü findest du Werkzeuge, Anzeigen, Einstellungen und „Vollbild“. Falls nötig, zeigt dir das Spiel die Schritte für den Home-Bildschirm.</span></div>
+         <div class="help-item"><strong>☰ Menü & Werkzeuge</strong><span>Das Menü hat drei Bereiche: „Ansicht“ mit Vollbild, Reset, Gesamtgebiet und Anzeigen, „Karte & Werkzeuge“ mit Tiefenlinien, Mosel-Tiefenkarte, Messen, Standort und Drucken sowie „Einstellungen“ mit Wetter LIVE/NEUTRAL und Grafikqualität. Falls nötig, zeigt dir das Spiel die Schritte für den Home-Bildschirm.</span></div>
          <div class="help-item"><strong>↻ Reset / 🌍 Gesamtgebiet</strong><span>„Reset“ zeigt den Weiher. „Gesamtgebiet“ zeigt die erweiterte Landschaft mit der Mosel.</span></div>
          <div class="help-item"><strong>🖥️ Grafikqualität</strong><span>Ändert die Bildauflösung: Leistung, Standard oder Ultra.</span></div>
          <div class="help-item"><strong>👁️ Anzeigen</strong><span>Blendet Wetterfenster, Tiefenlegende und Kompass gemeinsam ein oder aus.</span></div>
          <div class="help-item"><strong>💧 Wasser: AN/AUS</strong><span>Blendet die Wasseroberflächen ein oder aus.</span></div>
-         <div class="help-item"><strong>🌦️ Wetter LIVE / NEUTRAL</strong><span>LIVE zeigt aktuelles Wetter und Tageszeit. NEUTRAL zeigt die Karte bei gleichmäßiger Beleuchtung.</span></div>
-         <div class="help-item"><strong>☀️ Sonne & 🌙 Mond</strong><span>Sonne und Mond folgen Datum und Uhrzeit und verändern Licht und Spiegelungen.</span></div>
+         <div class="help-item"><strong>🌦️ Wetter LIVE / NEUTRAL</strong><span>Im Menü unter „Einstellungen“. LIVE zeigt aktuelles Wetter, Tageszeit, Schatten und Spiegelungen. NEUTRAL zeigt die Karte als gleichmäßig beleuchteten Tag ohne Wetter, ohne Sonnen- und Wolkenspiegelungen und ohne die Schatten von Bäumen und Stegen; die Wasserflächen wirken dadurch schlichter.</span></div>
+         <div class="help-item"><strong>☀️ Sonne & 🌙 Mond</strong><span>Sonne und Mond folgen Datum und Uhrzeit und verändern Licht, Schatten und Spiegelungen. Bäume, Stege und die Konzer Brücke werfen passende Schatten, bei tiefer Sonne entsprechend lang. Hinter den Hügeln um Konz geht die Sonne für Weiher und Mosel früher unter und später auf als am freien Horizont; dann liegt das Tal im Hügelschatten.</span></div>
          <div class="help-item"><strong>✨ Sterne & Wolken</strong><span>Sterne folgen dem Nachthimmel; Wolken ziehen mit dem Wind.</span></div>
          <div class="help-item"><strong>🌧️ Wind und Regen</strong><span>Wind und Regen verändern Himmel und Wasser.</span></div>
          <div class="help-item"><strong>〰️ Tiefenlinien</strong><span>Blendet die Tiefenlinien der Karte ein oder aus.</span></div>
+         <div class="help-item"><strong>🗺️ Mosel-Tiefenkarte</strong><span>Öffnet im Menü unter „Karte & Werkzeuge“ eine eigene Tiefenkarte der Mosel mit Tiefenlinien und Farbskala in Metern.</span></div>
          <div class="help-item"><strong>🌊 Tiefenlegende</strong><span>Die Farbskala zeigt die Wassertiefe. Mit „Tiefe“ blendest du sie ein oder aus.</span></div>
          <div class="help-item"><strong>📌 Tiefenabfrage</strong><span>Tippe oder klicke auf eine Stelle, um ihre Tiefe anzuzeigen.</span></div>
          <div class="help-item"><strong>📏 Messen</strong><span>Start- und Zielpunkt auf der Karte setzen; Entfernung und Zieltiefe werden angezeigt.</span></div>
@@ -6428,7 +6458,7 @@ Melde Fehler bitte mit Gerät, Browser und betroffenem Spielmodus.
 </div>
        <details class="help-note" style="cursor:pointer">
          <summary style="font-weight:800">Update-Historie</summary>
-          <div style="margin-top:8px;cursor:default;overflow-wrap:anywhere"><strong>V.4.1 · 27.10.2026</strong><ul style="padding-left:20px"><li>Zewen Predator Cup mit sieben Anglern, 20 Minuten Dauer, freier Gewässerwahl und Punkte-Fangkarte. Erneute Teilnahme nach fünf Tagen.</li><li>Freies Erkunden am Weiher und an der Mosel, mit öffnenden Toren und direktem Wechsel zum Angeln.</li><li>Erweiterte Mosellandschaft bis zur Konzer Brücke mit Hafen, Zügen und Schiffsverkehr.</li><li>Moselangeln mit Strömung, Schiffssog und Wellen sowie eigener Fischpopulation und Unterwasserlandschaft.</li><li>Lebendige Umgebung mit Wasservogelfamilien, Fütterungen und Polizeiboot.</li></ul></div>
+          <div style="margin-top:8px;cursor:default;overflow-wrap:anywhere"><strong>V.4.2 · 03.11.2026</strong><ul style="padding-left:20px"><li>Schnellerer Spielstart und ruhigere Darstellung, vor allem bei Wald und Vegetation.</li><li>Hauptmenü neu gegliedert in Angeln, Fortschritt sowie Konto & Hilfe; Köderbox und Shop direkt unter „Angeln“. Kartenmenü mit den Bereichen Ansicht, Karte & Werkzeuge und Einstellungen.</li><li>Die Konzer Brücke wirft vollständige Schatten bei Sonne und Mond; Schiffsscheinwerfer beleuchten die Brücke.</li><li>Licht folgt dem echten Gelände: Hinter den Hügeln um Konz liegt das Tal abends früher und morgens länger im Schatten.</li><li>Dezentere Sonnen- und Mondspiegelung auf der Mosel, gleichmäßigere Wolkenspiegelung bei flachem Blick über das Wasser.</li><li>Pavillondach auch von unten sichtbar.</li><li>ZPC: Längen in ganzen Zentimetern, ab ,5 aufgerundet.</li></ul><strong>V.4.1 · 27.10.2026</strong><ul style="padding-left:20px"><li>Zewen Predator Cup mit sieben Anglern, 20 Minuten Dauer, freier Gewässerwahl und Punkte-Fangkarte. Erneute Teilnahme nach fünf Tagen.</li><li>Freies Erkunden am Weiher und an der Mosel, mit öffnenden Toren und direktem Wechsel zum Angeln.</li><li>Erweiterte Mosellandschaft bis zur Konzer Brücke mit Hafen, Zügen und Schiffsverkehr.</li><li>Moselangeln mit Strömung, Schiffssog und Wellen sowie eigener Fischpopulation und Unterwasserlandschaft.</li><li>Lebendige Umgebung mit Wasservogelfamilien, Fütterungen und Polizeiboot.</li></ul></div>
           <div style="margin-top:8px;cursor:default;overflow-wrap:anywhere"><strong>V.3.3 · 08.10.2026</strong><ul style="padding-left:20px"><li>20 Erfahrungsstufen bis 80.000 Gesamt-EP mit Rangtiteln und Aufstiegsanimation.</li></ul></div>
           <div style="margin-top:8px;cursor:default;overflow-wrap:anywhere"><strong>V.3.1 · 06.10.2026</strong><ul style="padding-left:20px"><li>Wettangeln mit ausgelosten Angelplätzen, KI-Anglern und Siegerehrung.</li></ul></div>
           <div style="margin-top:8px;cursor:default;overflow-wrap:anywhere"><strong>V.3.0 · 04.10.2026</strong><ul style="padding-left:20px"><li>Bootsangeln mit der Sabrina, E-Motor und Hecksonar sowie versteckte Köderfunde.</li></ul></div>
@@ -8606,7 +8636,9 @@ function updateUnderwaterObstacleShadows(submerged){
   // Nicht der pauschale Nachtfaktor, sondern der echte astronomische Horizont
   // entscheidet. So bleiben am 08.09. um 19:00 Uhr die langen Abendschatten
   // sichtbar und verschwinden erst nach dem realen Sonnenuntergang.
-  const useSun=active&&sunAboveHorizon&&(simulationEnabled?sun.intensity>.012:true);
+  const useSun=active&&sunAboveHorizon&&(simulationEnabled?(Number.isFinite(sun.userData.aczoOpenIntensity)?sun.userData.aczoOpenIntensity:sun.intensity)>.012:true);
+  // HILL-R5: source selection stays astronomical (no light/program switch); the sun's share fades.
+  const aczoR5Hill=useSun&&simulationEnabled?(typeof aczoHillLight==='function'?aczoHillLight('pond'):1):1,aczoR5HillOn=aczoR5Hill>.002;
   const useMoon=active&&simulationEnabled&&!useSun&&moonAboveHorizon&&moonLight.intensity>.005;
   // Live-Bewoelkung veraendert die Weichheit, deaktiviert die Schattenkarte
   // aber nicht. NEUTRAL entspricht einem klaren festen Sonnentag.
@@ -8631,7 +8663,7 @@ function updateUnderwaterObstacleShadows(submerged){
     const cloudTransmission=THREE.MathUtils.lerp(1.0,.58,Math.pow(cloud,.86)); // PERF17: sichtbarer Schatten-Kontrast auch bei 100 % Wolken
     aczoStructureShadowLight.intensity=useMoon
       ?THREE.MathUtils.clamp(moonLight.intensity*.76*cloudTransmission,.045,.25)
-      :.82*THREE.MathUtils.lerp(.56,1.0,altitude01)*cloudTransmission;
+      :.82*THREE.MathUtils.lerp(.56,1.0,altitude01)*cloudTransmission*aczoR5Hill;
   }else{
     aczoStructureShadowLight.intensity=0;
   }
@@ -8649,27 +8681,27 @@ function updateUnderwaterObstacleShadows(submerged){
     +'|'+Math.round(cloud*20)+'|a'+Math.round((Number.isFinite(sourceAltitude)?sourceAltitude:0)*90/Math.PI)
     +'|z'+Math.round((Number.isFinite(sourceAzimuth)?sourceAzimuth:0)*60/Math.PI);
   if(aczoLandShadowReceiver){
-    aczoLandShadowReceiver.visible=surface&&(useSun||useMoon);
+    aczoLandShadowReceiver.visible=surface&&(useSun||useMoon)&&aczoR5HillOn;
     if(typeof aczoLandShadowMat!=='undefined')aczoLandShadowMat.opacity=useMoon
-      ?.20:THREE.MathUtils.lerp(.62,.38,Math.pow(cloud,.78));
+      ?.20:THREE.MathUtils.lerp(.62,.38,Math.pow(cloud,.78))*aczoR5Hill;
   }
   if(aczoWaterStructureShadowReceiver&&aczoWaterStructureShadowMat){
-    aczoWaterStructureShadowReceiver.visible=surface&&waterVisible&&(useSun||useMoon);
+    aczoWaterStructureShadowReceiver.visible=surface&&waterVisible&&(useSun||useMoon)&&aczoR5HillOn;
     aczoWaterStructureShadowMat.opacity=useMoon
-      ?.13:THREE.MathUtils.lerp(.44,.28,Math.pow(cloud,.78));
+      ?.13:THREE.MathUtils.lerp(.44,.28,Math.pow(cloud,.78))*aczoR5Hill;
   }
   if(aczoMoselStructureShadowReceiver&&aczoMoselStructureShadowMat){
-    aczoMoselStructureShadowReceiver.visible=surface&&waterVisible&&(useSun||useMoon);
+    aczoMoselStructureShadowReceiver.visible=surface&&waterVisible&&(useSun||useMoon)&&aczoR5HillOn;
     aczoMoselStructureShadowMat.opacity=useMoon
-      ?.12:THREE.MathUtils.lerp(.38,.25,Math.pow(cloud,.78));
+      ?.12:THREE.MathUtils.lerp(.38,.25,Math.pow(cloud,.78))*aczoR5Hill;
   }
   if(typeof aczoPondStructureShadowReceiver!=='undefined'){
-    aczoPondStructureShadowReceiver.visible=!is2D&&active&&(useSun||useMoon);
+    aczoPondStructureShadowReceiver.visible=!is2D&&active&&(useSun||useMoon)&&aczoR5HillOn;
     // Der echte Projektionsschatten bleibt unter Wasser klar erkennbar, aber
     // nicht mehr tiefschwarz durch das ganze Gewaesser hindurch.
-    aczoPondStructureShadowMat.opacity=below
+    aczoPondStructureShadowMat.opacity=(below
       ?THREE.MathUtils.lerp(.46,.30,Math.pow(cloud,.78))
-      :THREE.MathUtils.lerp(.36,.26,Math.pow(cloud,.78));
+      :THREE.MathUtils.lerp(.36,.26,Math.pow(cloud,.78)))*aczoR5Hill;
   }
   if(typeof updateAczoOpticalStructureShadows==='function'){
     updateAczoOpticalStructureShadows(structureActive,below,cloud,night);
@@ -9179,7 +9211,9 @@ function applyWeatherScene(){
       : sun.intensity;
     // Auch eine geschlossene Wolkendecke laesst diffuses gerichtetes Licht
     // uebrig. Die alte 28-%-Grenze liess Objekt-Schatten praktisch verschwinden.
-    sun.intensity=clearSun*Math.max(.66,1-fraction*.48);
+    // HILL-R5: open-sky value (clouds) kept for logic; the light itself is shaded by the hills.
+    sun.userData.aczoOpenIntensity=clearSun*Math.max(.66,1-fraction*.48);
+    sun.intensity=sun.userData.aczoOpenIntensity*(typeof aczoHillLight==='function'?aczoHillLight('pond'):1);
     if(sunDisc.material) sunDisc.material.opacity=1.0;
   }
 
@@ -9223,7 +9257,7 @@ function applyWeatherScene(){
       // V2.3.0: Tiefenfläche nachts stark abdunkeln; keine additive Selbstbeleuchtung mehr.
       pondNightLiftMat.opacity=0;pondNightLift.visible=false;
       const depthNight=THREE.MathUtils.smoothstep(neutralDark,.18,.96);
-      if(typeof pondMat!=='undefined'&&pondMat.color)pondMat.color.setRGB(1,1,1).multiplyScalar(THREE.MathUtils.lerp(1.0,.16,depthNight));
+      if(typeof pondMat!=='undefined'&&pondMat.color){pondMat.userData.aczoOpenShade=THREE.MathUtils.lerp(1.0,.16,depthNight);pondMat.color.setRGB(1,1,1).multiplyScalar(pondMat.userData.aczoOpenShade*(typeof aczoHillShade==='function'?aczoHillShade('pond'):1));} // HILL-R5b
     }
 
     const viewerWrap=document.querySelector('.wrap');
@@ -9276,7 +9310,8 @@ function applyWeatherScene(){
 
       // Tagsüber warmes gerichtetes Relieflicht aus der echten Sonnenposition.
       if(typeof dayReliefLight!=='undefined'){
-        dayReliefLight.intensity=.55*(1-neutralDark)*cloudTransmission;
+        dayReliefLight.userData.aczoOpenIntensity=.55*(1-neutralDark)*cloudTransmission;
+        dayReliefLight.intensity=dayReliefLight.userData.aczoOpenIntensity*(typeof aczoHillLight==='function'?aczoHillLight('pond'):1); // HILL-R5
       }
     }
     if(typeof hemi!=='undefined'){
@@ -9289,7 +9324,8 @@ function applyWeatherScene(){
 
     // Satellitenbild: nur Helligkeit reduzieren, keine Farbtönung.
     if(typeof satUniforms!=='undefined' && satUniforms.dayLight){
-      satUniforms.dayLight.value=THREE.MathUtils.lerp(1.0,0.22,neutralDark);
+      satUniforms.dayLight.aczoOpen=THREE.MathUtils.lerp(1.0,0.22,neutralDark); // HILL-R5b: open-sky value for logic
+      satUniforms.dayLight.value=satUniforms.dayLight.aczoOpen*(typeof aczoHillShade==='function'?aczoHillShade('land'):1);
     }
   }
 }
@@ -9689,7 +9725,7 @@ function updateOneDirectCelestialReflection(source,astronomicallyVisible,materia
     material.uniforms.trailWidth.value=THREE.MathUtils.lerp(3.00,1.46,altNorm)*(aczoUsesReducedMobileGraphics()?.72:1);
   }else{
     // Sonne bleibt dominant und bekommt ebenfalls eine klarere Spiegelbahn.
-    strength=THREE.MathUtils.lerp(1.00,.74,altNorm)*clearSky*(1-night*.92);
+    strength=THREE.MathUtils.lerp(1.00,.74,altNorm)*clearSky*(1-night*.92)*(typeof aczoHillLight==='function'?aczoHillLight(area==='mosel'?'bridge':'pond'):1); // HILL-R5
     material.uniforms.coreRadius.value=THREE.MathUtils.lerp(3.10,2.05,altNorm);
     material.uniforms.trailLength.value=THREE.MathUtils.lerp(24.0,9.2,altNorm)*(aczoUsesReducedMobileGraphics()?.68:1);
     material.uniforms.trailWidth.value=THREE.MathUtils.lerp(2.95,1.48,altNorm)*(aczoUsesReducedMobileGraphics()?.70:1);
@@ -9855,11 +9891,17 @@ function aczoBuildMoselWakeGeometry(){
 }
 function aczoK25UpdateBridgeShadow(){
   const u=aczoK25BridgeShadowUniforms,sunUp=simulationEnabled?Number(sun.userData.astronomicalAltitudeRad)>0:true;
-  const source=sunUp?sun:moonLight;
+  // BRIDGE-R5: same source selection as the pond's tree/pier shadows (updateUnderwaterObstacleShadows):
+  // sun while it is above the real horizon, otherwise the moon while it is above the horizon and lit.
+  const useSun=sunUp&&(simulationEnabled?(Number.isFinite(sun.userData.aczoOpenIntensity)?sun.userData.aczoOpenIntensity:sun.intensity)>.012:true);
+  const moonAltitude=Number(moonLight.userData.astronomicalAltitudeRad);
+  const useMoon=simulationEnabled&&!useSun&&(Number.isFinite(moonAltitude)?moonAltitude>0:!!moonLight.visible)&&moonLight.intensity>.005;
+  const source=useMoon?moonLight:sun;
   if(!simulationEnabled)u.aczoK25BridgeSun.value.copy(aczoNeutralShadowSunPosition).normalize();
   else u.aczoK25BridgeSun.value.copy(source.position).sub(source.target.position).normalize();
   const cloud=simulationEnabled?THREE.MathUtils.clamp((liveWeather.cloud||0)/100,0,1):0;
-  u.aczoK25BridgeStrength.value=!is2D&&waterSurface.visible&&u.aczoK25BridgeSun.value.z>.055?(sunUp?.37:.12)*(1-cloud*.65):0;
+  // HILL-R5: the sun's share fades out while the sun sinks behind the hills as seen from the bridge.
+  u.aczoK25BridgeStrength.value=!is2D&&waterSurface.visible&&(useSun||useMoon)&&u.aczoK25BridgeSun.value.z>0?(useSun?.37*(typeof aczoHillLight==='function'?aczoHillLight('bridge'):1):.12)*(1-cloud*.65):0;
  }
 function aczoK20PublishPatrolWave(p,state,dt){
  const s=aczoK20PatrolWake,valid=!!(p?.active&&state?.valid&&state.inWorld);
@@ -10564,7 +10606,7 @@ function updateAczoMoselTraffic(){
   if(!aczoMoselShipCache.has(state.type)){const ship=aczoBuildMoselVessel(state.type);ship.visible=false;aczoMoselShipCache.set(state.type,ship);aczoMoselShips.add(ship);}
  }
  const ship=aczoMoselShipCache.get(state.type);
- const night=typeof satUniforms!=='undefined'?THREE.MathUtils.clamp((1-satUniforms.dayLight.value)*1.28,0,1):0;
+ const night=typeof satUniforms!=='undefined'?THREE.MathUtils.clamp((1-(satUniforms.dayLight.aczoOpen??satUniforms.dayLight.value))*1.28,0,1):0;
  aczoShipMaterials.glass.emissive.setRGB(.20*night,.16*night,.065*night);
  aczoShipMaterials.navRed.emissive.setRGB(.34*night,.008*night,.002*night);aczoShipMaterials.navGreen.emissive.setRGB(.002*night,.25*night,.015*night);
  aczoMoselShips.visible=waterSurface.visible&&moselWaterSurface.visible;
@@ -10678,7 +10720,7 @@ function updateAczoKonzerBridge(){
  const elapsed=aczoK34RegionalVisualTime()-aczoKonzerTrainEpoch,slot=Math.max(0,Math.floor(elapsed/240)),phase=elapsed-slot*240,reverse=slot%2===1,type=slot%3,consist=aczoGetKonzerConsist(type);
  if(type!==aczoKonzerTrainActiveType){for(const root of aczoKonzerTrainCache.values())root.visible=false;aczoKonzerTrainActiveType=type;}
  const speed=type===2?11.2:15.8,travelled=phase*speed,total=consist.userData.totalLength;consist.visible=elapsed>=0&&travelled<aczoTrackLength+total;
- const night=simulationEnabled?THREE.MathUtils.clamp((1-satUniforms.dayLight.value)*1.28,0,1):0;
+ const night=simulationEnabled?THREE.MathUtils.clamp((1-(satUniforms.dayLight.aczoOpen??satUniforms.dayLight.value))*1.28,0,1):0;
  for(const group of [consist.userData.front,consist.userData.rear])for(const light of group.children)light.material.opacity=night*.94;
  if(!consist.visible){aczoK40UpdateTrainShadow(null,type);return;}
  for(const car of consist.userData.cars){const distance=reverse?aczoTrackLength-travelled+car.userData.centerOffset:travelled-car.userData.centerOffset;car.visible=distance>=0&&distance<=aczoTrackLength;if(!car.visible)continue;
@@ -10704,7 +10746,7 @@ function aczoK26ShipSearchPose(state){
  return {origin:new THREE.Vector3(state.position.x+dx*along,state.position.y+dy*along,ACZO_MOSEL_SURFACE_Z+.02+roof),direction:new THREE.Vector3(dx,dy,-.018).normalize(),range:420};
 }
 function aczoUpdateRegionalNight(state,ship){
- const night=simulationEnabled?THREE.MathUtils.clamp((1-satUniforms.dayLight.value)*1.28,0,1):0;aczoBridgeLightingUniforms.aczoBridgeNight.value=is2D?0:night;
+ const night=simulationEnabled?THREE.MathUtils.clamp((1-(satUniforms.dayLight.aczoOpen??satUniforms.dayLight.value))*1.28,0,1):0;aczoBridgeLightingUniforms.aczoBridgeNight.value=is2D?0:night;
  aczoShipMaterials.trainGlass.emissive.setRGB(.24*night,.17*night,.07*night);aczoShipMaterials.bridgeLamp.color.setRGB(.15+.85*night,.13+.68*night,.075+.32*night);
  for(const pool of aczoBridgeLampPools){pool.visible=!is2D&&waterSurface.visible&&night>.03;pool.material.opacity=night*.10;}
  if(ship){const dir=state.direction,side=new THREE.Vector2(dir.y,-dir.x),rel=new THREE.Vector2(camera.position.x-state.position.x,camera.position.y-state.position.y),forward=rel.dot(dir),right=rel.dot(side),angle=Math.atan2(right,forward);
@@ -10728,7 +10770,7 @@ aczoLitPoint=instanceMatrix*aczoLitPoint;
 #endif
 aczoLitWorld=(modelMatrix*aczoLitPoint).xyz;`);
   shader.fragmentShader=aczoK25SearchlightGLSL+aczoBridgeDownlightGLSL+`varying vec3 aczoLitWorld;
-float aczoSearchSpot(vec3 origin,vec3 direction,vec3 normal){vec3 d=aczoLitWorld-origin;float distance=length(d);return smoothstep(.975,.993,dot(normalize(d),direction))*max(.08,dot(normal,-normalize(d)))*(1.-smoothstep(270.,420.,distance))/(1.+distance*distance*.000018)*aczoK25SearchVisibility(aczoLitWorld,origin);}
+float aczoSearchSpot(vec3 origin,vec3 direction,vec3 normal){vec3 d=aczoLitWorld-origin;float distance=length(d);float cone=smoothstep(.975,.993,dot(normalize(d),direction));if(cone<=0.||aczoSearchStrength<=0.)return 0.;/* BRIDGE-R4: occlusion only inside the lit beam */return cone*max(.08,dot(normal,-normalize(d)))*(1.-smoothstep(270.,420.,distance))/(1.+distance*distance*.000018)*aczoK25SearchVisibility(aczoLitWorld,origin);}
 `+shader.fragmentShader;
   shader.fragmentShader=shader.fragmentShader.replace('gl_FragColor = vec4( outgoingLight, diffuseColor.a );',`vec3 aczoNormal=inverseTransformDirection(normalize(vNormal),viewMatrix);
 float aczoSearch=aczoSearchSpot(aczoSearchOrigin0,aczoSearchDirection0,aczoNormal);
@@ -11868,6 +11910,42 @@ function positionCelestialDiscsForMainCamera(){
 function restoreCelestialDiscWorldPositions(){
   positionCelestialDiscsForMainCamera();
 }
+// HILL-R5: real terrain horizon from the DGM1 payload of the K35 panorama (computed when this build
+// was made). Index = SunCalc azimuth in half degrees (0 = south, +west), value = ridge elevation in
+// 1/100 degree, seen from the pond centre and from the Konz bridge. Geometric altitude like the disc.
+var ACZO_HILL_HORIZON={pond:new Int16Array([197,187,177,167,168,169,169,169,169,167,165,164,164,164,165,165,166,167,168,170,171,172,172,173,150,131,129,125,119,111,103,96,88,80,69,43,65,93,110,111,112,119,128,135,137,140,139,139,140,135,130,124,119,119,120,112,103,95,93,104,114,118,120,118,115,112,109,107,108,109,109,109,109,105,97,94,94,98,104,95,84,75,75,78,82,85,90,99,113,130,148,149,149,151,157,167,182,200,217,228,239,251,260,264,268,266,264,264,263,262,258,254,253,254,272,283,294,312,322,323,325,326,328,328,330,333,336,345,354,362,373,374,374,377,380,382,385,385,385,384,383,380,376,373,369,351,329,309,291,277,266,255,245,238,230,223,217,212,207,202,198,194,191,191,190,189,189,189,189,189,190,191,192,193,193,194,195,196,197,198,199,199,200,201,202,202,203,203,204,205,206,206,208,218,228,239,251,266,280,293,297,300,302,305,308,312,317,320,321,323,325,326,328,328,329,329,329,330,330,331,333,336,338,341,344,348,352,356,361,365,369,362,358,359,360,362,363,367,372,379,392,405,407,406,408,410,411,413,416,424,432,440,448,456,464,472,480,488,496,504,513,521,529,537,545,553,562,570,578,586,594,602,610,618,626,634,642,648,655,662,668,675,680,685,690,695,701,706,711,714,717,720,724,727,730,732,735,737,737,739,741,741,743,743,740,737,733,731,725,724,718,717,701,683,667,652,639,629,620,613,604,598,590,582,564,542,520,502,481,457,438,419,397,374,369,373,376,380,398,417,435,454,472,483,493,503,513,524,534,543,549,554,560,566,572,573,572,571,571,570,569,563,559,558,557,556,554,552,550,547,544,541,538,535,531,528,524,517,511,505,498,490,483,478,470,460,451,443,435,432,425,417,413,408,402,397,389,378,376,367,358,349,336,327,316,300,284,268,254,239,225,214,202,188,174,155,130,116,97,76,59,46,35,27,26,25,25,24,24,23,22,22,21,20,20,19,19,18,18,17,17,17,16,16,15,15,15,15,14,14,14,14,14,14,14,14,14,14,14,14,14,14,15,18,21,23,24,24,24,24,25,27,28,29,32,35,36,38,41,42,44,45,47,48,50,53,57,62,68,74,83,93,101,106,109,110,112,116,118,119,121,125,130,138,145,150,157,166,171,176,178,180,187,199,209,220,230,240,251,255,259,262,265,267,270,276,285,293,302,310,319,321,323,324,326,328,332,336,340,343,347,351,355,359,364,368,372,377,380,384,388,392,396,399,400,401,402,404,405,405,405,406,406,406,406,406,406,407,407,407,408,409,409,410,411,412,414,417,420,424,427,431,435,438,442,447,451,452,453,453,453,453,453,453,453,454,455,456,456,457,457,458,458,459,459,459,459,458,458,457,456,456,455,454,453,451,448,446,443,441,440,438,436,435,434,432,432,431,430,429,428,427,425,424,422,421,419,418,417,416,415,413,411,407,404,402,400,398,398,398,398,398,399,400,399,398,398,398,398,397,396,391,387,384,381,377,376,372,371,368,366,362,357,353,349,345,342,336,334,328,326,320,314,306,302,299,295,292,289,287,284,281,278,276,274,272,278,287,291,294,298,302,307,308,306,306,306,308,310,297,283,273,268,264,259,255,245,231,218,207]),
+ bridge:new Int16Array([192,190,190,191,193,193,195,197,198,200,201,203,204,204,205,206,170,154,147,140,132,125,112,105,96,63,50,44,31,36,69,105,121,137,135,139,142,141,140,143,152,155,158,158,157,158,158,153,148,142,137,134,135,134,125,116,108,109,120,130,136,138,139,136,133,130,126,124,126,127,128,128,128,128,127,118,111,110,111,115,121,116,105,95,87,87,91,94,99,104,115,131,148,166,167,167,169,172,180,191,206,224,242,254,264,273,286,294,297,303,306,302,302,303,302,301,299,295,292,290,290,291,311,321,332,342,355,366,375,380,381,382,383,384,385,386,388,390,393,402,410,418,424,432,442,442,441,443,445,447,449,449,448,448,447,446,442,439,435,430,413,392,370,349,331,318,304,291,280,273,265,257,250,244,238,232,226,222,217,214,209,201,193,193,194,197,198,197,197,195,190,201,213,224,235,237,244,255,267,274,275,276,278,279,280,281,282,282,281,282,283,284,284,285,285,285,285,286,286,286,284,283,283,283,283,280,280,280,280,277,277,276,281,287,296,305,315,320,322,324,326,329,331,333,335,337,339,340,340,341,341,342,342,341,340,339,338,338,339,340,341,345,347,349,351,354,357,360,363,366,371,374,377,380,383,386,389,392,394,395,397,398,398,398,398,399,399,400,401,402,404,404,404,412,419,427,434,441,449,457,465,474,483,488,493,498,503,507,512,517,523,527,532,536,540,545,550,554,559,564,568,570,572,574,576,578,580,581,582,582,583,583,583,584,583,582,580,580,578,577,575,571,565,559,554,550,545,537,517,497,478,463,455,447,437,419,397,376,360,370,381,389,394,405,418,431,439,444,449,454,458,457,456,454,453,449,448,446,445,443,440,438,436,432,429,426,421,415,409,403,395,390,381,372,363,360,354,346,342,337,332,324,317,311,301,292,280,271,255,239,223,209,194,183,171,156,142,118,100,82,60,46,34,25,18,17,13,12,12,12,11,11,10,10,10,9,9,9,9,8,8,8,8,8,8,9,9,10,10,11,12,13,12,11,11,10,10,9,8,7,7,7,7,7,6,6,8,14,23,28,31,33,35,38,39,41,42,44,45,46,48,49,51,53,55,58,66,69,73,79,87,97,106,115,124,136,150,163,175,186,197,208,215,220,224,229,237,244,253,262,271,274,277,279,281,287,294,301,309,315,320,324,329,334,338,340,342,344,346,348,351,353,354,355,356,357,358,360,363,367,372,376,379,381,386,391,397,402,403,405,406,407,409,410,413,415,417,419,421,423,425,427,428,429,430,431,431,433,433,434,434,431,429,427,426,426,426,427,428,428,429,430,430,430,430,430,430,431,431,432,432,432,432,433,431,430,429,428,427,427,428,429,431,434,437,439,441,443,445,447,447,445,443,441,440,439,437,436,434,433,433,431,430,429,426,424,422,420,418,416,413,410,406,403,400,397,394,387,380,372,365,357,350,343,345,348,351,352,353,354,353,353,353,354,355,353,351,350,351,351,350,348,346,344,342,339,336,333,331,328,326,324,321,319,327,336,343,345,347,350,355,360,365,365,363,362,362,363,363,366,371,358,345,331,321,317,312,304,291,277,263,250,238,228,218,209,200,191,183,181,183,184,187,190,191,192,193,193,193,193])};
+var aczoHill={target:{pond:1,bridge:1},value:{pond:1,bridge:1},shade:{land:1,pond:1,mosel:1},init:false};
+function aczoHillHorizonDeg(table,azimuthRad){let a=(azimuthRad*57.29577951308232)%360;if(a<0)a+=360;const x=a*2,i=Math.floor(x),f=x-i;return (table[i%720]*(1-f)+table[(i+1)%720]*f)/100;}
+// Share of the 0.53 deg sun disc above the ridge.
+function aczoHillVisibility(table,altitudeRad,azimuthRad){return THREE.MathUtils.smoothstep(altitudeRad*57.29577951308232-aczoHillHorizonDeg(table,azimuthRad),-.265,.265);}
+function aczoHillLight(where){return simulationEnabled?aczoHill.value[where]:1;}
+function aczoHillSetTarget(altitudeRad,azimuthRad,sunUp){
+ for(const w of ['pond','bridge'])aczoHill.target[w]=!simulationEnabled?1:sunUp?aczoHillVisibility(ACZO_HILL_HORIZON[w],altitudeRad,azimuthRad):0;
+ if(!aczoHill.init||(typeof anglingTimeShiftActive!=='undefined'&&anglingTimeShiftActive)){aczoHill.value.pond=aczoHill.target.pond;aczoHill.value.bridge=aczoHill.target.bridge;aczoHill.init=true;}
+}
+// Per frame: ease toward the 30-s astronomy target (no light steps) and re-apply the direct light.
+function aczoHillTick(dt){
+ if(!simulationEnabled){aczoHill.value.pond=aczoHill.value.bridge=1;aczoHill.shade.land=aczoHill.shade.pond=aczoHill.shade.mosel=1;if(typeof aczoK25BridgeShadowUniforms!=='undefined'&&aczoK25BridgeShadowUniforms.aczoR5MoselShade)aczoK25BridgeShadowUniforms.aczoR5MoselShade.value=1;if(typeof waterUniforms!=='undefined'&&waterUniforms.aczoR5WaterShade)waterUniforms.aczoR5WaterShade.value=1;return;}
+ const fast=typeof anglingTimeShiftActive!=='undefined'&&anglingTimeShiftActive,k=fast?1:1-Math.exp(-Math.max(0,Math.min(1,Number(dt)||0))/1.2);
+ for(const w of ['pond','bridge']){const t=aczoHill.target[w];let v=aczoHill.value[w]+(t-aczoHill.value[w])*k;if(Math.abs(t-v)<.002)v=t;aczoHill.value[w]=v;}
+ const h=aczoHill.value.pond;
+ if(Number.isFinite(sun.userData.aczoOpenIntensity))sun.intensity=sun.userData.aczoOpenIntensity*h;
+ if(typeof dayReliefLight!=='undefined'&&Number.isFinite(dayReliefLight.userData.aczoOpenIntensity))dayReliefLight.intensity=dayReliefLight.userData.aczoOpenIntensity*h;
+ // HILL-R5b: in the hills' shade the unlit aerial image, pond depth colours and Mosel get the same
+ // darkening as a sun shadow (same strengths as the shadow catchers, same cloud rule). It fades out
+ // with the existing night factor, so night is unchanged and dusk never brightens again.
+ const lerp=THREE.MathUtils.lerp,nd=THREE.MathUtils.clamp(Number(sceneNightFactor)||0,0,1),fade=Math.sqrt(THREE.MathUtils.clamp((1-nd)/.75,0,1));
+ const c=Math.pow(THREE.MathUtils.clamp((Number(liveWeather?.cloud)||0)/100,0,1),.78),wP=(1-aczoHill.value.pond)*fade,wB=(1-aczoHill.value.bridge)*fade;
+ aczoHill.shade.land=1-lerp(.62,.38,c)*wP;
+ aczoHill.shade.pond=1-(1-(1-lerp(.44,.28,c))*(1-lerp(.36,.26,c)))*wP;
+ aczoHill.shade.mosel=1-lerp(.38,.25,c)*wB;
+ if(typeof satUniforms!=='undefined'&&satUniforms.dayLight&&Number.isFinite(satUniforms.dayLight.aczoOpen))satUniforms.dayLight.value=satUniforms.dayLight.aczoOpen*aczoHill.shade.land;
+ if(typeof pondMat!=='undefined'&&pondMat.color&&Number.isFinite(pondMat.userData.aczoOpenShade))pondMat.color.setScalar(pondMat.userData.aczoOpenShade*aczoHill.shade.pond);
+ if(typeof aczoK25BridgeShadowUniforms!=='undefined'&&aczoK25BridgeShadowUniforms.aczoR5MoselShade)aczoK25BridgeShadowUniforms.aczoR5MoselShade.value=aczoHill.shade.mosel;
+ if(typeof waterUniforms!=='undefined'&&waterUniforms.aczoR5WaterShade){const uw=(typeof fishMode!=='undefined'&&fishMode)||!!window.__aczoUnderwaterSceneActive;waterUniforms.aczoR5WaterShade.value=uw?1:aczoHill.shade.pond;}
+}
+function aczoHillShade(where){return simulationEnabled&&typeof aczoHill!=='undefined'?aczoHill.shade[where]:1;}
 function updateAstronomy(){
   if(typeof SunCalc==='undefined') return;
 
@@ -11982,6 +12060,7 @@ function updateAstronomy(){
   // Unveränderter Ausgangswert für die Wolkendämpfung. Dadurch kann der
   // Regler die Sonne nicht bei jedem Aufruf erneut schwächer multiplizieren.
   sun.userData.clearSkyIntensity=sun.intensity;
+  aczoHillSetTarget(sunPos.altitude,sunPos.azimuth,sunUp); // HILL-R5
   // Mondlicht bleibt in heller Daemmerung/bei Tag dezent; nur die Scheibe darf
   // sichtbar sein. Dadurch entsteht kein kuenstlicher Nacht-Look vor Sonnenuntergang.
   const moonLightDayFade=THREE.MathUtils.lerp(1,.16,moonDaylight);
@@ -13183,7 +13262,7 @@ function updateTraffic(dt){
 function birdsAllowedNow(){
   if(is2D&&!(typeof anglingMode!=='undefined'&&anglingMode))return false;
   if(typeof simulationEnabled!=='undefined'&&simulationEnabled){
-    if(typeof sun==='undefined'||!sun.visible||sun.intensity<0.16)return false;
+    if(typeof sun==='undefined'||!sun.visible||(Number.isFinite(sun.userData.aczoOpenIntensity)?sun.userData.aczoOpenIntensity:sun.intensity)<0.16)return false; // HILL-R5: birds keep the astronomical rule
   }
   return true;
 }
@@ -16827,7 +16906,9 @@ function aczoBuildGrillPavilion(){
   ],2));
   roofGeo.setIndex([0,1,2,0,2,3,4,5,6,4,6,7,8,9,10,11,12,13]);
   roofGeo.computeVertexNormals();
-  aczoFacilityMesh(pavilion,new THREE.Mesh(roofGeo,aczoBuildingSlateMat),'PAVILLON_WALMDACH_SCHINDELN');
+  // FIX-1: roof visible from below (explore view); shadow pass unchanged (BackSide as before).
+const aczoFix1PavilionRoofMat=aczoBuildingSlateMat.clone();aczoFix1PavilionRoofMat.side=THREE.DoubleSide;aczoFix1PavilionRoofMat.shadowSide=THREE.BackSide;
+aczoFacilityMesh(pavilion,new THREE.Mesh(roofGeo,aczoFix1PavilionRoofMat),'PAVILLON_WALMDACH_SCHINDELN');
   aczoFacilityBox(pavilion,[ridgeHalf*2+.18,.13,.13],[0,0,ridge+.06],aczoBuildingRoofEdgeMat,'PAVILLON_FIRSTKAPPE');
   for(const y of [-ry,ry])aczoFacilityBox(pavilion,[w+over*2+.08,.11,.12],[0,y,eave-.02],aczoBuildingRoofEdgeMat,'PAVILLON_TRAUFKANTE');
   for(const x of [-rx,rx])aczoFacilityBox(pavilion,[.11,d+over*2+.08,.12],[x,0,eave-.02],aczoBuildingRoofEdgeMat,'PAVILLON_TRAUFKANTE_SEITE');
@@ -18882,7 +18963,7 @@ async function aczoSurveyBuildSegments(items,material,name,cast=true,receive=tru
   const groups=new Map();
   if(chunked){
     for(const s of items){
-await window.__aczoSafeStart.yield();
+if(window.__aczoSafeStart.due())await window.__aczoSafeStart.yieldWork();
 
       const mx=(s.a.x+s.b.x)*.5,my=(s.a.y+s.b.y)*.5;
       const key=Math.floor(mx/ACZO_SURVEY_SEGMENT_CHUNK_SIZE)+'|'+Math.floor(my/ACZO_SURVEY_SEGMENT_CHUNK_SIZE)+'|'+(aczoSurveyDistanceToPondEdge(mx,my)<=45?'near':'far');
@@ -18890,24 +18971,24 @@ await window.__aczoSafeStart.yield();
       groups.get(key).push(s);
     }
   }else for(const segment of items){
-await window.__aczoSafeStart.yield();
+if(window.__aczoSafeStart.due())await window.__aczoSafeStart.yieldWork();
 const near=aczoSurveyDistanceToPondEdge((segment.a.x+segment.b.x)*.5,(segment.a.y+segment.b.y)*.5)<=45,key=near?'near':'far';if(!groups.has(key))groups.set(key,[]);groups.get(key).push(segment);}
 
   let firstMesh=null,chunkIndex=0;
   for(const batch of groups.values()){
-await window.__aczoSafeStart.yield();
+if(window.__aczoSafeStart.due())await window.__aczoSafeStart.yieldWork();
 
     // Eigene kleine Branch-Geometrie pro Chunk erlaubt eine korrekte
     // BoundingSphere trotz InstancedMesh-Weltmatrizen.
     const geo=chunked?aczoSurveyBranchGeo.clone():aczoSurveyBranchGeo;
     const mesh=new THREE.InstancedMesh(geo,material,batch.length),dummy=new THREE.Object3D();
     let minX=Infinity,minY=Infinity,minZ=Infinity,maxX=-Infinity,maxY=-Infinity,maxZ=-Infinity;
-    (await (async()=>{for(const [i,s] of (batch).entries()){await window.__aczoSafeStart.yield();
-      const delta=s.b.clone().sub(s.a),length=delta.length();
+    (await (async()=>{for(let i=0;i<batch.length;i++){const s=batch[i];if(window.__aczoSafeStart.due())await window.__aczoSafeStart.yieldWork();
+      const delta=aczoOpt9Delta.copy(s.b).sub(s.a),length=delta.length();
       dummy.position.copy(s.a).add(s.b).multiplyScalar(.5);
       dummy.quaternion.setFromUnitVectors(aczoSurveyUp,delta.normalize());
       dummy.scale.set(s.r,length,s.r);dummy.updateMatrix();mesh.setMatrixAt(i,dummy.matrix);
-      if(material.vertexColors)mesh.setColorAt(i,new THREE.Color(s.color??material.color??0xffffff));
+      if(material.vertexColors)mesh.setColorAt(i,aczoOpt9Color.set(s.color??material.color??0xffffff));
       minX=Math.min(minX,s.a.x,s.b.x);minY=Math.min(minY,s.a.y,s.b.y);minZ=Math.min(minZ,s.a.z,s.b.z);
       maxX=Math.max(maxX,s.a.x,s.b.x);maxY=Math.max(maxY,s.a.y,s.b.y);maxZ=Math.max(maxZ,s.a.z,s.b.z);
     }})());
@@ -18925,6 +19006,8 @@ await window.__aczoSafeStart.yield();
       mesh.userData.aczoForestChunk=true;
       mesh.userData.aczoChunkCenter=center;
       mesh.userData.aczoChunkRadius=radius;
+      // OPT-11: far-distance geometry for this chunk (own bounds, like the near geometry).
+      if(ACZO_OPT8_ENABLED&&geo!==aczoSurveyBranchGeo&&geo.attributes.position.count===aczoSurveyBranchGeo.attributes.position.count){const lo=aczoOpt11BranchLoGeo.clone();lo.boundingSphere=geo.boundingSphere.clone();mesh.userData.aczoOpt11={hi:geo,lo,far:false};aczoOpt11Chunks.push(mesh);}
     }else mesh.frustumCulled=false;
     mesh.updateMatrix();mesh.matrixAutoUpdate=false;
     aczoSurveyedNatureGroup.add(mesh);
@@ -18933,8 +19016,8 @@ await window.__aczoSafeStart.yield();
   return firstMesh;
 }
 function aczoSurveyShuffle(items,seed){const rnd=aczoSurveyRandom(seed);for(let i=items.length-1;i>0;i--){const j=Math.floor(rnd()*(i+1));[items[i],items[j]]=[items[j],items[i]];}}
-async function aczoSurveyBuildColored(items,geometry,material,name,seasonal,cast=true,receive=true){if(!items.length)return null;const mesh=new THREE.InstancedMesh(geometry,material,items.length),dummy=new THREE.Object3D();(await (async()=>{for(const [i,item] of (items).entries()){await window.__aczoSafeStart.yield();dummy.position.copy(item.p);dummy.rotation.copy(item.rot);dummy.scale.copy(item.scale);dummy.updateMatrix();mesh.setMatrixAt(i,dummy.matrix);mesh.setColorAt(i,new THREE.Color(item.color??item.species?.summer??0x65a94c));}})());mesh.instanceMatrix.setUsage(THREE.StaticDrawUsage);mesh.instanceMatrix.needsUpdate=true;if(mesh.instanceColor){mesh.instanceColor.setUsage(THREE.StaticDrawUsage);mesh.instanceColor.needsUpdate=true;}mesh.updateMatrix();mesh.matrixAutoUpdate=false;mesh.name=name;mesh.castShadow=cast;mesh.receiveShadow=receive;mesh.userData.aczoNoShadow=!cast;mesh.userData.aczoNoReceiveShadow=!receive;mesh.frustumCulled=false;mesh.userData.maxCount=items.length;mesh.userData.seasonCount=items.length;aczoSurveyedNatureGroup.add(mesh);(seasonal?aczoSurveySeasonMeshes:aczoSurveyEvergreenMeshes).push(mesh);if(name.includes('EINZELBLAETTER'))aczoSurveyFineLodMeshes.push(mesh);return mesh;}
-async function aczoSurveyBuildFoliageBatches(items,geometry,name,cast=false,receive=false,fineLod=false){
+async function aczoSurveyBuildColored(items,geometry,material,name,seasonal,cast=true,receive=true){if(!items.length)return null;const mesh=new THREE.InstancedMesh(geometry,material,items.length),dummy=new THREE.Object3D();(await (async()=>{for(let i=0;i<items.length;i++){const item=items[i];if(window.__aczoSafeStart.due())await window.__aczoSafeStart.yieldWork();dummy.position.copy(item.p);dummy.rotation.copy(item.rot);dummy.scale.copy(item.scale);dummy.updateMatrix();mesh.setMatrixAt(i,dummy.matrix);mesh.setColorAt(i,aczoOpt9Color.set(item.color??item.species?.summer??0x65a94c));}})());mesh.instanceMatrix.setUsage(THREE.StaticDrawUsage);mesh.instanceMatrix.needsUpdate=true;if(mesh.instanceColor){mesh.instanceColor.setUsage(THREE.StaticDrawUsage);mesh.instanceColor.needsUpdate=true;}mesh.updateMatrix();mesh.matrixAutoUpdate=false;mesh.name=name;mesh.castShadow=cast;mesh.receiveShadow=receive;mesh.userData.aczoNoShadow=!cast;mesh.userData.aczoNoReceiveShadow=!receive;mesh.frustumCulled=false;mesh.userData.maxCount=items.length;mesh.userData.seasonCount=items.length;aczoSurveyedNatureGroup.add(mesh);(seasonal?aczoSurveySeasonMeshes:aczoSurveyEvergreenMeshes).push(mesh);if(name.includes('EINZELBLAETTER'))aczoSurveyFineLodMeshes.push(mesh);return mesh;}
+async function aczoOpt8LegacyFoliageBatches(items,geometry,name,cast=false,receive=false,fineLod=false){
   // VEG-02: Nur gleiche Sektormaterialien dieser Geometriefamilie teilen.
   // Artenidentitaet und exakte Farbverschiebungen bleiben getrennt.
   // Der lokale Pool lebt nur waehrend dieses unveraenderten Profilaufbaus.
@@ -18945,7 +19028,7 @@ async function aczoSurveyBuildFoliageBatches(items,geometry,name,cast=false,rece
   // damit die Zahl der Drawcalls nicht sinnlos explodiert.
   const baseBatches=new Map();
   for(const item of items){
-await window.__aczoSafeStart.yield();
+if(window.__aczoSafeStart.due())await window.__aczoSafeStart.yieldWork();
 
     const key=item.species.name+'_'+(item.toneBand||0);
     if(!baseBatches.has(key))baseBatches.set(key,[]);
@@ -18954,12 +19037,12 @@ await window.__aczoSafeStart.yield();
   const chunkSize=aczoSurveyReducedDetail?28:38;
   const chunkThreshold=aczoSurveyReducedDetail?180:300;
   for(const [key,baseBatch] of baseBatches){
-await window.__aczoSafeStart.yield();
+if(window.__aczoSafeStart.due())await window.__aczoSafeStart.yieldWork();
 
     const spatial=new Map();
     if(baseBatch.length>=chunkThreshold){
       for(const item of baseBatch){
-await window.__aczoSafeStart.yield();
+if(window.__aczoSafeStart.due())await window.__aczoSafeStart.yieldWork();
 
         const sectorSize=item.moselExpansion?76:chunkSize;
         const k=(item.moselExpansion?'mosel|':'')+Math.floor(item.p.x/sectorSize)+'|'+Math.floor(item.p.y/sectorSize);
@@ -18969,7 +19052,7 @@ await window.__aczoSafeStart.yield();
     }else spatial.set('all',baseBatch);
     let ci=0;
     for(const batch of spatial.values()){
-await window.__aczoSafeStart.yield();
+if(window.__aczoSafeStart.due())await window.__aczoSafeStart.yieldWork();
 
       const first=batch[0];
       let tones=materialPool.get(first.species);
@@ -18990,7 +19073,7 @@ await window.__aczoSafeStart.yield();
       }
       const mesh=new THREE.InstancedMesh(geometry,material,batch.length),dummy=new THREE.Object3D();
       let minX=Infinity,minY=Infinity,minZ=Infinity,maxX=-Infinity,maxY=-Infinity,maxZ=-Infinity;
-      (await (async()=>{for(const [i,item] of (batch).entries()){await window.__aczoSafeStart.yield();
+      (await (async()=>{for(let i=0;i<batch.length;i++){const item=batch[i];if(window.__aczoSafeStart.due())await window.__aczoSafeStart.yieldWork();
         dummy.position.copy(item.p);dummy.rotation.copy(item.rot);dummy.scale.copy(item.scale);dummy.updateMatrix();mesh.setMatrixAt(i,dummy.matrix);
         const r=Math.max(item.scale.x,item.scale.y,item.scale.z)*1.35;
         minX=Math.min(minX,item.p.x-r);minY=Math.min(minY,item.p.y-r);minZ=Math.min(minZ,item.p.z-r);
@@ -19039,6 +19122,154 @@ await window.__aczoSafeStart.yield();
       if(fineLod)aczoSurveyFineLodMeshes.push(mesh);
       if(name.includes('NATURWALD_FEINE_BLATTFAECHER_UND_SCHATTEN'))aczoSurveySprayLodMeshes.push(mesh);
     }
+  }
+}
+// OPT-8 (Performance 2026-11): one InstancedMesh per foliage sector instead of
+// one per species x tone band x sector. Colours move into instanceColor.
+// Default since round 4. A/B switch: ?opt8=0 restores the previous batches, sectors and branch geometry.
+const ACZO_OPT8_EMISSIVE_ANCHOR='vec3 totalEmissiveRadiance = emissive;';
+const ACZO_OPT8_ENABLED=!/[?&]opt8=0(?:&|$)/.test(String(location.search||''))&&String(THREE.ShaderLib?.lambert?.fragmentShader||'').includes(ACZO_OPT8_EMISSIVE_ANCHOR);
+const aczoOpt8Color=new THREE.Color(),aczoOpt8Tmp=new THREE.Color();
+function aczoOpt8FoliageShader(shader){
+  // The former per-tone material used the tone colour as emissive colour too.
+  shader.fragmentShader=shader.fragmentShader.replace('vec3 totalEmissiveRadiance = emissive;','vec3 totalEmissiveRadiance = emissive;\n#ifdef USE_INSTANCING_COLOR\n\ttotalEmissiveRadiance *= vColor;\n#endif');
+}
+function aczoOpt8SeasonColor(target,tmp,s,phase,progress,d){
+  // Identical colour rule as updateAczoSurveyedNatureSeason.
+  if(phase==='winter')target.set(s.winter);
+  else if(phase==='spring'){
+    target.set(s.spring).lerp(tmp.set(s.summer),progress*.74);
+    if(s.blossom&&d>=82&&d<=126)target.set(0xe0e2cf).lerp(tmp.set(0xb5c595),Math.abs(d-104)/22);
+  }else if(phase==='autumn')target.set(s.summer).lerp(tmp.set(s.autumn),progress);
+  else target.set(s.summer);
+  return target;
+}
+function aczoOpt8Paint(mesh,phase,progress,d){
+  const data=mesh.userData.aczoOpt8,groups=data.groups;let changed=false;
+  for(const g of groups){
+    aczoOpt8SeasonColor(aczoOpt8Color,aczoOpt8Tmp,g.species,phase,progress,d).offsetHSL(g.hueShift,g.satShift,g.lightShift);
+    if(aczoOpt8Color.r!==g.r||aczoOpt8Color.g!==g.g||aczoOpt8Color.b!==g.b){g.r=aczoOpt8Color.r;g.g=aczoOpt8Color.g;g.b=aczoOpt8Color.b;changed=true;}
+  }
+  if(!changed)return;
+  const a=mesh.instanceColor.array,of=data.groupOf;
+  for(let i=0;i<of.length;i++){const g=groups[of[i]];a[i*3]=g.r;a[i*3+1]=g.g;a[i*3+2]=g.b;}
+  mesh.instanceColor.needsUpdate=true;
+}
+function aczoOpt8Count(mesh,factor){
+  // Same rounding per former batch as Math.round(seasonCount*factor) before.
+  let n=0;for(const g of mesh.userData.aczoOpt8.groups)n+=Math.max(0,Math.round(g.seasonCount*factor));return n;
+}
+async function aczoSurveyBuildFoliageBatches(items,geometry,name,cast=false,receive=false,fineLod=false){
+  if(!ACZO_OPT8_ENABLED)return aczoOpt8LegacyFoliageBatches(items,geometry,name,cast,receive,fineLod);
+  const boot=window.__aczoSafeStart;
+  // Same base batches; sector cells 76 m (Mosel expansion 76 m as before).
+  const baseBatches=new Map();
+  for(const item of items){
+    if(boot.due())await boot.yieldWork();
+    const key=item.species.name+'_'+(item.toneBand||0);
+    if(!baseBatches.has(key))baseBatches.set(key,[]);
+    baseBatches.get(key).push(item);
+  }
+  const chunkSize=aczoSurveyReducedDetail?28:76; // round 4: 76 m map-view sectors (legacy path keeps 38 m)
+  const chunkThreshold=aczoSurveyReducedDetail?180:300;
+  const sectors=new Map();
+  for(const [key,baseBatch] of baseBatches){
+    if(boot.due())await boot.yieldWork();
+    const spatial=new Map();
+    if(baseBatch.length>=chunkThreshold){
+      for(const item of baseBatch){
+        if(boot.due())await boot.yieldWork();
+        const sectorSize=item.moselExpansion?76:chunkSize;
+        const k=(item.moselExpansion?'mosel|':'')+Math.floor(item.p.x/sectorSize)+'|'+Math.floor(item.p.y/sectorSize);
+        if(!spatial.has(k))spatial.set(k,[]);
+        spatial.get(k).push(item);
+      }
+    }else spatial.set('all',baseBatch);
+    // A base batch that did not split stays unsectored (frustumCulled=false), as before.
+    const sectored=spatial.size>1;
+    for(const [cell,batch] of spatial){
+      const first=batch[0],k=sectored?cell:'all';
+      let groups=sectors.get(k);if(!groups){groups=[];sectors.set(k,groups);}
+      groups.push({key,batch,n:batch.length,seasonCount:batch.length,species:first.species,
+        hueShift:first.hueShift||0,satShift:first.satShift||0,lightShift:first.lightShift||0,r:NaN,g:NaN,b:NaN});
+    }
+  }
+  const material=new THREE.MeshLambertMaterial({color:0xffffff,side:THREE.DoubleSide,emissive:0xffffff,emissiveIntensity:.075});
+  material.userData.aczoDayColor=new THREE.Color(0xffffff);
+  material.userData.aczoDayEmissiveIntensity=.075;material.userData.aczoOpt8=true;
+  material.onBeforeCompile=aczoOpt8FoliageShader;
+  aczoSurveyFoliageMaterials.push(material);
+  let ci=0;
+  for(const [k,groups] of sectors){
+    if(boot.due())await boot.yieldWork();
+    // Instance j of former batch g is drawn when Math.round(n_g*f)>j, i.e. for f>=(j+.5)/n_g.
+    let total=0;for(const g of groups)total+=g.n;
+    // k-way merge of the already ordered batches (smallest fraction first, ties by batch order).
+    const orderG=new Uint16Array(total),orderJ=new Uint32Array(total),next=new Uint32Array(groups.length);
+    for(let i=0;i<total;i++){
+      let best=-1,bestF=Infinity;
+      for(let gi=0;gi<groups.length;gi++){const j=next[gi],n=groups[gi].n;if(j<n){const f=(j+.5)/n;if(f<bestF){bestF=f;best=gi;}}}
+      orderG[i]=best;orderJ[i]=next[best]++;
+    }
+    const mesh=new THREE.InstancedMesh(geometry,material,total),dummy=new THREE.Object3D(),groupOf=new Uint16Array(total);
+    let minX=Infinity,minY=Infinity,minZ=Infinity,maxX=-Infinity,maxY=-Infinity,maxZ=-Infinity;
+    for(let i=0;i<total;i++){
+      if(boot.due())await boot.yieldWork();
+      const gi=orderG[i],item=groups[gi].batch[orderJ[i]];groupOf[i]=gi;
+      dummy.position.copy(item.p);dummy.rotation.copy(item.rot);dummy.scale.copy(item.scale);dummy.updateMatrix();mesh.setMatrixAt(i,dummy.matrix);
+      const r=Math.max(item.scale.x,item.scale.y,item.scale.z)*1.35;
+      minX=Math.min(minX,item.p.x-r);minY=Math.min(minY,item.p.y-r);minZ=Math.min(minZ,item.p.z-r);
+      maxX=Math.max(maxX,item.p.x+r);maxY=Math.max(maxY,item.p.y+r);maxZ=Math.max(maxZ,item.p.z+r);
+    }
+    mesh.instanceColor=new THREE.InstancedBufferAttribute(new Float32Array(total*3),3);
+    mesh.userData.aczoOpt8={groups,groupOf};
+    aczoOpt8Paint(mesh,'summer',0,180);
+    mesh.userData.aczoVisualBounds=new THREE.Box3(new THREE.Vector3(minX,minY,minZ),new THREE.Vector3(maxX,maxY,maxZ));
+    mesh.instanceMatrix.setUsage(THREE.StaticDrawUsage);mesh.instanceMatrix.needsUpdate=true;
+    mesh.name=name+'_OPT8_'+(k==='all'?'ALL':'SECTOR_'+(++ci));
+    mesh.castShadow=cast;mesh.receiveShadow=receive;
+    mesh.userData.aczoNoShadow=!cast;mesh.userData.aczoNoReceiveShadow=!receive;
+    mesh.userData.maxCount=total;mesh.userData.seasonCount=total;
+    mesh.userData.species=groups[0].species;mesh.userData.hueShift=0;mesh.userData.satShift=0;mesh.userData.lightShift=0;
+    if(k!=='all'){
+      const center=new THREE.Vector3((minX+maxX)*.5,(minY+maxY)*.5,(minZ+maxZ)*.5);
+      const radius=.5*Math.hypot(maxX-minX,maxY-minY,maxZ-minZ)+1.0;
+      const sharedSector=geometry===realBirchLeafGeometry||geometry===realBirchSprayGeometry;
+      const cloneSource=sharedSector?Object.assign(Object.create(geometry),{attributes:{},index:null}):geometry;
+      mesh.geometry=geometry.clone.call(cloneSource);
+      if(sharedSector){
+        const sharedAttributes={...geometry.attributes},sharedIndex=geometry.index;
+        mesh.geometry.index=sharedIndex;
+        for(const key of Object.keys(sharedAttributes))mesh.geometry.attributes[key]=sharedAttributes[key];
+        const disposeSector=mesh.geometry.dispose;
+        mesh.geometry.dispose=function(){
+          const index=this.index,attributes=this.attributes,owned={};
+          for(const key of Object.keys(attributes))if(attributes[key]!==sharedAttributes[key])owned[key]=attributes[key];
+          this.index=index===sharedIndex?null:index;this.attributes=owned;
+          try{return disposeSector.call(this);}
+          finally{this.index=index;this.attributes=attributes;}
+        };
+      }
+      mesh.geometry.boundingSphere=new THREE.Sphere(center,radius);
+      mesh.frustumCulled=true;mesh.userData.aczoPerf11Sector=true;
+    }else mesh.frustumCulled=false;
+    mesh.updateMatrix();mesh.matrixAutoUpdate=false;
+    aczoSurveyedNatureGroup.add(mesh);aczoSurveySeasonMeshes.push(mesh);
+    if(fineLod)aczoSurveyFineLodMeshes.push(mesh);
+    if(name.includes('NATURWALD_FEINE_BLATTFAECHER_UND_SCHATTEN'))aczoSurveySprayLodMeshes.push(mesh);
+  }
+}
+// OPT-9a: reused scratch objects for the forest generator (values are copied immediately).
+const aczoOpt9Delta=new THREE.Vector3(),aczoOpt9Color=new THREE.Color();
+// OPT-11: branch distance LOD (see aczoOpt11UpdateBranchLod).
+const aczoOpt11BranchLoGeo=new THREE.CylinderGeometry(1,1,1,4,1,false),aczoOpt11Chunks=[];
+function aczoOpt11UpdateBranchLod(){
+  if(!aczoOpt11Chunks.length||typeof camera==='undefined')return;
+  const p=camera.position;
+  for(const mesh of aczoOpt11Chunks){
+    const lod=mesh.userData.aczoOpt11,c=mesh.userData.aczoChunkCenter,r=mesh.userData.aczoChunkRadius||0;if(!lod||!c)continue;
+    const gap=p.distanceTo(c)-r,far=lod.far?gap>58:gap>62;
+    if(far!==lod.far){lod.far=far;mesh.geometry=far?lod.lo:lod.hi;}
   }
 }
 function aczoP13PointSegmentDistance(px,py,a,b){
@@ -19098,7 +19329,30 @@ function aczoSurveyPointSegmentDistance2D(px,py,a,b){
   const t=vv>1e-9?THREE.MathUtils.clamp((wx*vx+wy*vy)/vv,0,1):0;
   return Math.hypot(px-(a[0]+vx*t),py-(a[1]+vy*t));
 }
+// OPT-7: exact bounding-box pruning (start-up only, identical result).
+let aczoOpt7PondEdgeIndex=null;
+function aczoOpt7PondEdgeDistance(x,y){
+  const points=POND_RENDER_BOUNDARY,n=points.length;
+  let index=aczoOpt7PondEdgeIndex;
+  if(!index||index.points!==points||index.n!==n){
+    const box=new Float64Array(n*4);
+    for(let i=0;i<n;i++){const a=points[i],b=points[(i+1)%n];box[i*4]=Math.min(a[0],b[0]);box[i*4+1]=Math.max(a[0],b[0]);box[i*4+2]=Math.min(a[1],b[1]);box[i*4+3]=Math.max(a[1],b[1]);}
+    index=aczoOpt7PondEdgeIndex={points,n,box};
+  }
+  const box=index.box;let near=0,nearD=Infinity;
+  for(let i=0;i<n;i++){const p=points[i],dx=p[0]-x,dy=p[1]-y,d=dx*dx+dy*dy;if(d<nearD){nearD=d;near=i;}}
+  const s0=(near+n-1)%n;
+  let best=Math.min(aczoSurveyPointSegmentDistance2D(x,y,points[s0],points[near]),aczoSurveyPointSegmentDistance2D(x,y,points[near],points[(near+1)%n]));
+  for(let i=0;i<n;i++){
+    if(i===s0||i===near)continue;
+    const k=i*4,dx=x<box[k]?box[k]-x:x>box[k+1]?x-box[k+1]:0,dy=y<box[k+2]?box[k+2]-y:y>box[k+3]?y-box[k+3]:0;
+    if(dx*dx+dy*dy>best*best*(1+1e-9)+1e-9)continue;
+    best=Math.min(best,aczoSurveyPointSegmentDistance2D(x,y,points[i],points[(i+1)%n]));
+  }
+  return best;
+}
 function aczoSurveyDistanceToPondEdge(x,y){
+  if(window.__aczoSafeStart?.initializing&&POND_RENDER_BOUNDARY.length>2)return aczoOpt7PondEdgeDistance(x,y);
   let best=Infinity;
   for(let i=0;i<POND_RENDER_BOUNDARY.length;i++){
     const a=POND_RENDER_BOUNDARY[i],b=POND_RENDER_BOUNDARY[(i+1)%POND_RENDER_BOUNDARY.length];
@@ -19144,7 +19398,7 @@ function aczoBuildVariedDeciduous(tree){
   aczoSurveyBuildDeciduous(t);
   const lean=(kind===4?.13:kind===5?-.095:.02)*(variant()<.5?-1:1),angle=variant()*Math.PI*2;
   const sx=Math.cos(angle)*lean,sy=Math.sin(angle)*lean;
-  const seen=new WeakSet();const shift=p=>{if(seen.has(p))return;seen.add(p);const dz=Math.max(0,p.z-ACZO_SATELLITE_GROUND_Z);p.x+=sx*dz;p.y+=sy*dz;};
+  const seen=new Set();const shift=p=>{if(seen.has(p))return;seen.add(p);const dz=Math.max(0,p.z-ACZO_SATELLITE_GROUND_Z);p.x+=sx*dz;p.y+=sy*dz;};
   for(const [items,start] of [[aczoSurveyWoodSegments,wood],[aczoSurveyBirchSegments,birch],[aczoSurveyBirchMarks,marks]])
     for(let i=start;i<items.length;i++){shift(items[i].a);shift(items[i].b);}
   for(const [items,start] of [[aczoSurveyLeafItems,leaves],[aczoSurveySprayItems,sprays],[aczoSeasonalTreeShadowProxyItems,shadows]])
@@ -19156,7 +19410,7 @@ function aczoBuildVariedConifer(object,index,forestMix=false){
   aczoSurveyBuildConifer(object,index,forestMix);
   const rng=aczoSurveyRandom(aczoSurveySeed(object.x,object.y,index+441)),shape=index%4;
   const height=.78+rng()*.48,width=shape===0?.68:shape===1?1.22:.86+rng()*.25;
-  const seen=new WeakSet();const transform=p=>{if(seen.has(p))return;seen.add(p);p.x=object.x+(p.x-object.x)*width;p.y=object.y+(p.y-object.y)*width;p.z=ACZO_SATELLITE_GROUND_Z+(p.z-ACZO_SATELLITE_GROUND_Z)*height;};
+  const seen=new Set();const transform=p=>{if(seen.has(p))return;seen.add(p);p.x=object.x+(p.x-object.x)*width;p.y=object.y+(p.y-object.y)*width;p.z=ACZO_SATELLITE_GROUND_Z+(p.z-ACZO_SATELLITE_GROUND_Z)*height;};
   for(let i=wood;i<aczoSurveyConiferSegments.length;i++){transform(aczoSurveyConiferSegments[i].a);transform(aczoSurveyConiferSegments[i].b);}
   for(let i=needles;i<aczoSurveyNeedleItems.length;i++){transform(aczoSurveyNeedleItems[i].p);aczoSurveyNeedleItems[i].scale.multiply(new THREE.Vector3(width,width,height));}
   for(let i=shadows;i<aczoEvergreenTreeShadowProxyItems.length;i++){transform(aczoEvergreenTreeShadowProxyItems[i].p);aczoEvergreenTreeShadowProxyItems[i].scale.multiply(new THREE.Vector3(width,width,height));}
@@ -19188,7 +19442,7 @@ function aczoSurveyBuildLowPolyBush(object,index){
 }
 async function aczoBuildRegionalUnderstory(){
  for(let i=1664;i<ACZO_MOSEL_FOREST_POSITIONS.length;i++){
-await window.__aczoSafeStart.yield();
+if(window.__aczoSafeStart.due())await window.__aczoSafeStart.yieldWork();
 
   if(i%3!==0)continue;const [x,y]=ACZO_MOSEL_FOREST_POSITIONS[i],shadows=aczoSeasonalTreeShadowProxyItems.length;
   const sprays=aczoSurveySprayItems.length,leaves=aczoSurveyLeafItems.length;aczoSurveyBuildBush({x:x+1.6,y:y-1.3},94000+i);aczoSeasonalTreeShadowProxyItems.length=shadows;for(let j=sprays;j<aczoSurveySprayItems.length;j++)aczoSurveySprayItems[j].moselExpansion=true;for(let j=leaves;j<aczoSurveyLeafItems.length;j++)aczoSurveyLeafItems[j].moselExpansion=true;
@@ -19196,7 +19450,7 @@ await window.__aczoSafeStart.yield();
 }
 async function aczoBuildMoselForestWithExistingTrees(){
   for(let i=0;i<ACZO_MOSEL_FOREST_POSITIONS.length;i++){
-await window.__aczoSafeStart.yield();
+if(window.__aczoSafeStart.due())await window.__aczoSafeStart.yieldWork();
 
     const [x,y,height,edge]=ACZO_MOSEL_FOREST_POSITIONS[i];
     const tree=aczoSurveyTreeSpec({x,y,type:'deciduous'},51000+i,false);
@@ -19216,7 +19470,7 @@ await window.__aczoSafeStart.yield();
       aczoSurveyLeafItems.length=leaves+Math.min(16,aczoSurveyLeafItems.length-leaves);
       let write=wood;
       for(let j=wood;j<aczoSurveyWoodSegments.length;j++){
-await window.__aczoSafeStart.yield();
+if(window.__aczoSafeStart.due())await window.__aczoSafeStart.yieldWork();
 
         if(j<wood+6||aczoSurveyWoodSegments[j].r>=.075)aczoSurveyWoodSegments[write++]=aczoSurveyWoodSegments[j];
       }
@@ -19244,7 +19498,7 @@ async function aczoBuildSurveyVegetationProfile(reduced){
   aczoSeasonalTreeShadowProxyItems.push(...aczoSurveyBaseSeasonalProxies);
   aczoEvergreenTreeShadowProxyItems.push(...aczoSurveyBaseEvergreenProxies);
   const before=new Set(aczoSurveyedNatureGroup.children);
-(await (async()=>{for(const [i,o] of (aczoSurveyManualTreeObjects).entries()){await window.__aczoSafeStart.yield();
+(await (async()=>{for(const [i,o] of (aczoSurveyManualTreeObjects).entries()){if(window.__aczoSafeStart.due())await window.__aczoSafeStart.yieldWork();
   const tree=aczoSurveyTreeSpec(o,i,false);
   // PERF9.2: echte Geraeteprofile. Desktop rendert alle vermessenen Laubbaeume
   // wieder mit der vorhandenen Detailgeometrie; Mobil behaelt die bewiesene
@@ -19257,7 +19511,7 @@ else{aczoSurveyBuildDeciduous(ACZO_SOUTH_LIFEBUOY_TREE);aczoPerf2DetailedTrees++
 // durch die bereits vorhandene feste LowPoly-Silhouette ersetzt.
 // PERF25: Auch die vier manuell gesetzten Nadelbaeume des Ursprungsbestands
 // werden nicht mehr durch Fernwald-Filter entfernt.
-(await (async()=>{for(const [i,o] of (ACZO_SURVEY_DATA.objects.filter(o=>o.type==='conifer')).entries()){await window.__aczoSafeStart.yield();
+(await (async()=>{for(const [i,o] of (ACZO_SURVEY_DATA.objects.filter(o=>o.type==='conifer')).entries()){if(window.__aczoSafeStart.due())await window.__aczoSafeStart.yieldWork();
   const edgeDist=aczoSurveyDistanceToPondEdge(o.x,o.y);
   if(!aczoSurveyReducedDetail||edgeDist<=14||aczoP13TreeProtected(o.x,o.y)){aczoSurveyBuildConifer(o,i,false);aczoPerf2DetailedConifers++;}
   else{aczoSurveyBuildLowPolyConifer(o,i,edgeDist);aczoPerf2LowPolyConifers++;}
@@ -19271,23 +19525,23 @@ else{aczoSurveyBuildDeciduous(ACZO_SOUTH_LIFEBUOY_TREE);aczoPerf2DetailedTrees++
 // PERF25: Strauchpositionen aus der Ursprungsdatei bleiben 1:1 erhalten.
 // Nur spaeter automatisch hinzugefuegte Vegetation wird auf Waldpolygone begrenzt.
 (await (async()=>{for(const [i,o] of (ACZO_SURVEY_DATA.objects
-  .filter(o=>o.type==='bush')).entries()){await window.__aczoSafeStart.yield();
+  .filter(o=>o.type==='bush')).entries()){if(window.__aczoSafeStart.due())await window.__aczoSafeStart.yieldWork();
     if(aczoSurveyReducedDetail)aczoSurveyBuildLowPolyBush(o,18000+i);
     else aczoSurveyBuildBush(o,18000+i);
   }})());
 ACZO_SURVEY_DATA.objects.filter(o=>o.type==='reeds').forEach(aczoSurveyBuildReeds);
 
 for(let ai=0;ai<aczoSurveyForestAreas.length;ai++){
-await window.__aczoSafeStart.yield();
+if(window.__aczoSafeStart.due())await window.__aczoSafeStart.yieldWork();
 
   const poly=aczoSurveyForestAreas[ai].points,xs=poly.map(p=>p[0]),ys=poly.map(p=>p[1]),rnd=aczoSurveyRandom(23091+ai*817);
   // PERF25: Verdichtung nur in den original markierten Mischwaldpolygonen.
   // Desktop bekommt sichtbar mehr Bestand, Mobil bleibt vorsichtiger.
   const step=aczoSurveyReducedDetail?3.72:3.12;
   for(let y=Math.min(...ys)+step*.5;y<Math.max(...ys);y+=step){
-await window.__aczoSafeStart.yield();
+if(window.__aczoSafeStart.due())await window.__aczoSafeStart.yieldWork();
 for(let x=Math.min(...xs)+step*.5;x<Math.max(...xs);x+=step){
-await window.__aczoSafeStart.yield();
+if(window.__aczoSafeStart.due())await window.__aczoSafeStart.yieldWork();
 
     const px=x+(rnd()-.5)*2.9,py=y+(rnd()-.5)*2.9;
     if(!aczoSurveyPointInPolygon(px,py,poly)||aczoSurveyClearAreas.some(a=>aczoSurveyPointInPolygon(px,py,a.points))||aczoSurveyInsidePond(px,py))continue;
@@ -19379,7 +19633,7 @@ aczoSurveyInstanceStats=Object.freeze({
   aczoSurveyMidCanopyItems,aczoSurveyFarCanopyItems,aczoSurveyFarConiferItems,
   aczoSurveyLowPolyBushItems,aczoSurveyForestUnderstoryItems,aczoSurveyReedBladeItems,aczoSeasonalTreeShadowProxyItems,
   aczoEvergreenTreeShadowProxyItems
-])){await window.__aczoSafeStart.yield();items.length=0;}})());
+])){if(window.__aczoSafeStart.due())await window.__aczoSafeStart.yieldWork();items.length=0;}})());
 
 
   return {
@@ -19659,6 +19913,14 @@ function updateAczoSurveyedNatureSeason(day){
   }
   const key=phase+'|'+Math.round(progress*20)+'|'+Math.round(density*40)+'|'+(is2D?'2':'3');if(key===aczoSurveySeasonKey){aczoSurveyedNatureGroup.visible=!is2D;return;}aczoSurveySeasonKey=key;
   for(const mesh of aczoSurveySeasonMeshes){
+    if(mesh.userData.aczoOpt8){
+      // OPT-8: per former batch density, colours per instance, white shared material.
+      let total=0;for(const g of mesh.userData.aczoOpt8.groups){g.seasonCount=Math.max(0,Math.round(g.n*density));total+=g.seasonCount;}
+      mesh.userData.seasonCount=total;mesh.count=total;aczoOpt8Paint(mesh,phase,progress,d);
+      mesh.material.emissive.setRGB(1,1,1);mesh.material.color.copy(mesh.material.userData.aczoDayColor).multiplyScalar(brightness);
+      mesh.material.emissiveIntensity=mesh.material.userData.aczoDayEmissiveIntensity*(1-night);
+      mesh.visible=!is2D&&mesh.count>0;continue;
+    }
     const s=mesh.userData.species;
     mesh.userData.seasonCount=Math.max(0,Math.round(mesh.userData.maxCount*density));
     mesh.count=mesh.userData.seasonCount;
@@ -19707,6 +19969,7 @@ function aczoK94NatureDistance(mesh){
 function updateAczoSurveyForestLod(){
   const localLod=aczoK94UseLocalNatureLod(),modeChanged=localLod!==aczoK94NatureLodActive;
   const now=performance.now(),seasonChanged=aczoSurveyLodSeason!==aczoSurveySeasonKey;if(now<aczoSurveyLastLodAt&&!seasonChanged&&!modeChanged)return;aczoSurveyLastLodAt=now+180;aczoSurveyLodSeason=aczoSurveySeasonKey;aczoK94NatureLodActive=localLod;
+  aczoOpt11UpdateBranchLod(); // OPT-11
   const dist=Math.max(0,camera.position.distanceTo(controls.target));
   // P5 unveraendert: Die feinsten Einzelblaetter verschwinden in der Ferne.
   let leafFactor=1;
@@ -19731,14 +19994,14 @@ function updateAczoSurveyForestLod(){
     const max=mesh.userData.seasonCount??mesh.userData.maxCount??0;
     const groupDistance=localLod?aczoK94NatureDistance(mesh):null;
     const factor=groupDistance===null?leafFactor:1-THREE.MathUtils.smoothstep(groupDistance,42,60);
-    mesh.count=is2D?0:Math.max(0,Math.round(max*factor));
+    mesh.count=is2D?0:mesh.userData.aczoOpt8?aczoOpt8Count(mesh,factor):Math.max(0,Math.round(max*factor));
     mesh.visible=!is2D&&mesh.count>0;
   }
   for(const mesh of aczoSurveySprayLodMeshes){
     const max=mesh.userData.seasonCount??mesh.userData.maxCount??0;
     const groupDistance=localLod?aczoK94NatureDistance(mesh):null;
     const factor=groupDistance===null?sprayFactor:THREE.MathUtils.lerp(1,sprayFarFactor,THREE.MathUtils.smoothstep(groupDistance,58,125));
-    mesh.count=is2D?0:Math.max(0,Math.round(max*factor));
+    mesh.count=is2D?0:mesh.userData.aczoOpt8?aczoOpt8Count(mesh,factor):Math.max(0,Math.round(max*factor));
     mesh.visible=!is2D&&mesh.count>0;
   }
 }
@@ -24262,7 +24525,7 @@ function updateAnglingEnvironment(){
   // V7.20: Panorama und Satellitenbild bekommen dieselbe astronomische
   // Grundhelligkeit. Das verhindert den bisherigen "Tageswald bei Sternenhimmel".
   const satelliteDayLevel=(simulationEnabled&&satUniforms&&satUniforms.dayLight)
-    ? THREE.MathUtils.clamp(Number(satUniforms.dayLight.value)||.22,.08,1)
+    ? THREE.MathUtils.clamp(Number(satUniforms.dayLight.aczoOpen??satUniforms.dayLight.value)||.22,.08,1)
     : 1;
   const panoramaNightUser=seasonPanoramaNightStrength();
   // V7.28: Nachts deutlich dunkler, vor allem ohne Mondlicht oder bei stark verdecktem Himmel.
@@ -42198,7 +42461,7 @@ function aczoK5dInit(){
  aczoLandscapeGroundMat.fragmentShader=aczoK25SearchlightGLSL+aczoK25BridgeShadowGLSL+aczoLandscapeGroundMat.fragmentShader;
  aczoLandscapeGroundMat.fragmentShader=aczoLandscapeGroundMat.fragmentShader.split('gl_FragColor=vec4(col,1.0);').join('vec3 bridgeGroundPoint=vec3((vUv-vec2(.5))*sceneSize+vec2(-100.,-215.),-.035);gl_FragColor=vec4(col*(1.-aczoK25BridgeShadow(bridgeGroundPoint))+aczoK25SearchLand(bridgeGroundPoint)+aczoK40BeaconLand(bridgeGroundPoint),1.0);');
  aczoLandscapeGroundMat.needsUpdate=true;
- const helpers=`float aczoK25BridgeShadow(vec3 world);uniform float aczoMoselBrown,aczoMoselFlowClock;uniform vec3 aczoK12Haze;uniform float aczoK12Density;
+ const helpers=`float aczoK25BridgeShadow(vec3 world);uniform float aczoR5MoselShade;uniform float aczoMoselBrown,aczoMoselFlowClock;uniform vec3 aczoK12Haze;uniform float aczoK12Density;
  ${aczoK20FloodGLSL}
   // K53: sediment tints the existing ship/patrol wash in both quality paths.
   // Normal-water foam keeps its exact original colour.
@@ -42212,7 +42475,7 @@ function aczoK5dInit(){
   float above=step(-.205,cameraPosition.z);vec3 clearRiver=rgb;
   vec3 result=mix(clearRiver,silt,aczoMoselBrown*.97)+(streak*.006+movingRipple*.004)*aczoMoselBrown*above;
   if(underwaterView>.01&&cameraPosition.z<-.205){float dist=length(world-cameraPosition);result=mix(result,aczoK12Haze,1.-exp(-aczoK12Density*aczoK12Density*dist*dist));}
-  return result*(1.-aczoK25BridgeShadow(world));
+  return result*(1.-aczoK25BridgeShadow(world))*mix(1.,aczoR5MoselShade,above);
  }
  `;
  moselWaterMat.uniforms.aczoK12Haze={value:aczoK5dRiver.clone()};moselWaterMat.uniforms.aczoK12Density={value:.145};
@@ -42272,7 +42535,7 @@ function updateAczoRegionalWeather(){
  aczoUpdateRiverBuoys();aczoK6aFocus();
  const fog=scene.fog,underwater=typeof fishUnderwaterFog!=='undefined'&&fog===fishUnderwaterFog;aczoRegionalWeatherUniforms.aczoWeatherFogDensity.value=fog&&fog.isFogExp2&&!underwater?fog.density:0;if(fog?.color)aczoRegionalWeatherUniforms.aczoWeatherFogColor.value.copy(fog.color);
  aczoRegionalWeatherUniforms.aczoRegionalRain.value=simulationEnabled&&seasonTestRaining()?Math.min(1,Number(liveWeather.precipitation||liveWeather.rain||0)/1.5):0;
- aczoRiverCarveUniform.value=waterSurface.visible?1:0;aczoRiverBed.visible=waterSurface.visible;const riverLight=simulationEnabled?Math.max(.035,satUniforms.dayLight.value):1;aczoRiverBedMat.color.setRGB(.012*riverLight,.035*riverLight,.039*riverLight);aczoRiverBank.visible=false;if(aczoK12BankSkirt)aczoK12BankSkirt.visible=aczoRiverBed.visible;aczoRiverBankMat.color.setRGB(riverLight,riverLight,riverLight);
+ aczoRiverCarveUniform.value=waterSurface.visible?1:0;aczoRiverBed.visible=waterSurface.visible;const riverLight=simulationEnabled?Math.max(.035,satUniforms.dayLight.aczoOpen??satUniforms.dayLight.value):1;aczoRiverBedMat.color.setRGB(.012*riverLight,.035*riverLight,.039*riverLight);aczoRiverBank.visible=false;if(aczoK12BankSkirt)aczoK12BankSkirt.visible=aczoRiverBed.visible;aczoRiverBankMat.color.setRGB(riverLight,riverLight,riverLight);
  aczoNeighbourPondSurface.visible=!is2D&&waterSurface.visible;aczoHarborHullOverlay.visible=aczoNeighbourPondSurface.visible;
  aczoNeighbourSun.visible=aczoNeighbourPondSurface.visible&&aczoK10NeighbourReflection(aczoNeighbourSunMat,directSunMoselReflectionMat,sun,!!sunDisc.userData.astronomicallyVisible);
  aczoNeighbourMoon.visible=aczoNeighbourPondSurface.visible&&aczoK10NeighbourReflection(aczoNeighbourMoonMat,directMoonMoselReflectionMat,moonLight,!!moonDisc.userData.astronomicallyVisible);
@@ -43193,7 +43456,7 @@ function aczoPerf6PrepareRigidBatches(observeBatch){
 </script>
 <script type="application/x-aczo-stage" data-label="Grundlage und Karte werden vorbereitet">
 window.__aczoStartup={mainReady:false,rendererState:'pending',rendererAttempts:[],firstError:null,errors:[],skippedModules:[]};
-const VIEWER_VERSION='ACZO56-Interaktiv V.4.1';
+const VIEWER_VERSION='ACZO56-Interaktiv V.4.2';
 const ACZO_INTERNAL_BUILD='4.0-Mosel-K45-PREDATOR-PIT';
 const helpVersion=document.getElementById('helpVersion');
 if(helpVersion) helpVersion.textContent=VIEWER_VERSION;
@@ -44804,6 +45067,8 @@ scene.add(dayReliefLight.target);
 scene.add(dayReliefLight);
 const moonCanvas=document.createElement('canvas');
 moonCanvas.width=moonCanvas.height=256;
+// OPT-4: CPU-backed 2D context for the per-pixel moon phase (no GPU readback stall).
+try{moonCanvas.getContext('2d',{willReadFrequently:true});}catch(_e){}
 const moonTex=new THREE.CanvasTexture(moonCanvas);
 moonTex.encoding=THREE.sRGBEncoding;
 const moonDisc=new THREE.Sprite(new THREE.SpriteMaterial({
@@ -44915,6 +45180,8 @@ aczoPerf2CloudTex.magFilter=THREE.LinearFilter;
 aczoPerf2CloudTex.generateMipmaps=false;
 aczoPerf2CloudTex.flipY=false;
 aczoPerf2CloudTex.needsUpdate=true;
+// CLOUD-R5b: mean of softCloud() over the static cloud texture (grazing reflections fade into it).
+var aczoR5CloudMeanValue=(()=>{try{const d=aczoPerf2CloudCtx.getImageData(0,0,ACZO_PERF2_CLOUD_W,ACZO_PERF2_CLOUD_H).data,ss=(a,b,x)=>{const t=Math.min(1,Math.max(0,(x-a)/(b-a)));return t*t*(3-2*t);};let sum=0;for(let i=0;i<d.length;i+=4){const r=d[i]/255;sum+=ss(.08,.52,r)*(.30+.24*ss(.16,.64,r));}return sum/(d.length/4);}catch(e){return .18;}})();
 const aczoPerf2CloudUniforms={
   map:{value:aczoPerf2CloudTex},
   worldScale:{value:new THREE.Vector2(.0060,.0047)},
@@ -45177,7 +45444,7 @@ const waterUniforms={
  // V8.47: waterGeo besteht bereits exakt aus denselben ReefMaster-Dreiecken
  // wie pondGeo. Eine zusätzliche rechteckige Fragment-Maske ist redundant
  // und schnitt die über pondW/pondH hinausragenden Ecken ab.
- clipToPond:{value:1.0},
+ clipToPond:{value:1.0},aczoR5WaterShade:{value:1},aczoR5CloudMean:{value:aczoR5CloudMeanValue},
  shoreInset:{value:0.18}
 };
 const waterMat=new THREE.ShaderMaterial({
@@ -45253,6 +45520,8 @@ const waterMat=new THREE.ShaderMaterial({
    uniform vec2 viewportSize;
    uniform vec2 viewportOrigin;
    uniform float sunStrength;
+   uniform float aczoR5WaterShade;
+   uniform float aczoR5CloudMean;
    uniform float moonStrength;
    uniform float cloudAmount;
    uniform vec2 cloudWindDir;
@@ -45381,6 +45650,7 @@ float reflectedStars(vec3 d){
        float liteIntroU=clamp(anglingIntroFade,0.0,1.0);
        float liteIntroCover=sin(liteIntroU*3.14159265);
        liteFinalAlpha=clamp(liteFinalAlpha*(1.0+liteIntroCover*.13),.34,.94);
+       liteColor*=mix(1.,aczoR5WaterShade,1.-clamp(underwaterView,0.,1.));
        gl_FragColor=vec4(liteColor,liteFinalAlpha);
        return;
      }
@@ -45395,12 +45665,18 @@ float reflectedStars(vec3 d){
      float mirrorAmount=(.40+fresnel*.46)*(1.0-clamp(underwaterView,0.0,1.0))
        *1.0*mix(1.12,1.60,anglingBoost);
 
-     vec2 cloudMirrorPos=vWorldPos.xy
-       +reflectedView.xy/max(.16,reflectedView.z)*max(0.,cloudCeiling-vWorldPos.z);
+     // CLOUD-R5b: rise >= .24 keeps the original mirror exactly. Flatter rays start at the camera's
+     // flat-water mirror point (same motion as the near part, no reversed drift) down to a rise of .08;
+     // their contrast fades into the mean cloud value between .16 and .08 (even haze, no streaks).
+     float cloudRise=max(.16,reflectedView.z),cloudFarRise=max(.08,reflectedView.z);
+     vec2 cloudNearPos=vWorldPos.xy+reflectedView.xy/cloudRise*max(0.,cloudCeiling-vWorldPos.z);
+     vec2 cloudFarPos=cameraPosition.xy+reflectedView.xy/cloudFarRise*(max(0.,cloudCeiling-vWorldPos.z)+max(0.,cameraPosition.z-vWorldPos.z));
+     vec2 cloudMirrorPos=mix(cloudFarPos,cloudNearPos,smoothstep(.16,.24,reflectedView.z));
+     float cloudDetail=smoothstep(.08,.16,reflectedView.z);
      // K73: no cloud sample when its exact contribution is zero.
      float cloudRefl=0.0;
      if(cloudAmount!=0.0 && underwaterView<1.0)
-       cloudRefl=softCloud(cloudMirrorPos)*cloudAmount
+       cloudRefl=mix(aczoR5CloudMean,softCloud(cloudMirrorPos),cloudDetail)*cloudAmount
          *(1.0-clamp(underwaterView,0.0,1.0));
      reflectedSky=mix(reflectedSky,
        mix(vec3(.70,.75,.80),vec3(.25,.31,.40),nightFactor),cloudRefl*.58);
@@ -45635,6 +45911,7 @@ float reflectedStars(vec3 d){
      float introU=clamp(anglingIntroFade,0.0,1.0);
      float introCover=sin(introU*3.14159265);
      finalAlpha=clamp(finalAlpha*(1.0+introCover*.13),.34,.94);
+     color*=mix(1.,aczoR5WaterShade,1.-clamp(underwaterView,0.,1.));
      gl_FragColor=vec4(color,finalAlpha);
    }
  `
@@ -45875,8 +46152,113 @@ const aczoK25PatrolMaskGLSL=`uniform vec3 aczoK25PatrolPose;uniform vec2 aczoK25
   float halfWidth=along< -3.6?mix(1.16,1.34,clamp((along+4.35)/.75,0.,1.)):along<1.6?1.34:along<3.5?mix(1.34,.90,(along-1.6)/1.9):mix(.90,0.,clamp((along-3.5)/1.0,0.,1.));
   return along> -4.35&&along<4.5&&abs(across)<halfWidth;
  }`;
-const aczoK25BridgeShadowUniforms={aczoK25BridgeSun:{value:new THREE.Vector3(.3,.5,.8).normalize()},aczoK25BridgeStrength:{value:0},aczoK40TrainCount:{value:0},aczoK40TrainCenter:{value:Array.from({length:10},()=>new THREE.Vector4())},aczoK40TrainAlong:{value:Array.from({length:10},()=>new THREE.Vector4())},aczoK40TrainUp:{value:Array.from({length:10},()=>new THREE.Vector4())},aczoK40TrainMin:{value:new THREE.Vector3()},aczoK40TrainMax:{value:new THREE.Vector3()}};
-const aczoK25BridgeShadowGLSL="\n#ifndef ACZO_K37_APPROACH_OCCLUSION\n#define ACZO_K37_APPROACH_OCCLUSION\n// Same two real approach ramps; no extra shadow maps, textures or draw passes.\nbool aczoK37ApproachClip(float p,float d,inout float first,inout float last){\n if(abs(d)<.000001)return p<=0.;\n float t=-p/d;if(d>0.)last=min(last,t);else first=max(first,t);return first<=last;\n}\nbool aczoK37ApproachBox(vec3 point,vec3 direction,float range,vec3 lo,vec3 hi){\n float first=.12,last=range;\n if(!aczoK37ApproachClip(lo.x-point.x,-direction.x,first,last))return false;\n if(!aczoK37ApproachClip(point.x-hi.x,direction.x,first,last))return false;\n if(!aczoK37ApproachClip(lo.y-point.y,-direction.y,first,last))return false;\n if(!aczoK37ApproachClip(point.y-hi.y,direction.y,first,last))return false;\n if(!aczoK37ApproachClip(lo.z-point.z,-direction.z,first,last))return false;\n return aczoK37ApproachClip(point.z-hi.z,direction.z,first,last);\n}\nbool aczoK37ApproachPrism(vec3 point,vec3 direction,float range,vec2 origin,vec2 axis,float span,float top,float grade,float floorZ,float floorGrade,float width,float taper){\n vec2 delta=point.xy-origin,side=vec2(axis.y,-axis.x);\n vec3 p=vec3(dot(delta,side),dot(delta,axis),point.z),d=vec3(dot(direction.xy,side),dot(direction.xy,axis),direction.z);\n float first=.12,last=range;\n if(!aczoK37ApproachClip(-p.y,-d.y,first,last))return false;\n if(!aczoK37ApproachClip(p.y-span,d.y,first,last))return false;\n if(!aczoK37ApproachClip(floorZ+floorGrade*p.y-p.z,floorGrade*d.y-d.z,first,last))return false;\n if(!aczoK37ApproachClip(p.z-top-grade*p.y,d.z-grade*d.y,first,last))return false;\n float extension=width+taper*(top+grade*p.y-p.z),extensionD=taper*(grade*d.y-d.z);\n if(!aczoK37ApproachClip(p.x-extension,d.x-extensionD,first,last))return false;\n return aczoK37ApproachClip(-p.x-extension,-d.x-extensionD,first,last);\n}\nbool aczoK37ApproachOccluded(vec3 point,vec3 direction,float range){\n // Match the existing regional material clip: off-map invisible ramp pieces\n // cannot cast a ghost shadow back onto the active map.\n float first=.12,last=range;\n if(!aczoK37ApproachClip(-500.-point.x,-direction.x,first,last))return false;\n if(!aczoK37ApproachClip(point.x-300.,direction.x,first,last))return false;\n if(!aczoK37ApproachClip(-630.-point.y,-direction.y,first,last))return false;\n if(!aczoK37ApproachClip(point.y-200.,direction.y,first,last))return false;\n float skip=max(0.,first-.12);point+=direction*skip;range=last-skip;\n if(aczoK37ApproachBox(point,direction,range,vec3(-503.7591403,-437.061441,-0.14),vec3(-400.2356975,-263.7158446,11.0776808))){\n  if(aczoK37ApproachPrism(point,direction,range,vec2(-499.3580661,-265.3092365),vec2(0.3392135,-0.9407094),44.2175081,0.2462161,0.0041301,-0.13,0.0,4.5775408,0.24))return true;\n  if(aczoK37ApproachPrism(point,direction,range,vec2(-484.4436266,-306.646557),vec2(0.2859947,-0.9582312),40.1119021,0.4276823,0.0106284,-0.13,0.0,4.5253476,0.24))return true;\n  if(aczoK37ApproachPrism(point,direction,range,vec2(-473.0998186,-344.724296),vec2(0.3602623,-0.9328511),20.5143547,0.8502228,0.05176,-0.13,0.0,4.6372732,0.24))return true;\n  if(aczoK37ApproachPrism(point,direction,range,vec2(-465.8480446,-363.5324319),vec2(0.4241598,-0.9055874),15.0126756,1.891211,0.0927946,-0.13,0.0,4.5212879,0.24))return true;\n  if(aczoK37ApproachPrism(point,direction,range,vec2(-459.7107591,-376.6944426),vec2(0.5047541,-0.8632632),13.3427775,3.2463836,0.1083297,-0.13,0.0,4.5750532,0.24))return true;\n  if(aczoK37ApproachPrism(point,direction,range,vec2(-453.389266,-387.6078367),vec2(0.6122094,-0.7906957),12.6384592,4.6173653,0.1115149,-0.13,0.0,4.6111828,0.24))return true;\n  if(aczoK37ApproachPrism(point,direction,range,vec2(-446.1435144,-397.0338984),vec2(0.7065546,-0.7076586),13.1486644,5.9344362,0.1215586,-0.13,0.0,4.555506,0.24))return true;\n  if(aczoK37ApproachPrism(point,direction,range,vec2(-437.143318,-406.0626432),vec2(0.7564602,-0.6540397),19.7826575,7.569233,0.101613,-0.13,0.0,4.5353854,0.055))return true;\n  if(aczoK37ApproachPrism(point,direction,range,vec2(-422.4880989,-418.7515845),vec2(0.8044526,-0.5940169),23.8628029,9.4671602,0.0670718,-0.13,0.0,4.5117739,0.055))return true;\n }\n if(aczoK37ApproachBox(point,direction,range,vec3(-231.4371388,-633.6902369,-0.14),vec3(-127.137545,-556.9967838,11.0424555))){\n  if(aczoK37ApproachPrism(point,direction,range,vec2(-228.2770681,-561.0962121),vec2(0.7922159,-0.6102409),32.0186351,11.0324555,-0.0051985,-0.13,0.0,4.5480771,0.055))return true;\n  if(aczoK37ApproachPrism(point,direction,range,vec2(-203.1994545,-580.4299788),vec2(0.8312051,-0.5559659),25.6865997,10.8703909,-0.0066038,-0.13,0.0,4.5987191,0.055))return true;\n  if(aczoK37ApproachPrism(point,direction,range,vec2(-155.357614,-612.1835442),vec2(0.8253344,-0.5646443),30.7565699,10.5223418,-0.0035054,-0.13,0.0,4.4242902,0.055))return true;\n  if(aczoK37ApproachPrism(point,direction,range,vec2(-183.0716319,-593.9236128),vec2(0.8350361,-0.5501952),33.3028273,10.8496332,-0.0055337,10.6281614,-0.0055337,4.4663866,0.0))return true;\n }\n return false;\n}\n#endif\nuniform vec3 aczoK25BridgeSun;uniform float aczoK25BridgeStrength;\n\nuniform int aczoK40TrainCount;\nuniform vec4 aczoK40TrainCenter[10],aczoK40TrainAlong[10],aczoK40TrainUp[10];\nuniform vec3 aczoK40TrainMin,aczoK40TrainMax;\nfloat aczoK40TrainShadow(vec3 world){\n if(aczoK40TrainCount==0)return 0.;\n // The ray/AABB reject keeps the ten-car loop away from other river pixels.\n if(!aczoK37ApproachBox(world,aczoK25BridgeSun,20000.,aczoK40TrainMin,aczoK40TrainMax))return 0.;\n // Respect the same map clipping as the rendered train materials, including\n // a partially visible car. An invisible off-map part cannot cast back in.\n float mapFirst=.12,mapLast=20000.;\n if(!aczoK37ApproachClip(-500.-world.x,-aczoK25BridgeSun.x,mapFirst,mapLast))return 0.;\n if(!aczoK37ApproachClip(world.x-300.,aczoK25BridgeSun.x,mapFirst,mapLast))return 0.;\n if(!aczoK37ApproachClip(-630.-world.y,-aczoK25BridgeSun.y,mapFirst,mapLast))return 0.;\n if(!aczoK37ApproachClip(world.y-200.,aczoK25BridgeSun.y,mapFirst,mapLast))return 0.;\n float shade=0.;\n for(int i=0;i<10;i++){\n  if(i>=aczoK40TrainCount)break;\n  vec4 c=aczoK40TrainCenter[i],a=aczoK40TrainAlong[i],u=aczoK40TrainUp[i];\n  vec3 side=cross(a.xyz,u.xyz),delta=world-c.xyz;\n  vec3 p=vec3(dot(delta,side),dot(delta,a.xyz),dot(delta,u.xyz));\n  vec3 d=vec3(dot(aczoK25BridgeSun,side),dot(aczoK25BridgeSun,a.xyz),dot(aczoK25BridgeSun,u.xyz));\n  float first=mapFirst,last=mapLast;\n  if(!aczoK37ApproachClip(-c.w-p.x,-d.x,first,last))continue;\n  if(!aczoK37ApproachClip(p.x-c.w,d.x,first,last))continue;\n  if(!aczoK37ApproachClip(-a.w-p.y,-d.y,first,last))continue;\n  if(!aczoK37ApproachClip(p.y-a.w,d.y,first,last))continue;\n  if(!aczoK37ApproachClip(-u.w-p.z,-d.z,first,last))continue;\n  if(!aczoK37ApproachClip(p.z-u.w,d.z,first,last))continue;\n  shade=max(shade,smoothstep(0.,.20,last-first));\n  if(shade>.999)break;\n }\n return shade;\n}\n\n float aczoK25BridgeShadow(vec3 world){\n  if(aczoK25BridgeStrength<=.001||world.z>11.2)return 0.;\n  vec2 delta=world.xy-vec2(-315.8,-497.),along=vec2(.807,-.591),across=vec2(.591,.807);\n  vec3 p=vec3(dot(delta,across),dot(delta,along),world.z),d=vec3(dot(aczoK25BridgeSun.xy,across),dot(aczoK25BridgeSun.xy,along),aczoK25BridgeSun.z);\n  if(d.z<.055||length(delta)>900.)return 0.;\n  vec2 deck=p.xy+d.xy*((11.05-p.z)/d.z);\n  float shade=(1.-smoothstep(4.05,4.65,abs(deck.x)))*(1.-smoothstep(108.3,109.1,abs(deck.y)));\n  vec3 safeDir=vec3(abs(d.x)<.0001?.0001:d.x,abs(d.y)<.0001?.0001:d.y,d.z);\n  for(int i=0;i<6;i++){\n   float y=i==0?-82.5:i==1?-50.5:i==2?-14.5:i==3?23.5:i==4?56.5:84.5;\n   vec3 lo=(vec3(-4.35,y-1.65,-.3)-p)/safeDir,hi=(vec3(4.35,y+1.65,9.1)-p)/safeDir;\n   vec3 t0=min(lo,hi),t1=max(lo,hi);float enter=max(max(t0.x,t0.y),t0.z),leave=min(min(t1.x,t1.y),t1.z);\n   shade=max(shade,step(max(0.,enter),leave));\n  }\n  if(aczoK37ApproachOccluded(world,aczoK25BridgeSun,20000.))shade=1.;\n  shade=max(shade,aczoK40TrainShadow(world));\n  return shade*aczoK25BridgeStrength;\n }\n";
+// BRIDGE-R4 (2026-11): shared, simplified and connected shadow body of the Konz railway bridge
+// (6 piers + deck/girder body, no railings) for sun, moon and the ship searchlight. The bridge is
+// ~595 m outside the only shadow map, so the existing analytic receivers test this body instead.
+const aczoR4BridgeProxyGLSL=`
+#ifndef ACZO_R4_BRIDGE_PROXY
+#define ACZO_R4_BRIDGE_PROXY
+// BRIDGE-R4: bridge frame x = across (.5908,.8068), y = along the deck (.8068,-.5908), z = world.
+// Body: deck plate + plate girders at x=-4.02/+0.90/+4.02, outline |x|<=4.30, |y|<=108.5,
+// z 9.40..11.16. Piers: six tapered octagons z -0.30..9.40 tangent to the real rounded piers
+// (stadium 2x2.70 m core, radius 1.65 m, scale 1.08 at z=-0.3 to 0.95 at z=8.8) plus capping
+// stone and plinth, touching the girders: one connected body. No railings, rails, masts, lamps.
+// Branch-free slab arithmetic: one reciprocal per ray, intervals (enter,leave) in ray units.
+vec2 aczoR4Slab(float p,float inv,float lo,float hi){float a=(lo-p)*inv,b=(hi-p)*inv;return vec2(min(a,b),max(a,b));}
+vec2 aczoR4And(vec2 a,vec2 b){return vec2(max(a.x,b.x),min(a.y,b.y));}
+vec3 aczoR4Inv(vec3 d){return 1./vec3(abs(d.x)<.000001?.000001:d.x,abs(d.y)<.000001?.000001:d.y,abs(d.z)<.000001?.000001:d.z);}
+// Half-space num-t*den>=0 (tilted pier planes), without branching.
+vec2 aczoR4Half(vec2 iv,float num,float den){
+ den=abs(den)<.000001?.000001:den;float t=num/den;
+ return vec2(den<0.?max(iv.x,t):iv.x,den>0.?min(iv.y,t):iv.y);
+}
+float aczoR4PierY(int i){return i==0?-82.5:i==1?-50.5:i==2?-14.5:i==3?23.5:i==4?56.5:84.5;}
+// One pier; iv is already limited to |x|<=4.70 and z -0.30..9.40.
+bool aczoR4Pier(vec3 p,vec3 d,vec3 inv,float pierY,vec2 iv){
+ vec3 q=vec3(p.x,p.y-pierY,p.z);
+ iv=aczoR4And(iv,aczoR4Slab(q.y,inv.y,-1.79,1.79));
+ if(!(iv.x<iv.y))return false;
+ // Square capping stone (8.4 x 2.95 m, up to the bearings) and waterline plinth (8.6 x 2.95 m).
+ vec2 square=aczoR4And(iv,aczoR4Slab(q.y,inv.y,-1.475,1.475));
+ vec2 cap=aczoR4And(aczoR4And(square,aczoR4Slab(q.x,inv.x,-4.20,4.20)),aczoR4Slab(q.z,inv.z,8.85,9.40));
+ vec2 plinth=aczoR4And(aczoR4And(square,aczoR4Slab(q.x,inv.x,-4.30,4.30)),aczoR4Slab(q.z,inv.z,-.30,.42));
+ if(cap.x<cap.y||plinth.x<plinth.y)return true;
+ // Tapered rounded shaft as a chamfered octagon tangent to it.
+ iv=aczoR4Half(iv,1.774929-q.y-.023571*q.z,d.y+.023571*d.z);
+ iv=aczoR4Half(iv,1.774929+q.y-.023571*q.z,-d.y+.023571*d.z);
+ iv=aczoR4Half(iv,4.679357-q.x-.062143*q.z,d.x+.062143*d.z);
+ iv=aczoR4Half(iv,4.679357+q.x-.062143*q.z,-d.x+.062143*d.z);
+ float c=5.414557-.071906*q.z,cd=.071906*d.z;
+ iv=aczoR4Half(iv,c-q.x-q.y,d.x+d.y+cd);
+ iv=aczoR4Half(iv,c-q.x+q.y,d.x-d.y+cd);
+ iv=aczoR4Half(iv,c+q.x-q.y,-d.x+d.y+cd);
+ iv=aczoR4Half(iv,c+q.x+q.y,-d.x-d.y+cd);
+ return iv.x<iv.y;
+}
+// All six piers: only those within the ray's along-deck range get the detailed test.
+bool aczoR4Piers(vec3 p,vec3 d,vec3 inv,vec2 iv){
+ iv=aczoR4And(aczoR4And(iv,aczoR4Slab(p.x,inv.x,-4.70,4.70)),aczoR4Slab(p.z,inv.z,-.30,9.40));
+ if(!(iv.x<iv.y))return false;
+ float ya=p.y+d.y*iv.x,yb=p.y+d.y*iv.y,lo=min(ya,yb)-1.79,hi=max(ya,yb)+1.79;
+ for(int i=0;i<6;i++){float y=aczoR4PierY(i);if(y<lo||y>hi)continue;if(aczoR4Pier(p,d,inv,y,iv))return true;}
+ return false;
+}
+// Point light (ship searchlight): true if the body or a pier lies on p+t*d, tMin<t<tMax.
+bool aczoR4BridgeBlocks(vec3 p,vec3 d,float tMin,float tMax){
+ vec3 inv=aczoR4Inv(d);
+ vec2 iv=aczoR4And(vec2(tMin,tMax),aczoR4Slab(p.y,inv.y,-108.5,108.5));
+ // Body as its real parts: deck plate + three plate girders (flange width 0.54 m). Same outline as
+ // the solid box for outside receivers, but undersides between the girders stay reachable.
+ vec2 body=aczoR4And(iv,aczoR4Slab(p.z,inv.z,9.40,11.16));
+ if(body.x<body.y){
+  vec2 deck=aczoR4And(aczoR4And(body,aczoR4Slab(p.z,inv.z,10.98,11.16)),aczoR4Slab(p.x,inv.x,-4.30,4.30));
+  vec2 w0=aczoR4And(body,aczoR4Slab(p.x,inv.x,-4.30,-3.75)),w1=aczoR4And(body,aczoR4Slab(p.x,inv.x,.63,1.17)),w2=aczoR4And(body,aczoR4Slab(p.x,inv.x,3.75,4.30));
+  if(deck.x<deck.y||w0.x<w0.y||w1.x<w1.y||w2.x<w2.y)return true;
+ }
+ return aczoR4Piers(p,d,inv,iv);
+}
+// Sun/moon (directional): 0..1 shade. The body keeps the previous soft deck edge, now over the
+// full girder height 9.40..11.16; piers are hard as before.
+float aczoR4BridgeSunShade(vec3 world,vec3 toLight){
+ vec2 along=vec2(.806786,-.590843),across=vec2(.590843,.806786),delta=world.xy-vec2(-315.8,-497.);
+ vec3 p=vec3(dot(delta,across),dot(delta,along),world.z),d=vec3(dot(toLight.xy,across),dot(toLight.xy,along),toLight.z);
+ if(d.z<=.0001)return 0.;
+ vec3 inv=aczoR4Inv(d);
+ // Broad phase: almost every water/ground pixel leaves here.
+ vec2 iv=aczoR4And(aczoR4And(aczoR4And(vec2(0.,100000.),aczoR4Slab(p.x,inv.x,-4.70,4.70)),aczoR4Slab(p.y,inv.y,-109.1,109.1)),aczoR4Slab(p.z,inv.z,-.30,11.16));
+ if(!(iv.x<iv.y))return 0.;
+ float shade=0.,z0=max(9.40,p.z);
+ if(z0<11.16){
+  vec2 a=p.xy+d.xy*((z0-p.z)/d.z),b=p.xy+d.xy*((11.16-p.z)/d.z);
+  vec2 m=max(max(min(a,b),-max(a,b)),vec2(0.));
+  shade=(1.-smoothstep(4.05,4.65,m.x))*(1.-smoothstep(108.3,109.1,m.y));
+ }
+ if(shade>.999)return 1.;
+ return aczoR4Piers(p,d,inv,vec2(0.,100000.))?1.:shade;
+}
+#endif
+`;
+function aczoR4BridgeGLSL(kind,source){
+ // BRIDGE-R4: optional text edits; any anchor that is not unique keeps the old shader text.
+ try{
+  const edits=kind==='sun'?[
+   ['  vec2 deck=p.xy+d.xy*((11.05-p.z)/d.z);\n  float shade=(1.-smoothstep(4.05,4.65,abs(deck.x)))*(1.-smoothstep(108.3,109.1,abs(deck.y)));\n',
+    '  // BRIDGE-R4: complete deck/girder body + real-size piers (shared bridge proxy).\n  float shade=aczoR4BridgeSunShade(world,aczoK25BridgeSun);\n'],
+   ['  vec3 safeDir=vec3(abs(d.x)<.0001?.0001:d.x,abs(d.y)<.0001?.0001:d.y,d.z);\n  for(int i=0;i<6;i++){\n   float y=i==0?-82.5:i==1?-50.5:i==2?-14.5:i==3?23.5:i==4?56.5:84.5;\n   vec3 lo=(vec3(-4.35,y-1.65,-.3)-p)/safeDir,hi=(vec3(4.35,y+1.65,9.1)-p)/safeDir;\n   vec3 t0=min(lo,hi),t1=max(lo,hi);float enter=max(max(t0.x,t0.y),t0.z),leave=min(min(t1.x,t1.y),t1.z);\n   shade=max(shade,step(max(0.,enter),leave));\n  }\n',
+    '']
+  ]:[
+   [' float aczoK25SearchVisibility(vec3 point,vec3 origin){\n',
+    ' float aczoK25SearchVisibility(vec3 point,vec3 origin){\n  // BRIDGE-R4: light off (exactly 0 by day/far) -> every caller scales by the strength anyway.\n  if(aczoSearchStrength<=0.)return 1.;\n'],
+   ['  if(aczoK25SearchBox(p,d,distance,vec3(-4.3,-108.5,10.90),vec3(4.3,108.5,11.16)))return 0.;\n  for(int i=0;i<6;i++){float y=i==0?-82.5:i==1?-50.5:i==2?-14.5:i==3?23.5:i==4?56.5:84.5;\n   if(aczoK25SearchBox(p,d,distance,vec3(-4.0,y-1.35,-.3),vec3(4.0,y+1.35,9.15)))return 0.;}\n  return 1.;\n',
+    '  // BRIDGE-R4: same connected body as the sun/moon shadow (full girder height, real pier size).\n  return aczoR4BridgeBlocks(p,d,.12,distance-.12)?0.:1.;\n']
+  ];
+  for(const [anchor] of edits)if(source.split(anchor).length!==2){console.warn('BRIDGE-R4: Anker nicht eindeutig, Brückenschatten ('+kind+') unverändert:',anchor.slice(0,72));return source;}
+  let out=source;for(const [anchor,text] of edits)out=out.replace(anchor,()=>text);
+  return aczoR4BridgeProxyGLSL+out;
+ }catch(error){console.warn('BRIDGE-R4 übersprungen:',error);return source;}
+}
+const aczoK25BridgeShadowUniforms={aczoK25BridgeSun:{value:new THREE.Vector3(.3,.5,.8).normalize()},aczoK25BridgeStrength:{value:0},aczoR5MoselShade:{value:1},aczoK40TrainCount:{value:0},aczoK40TrainCenter:{value:Array.from({length:10},()=>new THREE.Vector4())},aczoK40TrainAlong:{value:Array.from({length:10},()=>new THREE.Vector4())},aczoK40TrainUp:{value:Array.from({length:10},()=>new THREE.Vector4())},aczoK40TrainMin:{value:new THREE.Vector3()},aczoK40TrainMax:{value:new THREE.Vector3()}};
+const aczoK25BridgeShadowGLSL=aczoR4BridgeGLSL('sun',"\n#ifndef ACZO_K37_APPROACH_OCCLUSION\n#define ACZO_K37_APPROACH_OCCLUSION\n// Same two real approach ramps; no extra shadow maps, textures or draw passes.\nbool aczoK37ApproachClip(float p,float d,inout float first,inout float last){\n if(abs(d)<.000001)return p<=0.;\n float t=-p/d;if(d>0.)last=min(last,t);else first=max(first,t);return first<=last;\n}\nbool aczoK37ApproachBox(vec3 point,vec3 direction,float range,vec3 lo,vec3 hi){\n float first=.12,last=range;\n if(!aczoK37ApproachClip(lo.x-point.x,-direction.x,first,last))return false;\n if(!aczoK37ApproachClip(point.x-hi.x,direction.x,first,last))return false;\n if(!aczoK37ApproachClip(lo.y-point.y,-direction.y,first,last))return false;\n if(!aczoK37ApproachClip(point.y-hi.y,direction.y,first,last))return false;\n if(!aczoK37ApproachClip(lo.z-point.z,-direction.z,first,last))return false;\n return aczoK37ApproachClip(point.z-hi.z,direction.z,first,last);\n}\nbool aczoK37ApproachPrism(vec3 point,vec3 direction,float range,vec2 origin,vec2 axis,float span,float top,float grade,float floorZ,float floorGrade,float width,float taper){\n vec2 delta=point.xy-origin,side=vec2(axis.y,-axis.x);\n vec3 p=vec3(dot(delta,side),dot(delta,axis),point.z),d=vec3(dot(direction.xy,side),dot(direction.xy,axis),direction.z);\n float first=.12,last=range;\n if(!aczoK37ApproachClip(-p.y,-d.y,first,last))return false;\n if(!aczoK37ApproachClip(p.y-span,d.y,first,last))return false;\n if(!aczoK37ApproachClip(floorZ+floorGrade*p.y-p.z,floorGrade*d.y-d.z,first,last))return false;\n if(!aczoK37ApproachClip(p.z-top-grade*p.y,d.z-grade*d.y,first,last))return false;\n float extension=width+taper*(top+grade*p.y-p.z),extensionD=taper*(grade*d.y-d.z);\n if(!aczoK37ApproachClip(p.x-extension,d.x-extensionD,first,last))return false;\n return aczoK37ApproachClip(-p.x-extension,-d.x-extensionD,first,last);\n}\nbool aczoK37ApproachOccluded(vec3 point,vec3 direction,float range){\n // Match the existing regional material clip: off-map invisible ramp pieces\n // cannot cast a ghost shadow back onto the active map.\n float first=.12,last=range;\n if(!aczoK37ApproachClip(-500.-point.x,-direction.x,first,last))return false;\n if(!aczoK37ApproachClip(point.x-300.,direction.x,first,last))return false;\n if(!aczoK37ApproachClip(-630.-point.y,-direction.y,first,last))return false;\n if(!aczoK37ApproachClip(point.y-200.,direction.y,first,last))return false;\n float skip=max(0.,first-.12);point+=direction*skip;range=last-skip;\n if(aczoK37ApproachBox(point,direction,range,vec3(-503.7591403,-437.061441,-0.14),vec3(-400.2356975,-263.7158446,11.0776808))){\n  if(aczoK37ApproachPrism(point,direction,range,vec2(-499.3580661,-265.3092365),vec2(0.3392135,-0.9407094),44.2175081,0.2462161,0.0041301,-0.13,0.0,4.5775408,0.24))return true;\n  if(aczoK37ApproachPrism(point,direction,range,vec2(-484.4436266,-306.646557),vec2(0.2859947,-0.9582312),40.1119021,0.4276823,0.0106284,-0.13,0.0,4.5253476,0.24))return true;\n  if(aczoK37ApproachPrism(point,direction,range,vec2(-473.0998186,-344.724296),vec2(0.3602623,-0.9328511),20.5143547,0.8502228,0.05176,-0.13,0.0,4.6372732,0.24))return true;\n  if(aczoK37ApproachPrism(point,direction,range,vec2(-465.8480446,-363.5324319),vec2(0.4241598,-0.9055874),15.0126756,1.891211,0.0927946,-0.13,0.0,4.5212879,0.24))return true;\n  if(aczoK37ApproachPrism(point,direction,range,vec2(-459.7107591,-376.6944426),vec2(0.5047541,-0.8632632),13.3427775,3.2463836,0.1083297,-0.13,0.0,4.5750532,0.24))return true;\n  if(aczoK37ApproachPrism(point,direction,range,vec2(-453.389266,-387.6078367),vec2(0.6122094,-0.7906957),12.6384592,4.6173653,0.1115149,-0.13,0.0,4.6111828,0.24))return true;\n  if(aczoK37ApproachPrism(point,direction,range,vec2(-446.1435144,-397.0338984),vec2(0.7065546,-0.7076586),13.1486644,5.9344362,0.1215586,-0.13,0.0,4.555506,0.24))return true;\n  if(aczoK37ApproachPrism(point,direction,range,vec2(-437.143318,-406.0626432),vec2(0.7564602,-0.6540397),19.7826575,7.569233,0.101613,-0.13,0.0,4.5353854,0.055))return true;\n  if(aczoK37ApproachPrism(point,direction,range,vec2(-422.4880989,-418.7515845),vec2(0.8044526,-0.5940169),23.8628029,9.4671602,0.0670718,-0.13,0.0,4.5117739,0.055))return true;\n }\n if(aczoK37ApproachBox(point,direction,range,vec3(-231.4371388,-633.6902369,-0.14),vec3(-127.137545,-556.9967838,11.0424555))){\n  if(aczoK37ApproachPrism(point,direction,range,vec2(-228.2770681,-561.0962121),vec2(0.7922159,-0.6102409),32.0186351,11.0324555,-0.0051985,-0.13,0.0,4.5480771,0.055))return true;\n  if(aczoK37ApproachPrism(point,direction,range,vec2(-203.1994545,-580.4299788),vec2(0.8312051,-0.5559659),25.6865997,10.8703909,-0.0066038,-0.13,0.0,4.5987191,0.055))return true;\n  if(aczoK37ApproachPrism(point,direction,range,vec2(-155.357614,-612.1835442),vec2(0.8253344,-0.5646443),30.7565699,10.5223418,-0.0035054,-0.13,0.0,4.4242902,0.055))return true;\n  if(aczoK37ApproachPrism(point,direction,range,vec2(-183.0716319,-593.9236128),vec2(0.8350361,-0.5501952),33.3028273,10.8496332,-0.0055337,10.6281614,-0.0055337,4.4663866,0.0))return true;\n }\n return false;\n}\n#endif\nuniform vec3 aczoK25BridgeSun;uniform float aczoK25BridgeStrength;\n\nuniform int aczoK40TrainCount;\nuniform vec4 aczoK40TrainCenter[10],aczoK40TrainAlong[10],aczoK40TrainUp[10];\nuniform vec3 aczoK40TrainMin,aczoK40TrainMax;\nfloat aczoK40TrainShadow(vec3 world){\n if(aczoK40TrainCount==0)return 0.;\n // The ray/AABB reject keeps the ten-car loop away from other river pixels.\n if(!aczoK37ApproachBox(world,aczoK25BridgeSun,20000.,aczoK40TrainMin,aczoK40TrainMax))return 0.;\n // Respect the same map clipping as the rendered train materials, including\n // a partially visible car. An invisible off-map part cannot cast back in.\n float mapFirst=.12,mapLast=20000.;\n if(!aczoK37ApproachClip(-500.-world.x,-aczoK25BridgeSun.x,mapFirst,mapLast))return 0.;\n if(!aczoK37ApproachClip(world.x-300.,aczoK25BridgeSun.x,mapFirst,mapLast))return 0.;\n if(!aczoK37ApproachClip(-630.-world.y,-aczoK25BridgeSun.y,mapFirst,mapLast))return 0.;\n if(!aczoK37ApproachClip(world.y-200.,aczoK25BridgeSun.y,mapFirst,mapLast))return 0.;\n float shade=0.;\n for(int i=0;i<10;i++){\n  if(i>=aczoK40TrainCount)break;\n  vec4 c=aczoK40TrainCenter[i],a=aczoK40TrainAlong[i],u=aczoK40TrainUp[i];\n  vec3 side=cross(a.xyz,u.xyz),delta=world-c.xyz;\n  vec3 p=vec3(dot(delta,side),dot(delta,a.xyz),dot(delta,u.xyz));\n  vec3 d=vec3(dot(aczoK25BridgeSun,side),dot(aczoK25BridgeSun,a.xyz),dot(aczoK25BridgeSun,u.xyz));\n  float first=mapFirst,last=mapLast;\n  if(!aczoK37ApproachClip(-c.w-p.x,-d.x,first,last))continue;\n  if(!aczoK37ApproachClip(p.x-c.w,d.x,first,last))continue;\n  if(!aczoK37ApproachClip(-a.w-p.y,-d.y,first,last))continue;\n  if(!aczoK37ApproachClip(p.y-a.w,d.y,first,last))continue;\n  if(!aczoK37ApproachClip(-u.w-p.z,-d.z,first,last))continue;\n  if(!aczoK37ApproachClip(p.z-u.w,d.z,first,last))continue;\n  shade=max(shade,smoothstep(0.,.20,last-first));\n  if(shade>.999)break;\n }\n return shade;\n}\n\n float aczoK25BridgeShadow(vec3 world){\n  if(aczoK25BridgeStrength<=.001||world.z>11.2)return 0.;\n  vec2 delta=world.xy-vec2(-315.8,-497.),along=vec2(.807,-.591),across=vec2(.591,.807);\n  vec3 p=vec3(dot(delta,across),dot(delta,along),world.z),d=vec3(dot(aczoK25BridgeSun.xy,across),dot(aczoK25BridgeSun.xy,along),aczoK25BridgeSun.z);\n  float aczoR5Reach=length(delta);if(d.z<=.0001||aczoR5Reach>900.)return 0.;\n  vec2 deck=p.xy+d.xy*((11.05-p.z)/d.z);\n  float shade=(1.-smoothstep(4.05,4.65,abs(deck.x)))*(1.-smoothstep(108.3,109.1,abs(deck.y)));\n  vec3 safeDir=vec3(abs(d.x)<.0001?.0001:d.x,abs(d.y)<.0001?.0001:d.y,d.z);\n  for(int i=0;i<6;i++){\n   float y=i==0?-82.5:i==1?-50.5:i==2?-14.5:i==3?23.5:i==4?56.5:84.5;\n   vec3 lo=(vec3(-4.35,y-1.65,-.3)-p)/safeDir,hi=(vec3(4.35,y+1.65,9.1)-p)/safeDir;\n   vec3 t0=min(lo,hi),t1=max(lo,hi);float enter=max(max(t0.x,t0.y),t0.z),leave=min(min(t1.x,t1.y),t1.z);\n   shade=max(shade,step(max(0.,enter),leave));\n  }\n  if(aczoK37ApproachOccluded(world,aczoK25BridgeSun,20000.))shade=1.;\n  shade=max(shade,aczoK40TrainShadow(world));\n  return shade*aczoK25BridgeStrength*(1.-smoothstep(780.,900.,aczoR5Reach));\n }\n"); // BRIDGE-R4: shared bridge proxy
 const aczoShipWakeUniforms={
   aczoWakeOrigin:{value:new THREE.Vector2()},aczoWakeDirection:{value:new THREE.Vector2(1,0)},
   aczoWakeTime:{value:0},aczoWakeLength:{value:100},aczoWakeAmplitude:{value:0},aczoWakeTravel:{value:0}
@@ -45980,7 +46362,7 @@ moselWaterMat.fragmentShader=moselWaterMat.fragmentShader.replace(/float waveBan
  `);
 moselWaterMat.fragmentShader=moselWaterMat.fragmentShader.replace('float fine=(fine1*.68+fine2*.32)*.5+.5;','float fine=aczoK89FineRipples(vWorldPos.xy);');
 const aczoK25RiverClock={value:0};
-const moselWaterUniforms={...waterUniforms,time:aczoK25RiverClock,anglingView:{value:0},clipToPond:{value:0.0}};
+const moselWaterUniforms={...waterUniforms,time:aczoK25RiverClock,anglingView:{value:0},clipToPond:{value:0.0},aczoR5WaterShade:{value:1}};
 moselWaterMat.uniforms=moselWaterUniforms;
 for(const [from,to] of [
  ['vec3(.055,.28,.46)','vec3(.038,.085,.059)'],['vec3(.10,.47,.68)','vec3(.085,.155,.100)'],['vec3(.18,.64,.79)','vec3(.19,.265,.18)'],
@@ -46390,7 +46772,7 @@ const aczoNavigationGlowTexture=(()=>{
  const c=document.createElement('canvas');c.width=c.height=48;const x=c.getContext('2d'),g=x.createRadialGradient(24,24,1,24,24,23);g.addColorStop(0,'rgba(255,255,255,1)');g.addColorStop(.13,'rgba(255,255,255,.9)');g.addColorStop(.34,'rgba(255,255,255,.22)');g.addColorStop(1,'rgba(255,255,255,0)');x.fillStyle=g;x.fillRect(0,0,48,48);return new THREE.CanvasTexture(c);
 })();
 const aczoBridgeLightingUniforms={aczoBridgeNight:{value:0},aczoSearchStrength:{value:0},aczoSearchOrigin0:{value:new THREE.Vector3()},aczoSearchOrigin1:{value:new THREE.Vector3()},aczoSearchDirection0:{value:new THREE.Vector3(0,1,0)},aczoSearchDirection1:{value:new THREE.Vector3(0,1,0)}};
-const aczoK25SearchlightGLSL="\n#ifndef ACZO_K37_APPROACH_OCCLUSION\n#define ACZO_K37_APPROACH_OCCLUSION\n// Same two real approach ramps; no extra shadow maps, textures or draw passes.\nbool aczoK37ApproachClip(float p,float d,inout float first,inout float last){\n if(abs(d)<.000001)return p<=0.;\n float t=-p/d;if(d>0.)last=min(last,t);else first=max(first,t);return first<=last;\n}\nbool aczoK37ApproachBox(vec3 point,vec3 direction,float range,vec3 lo,vec3 hi){\n float first=.12,last=range;\n if(!aczoK37ApproachClip(lo.x-point.x,-direction.x,first,last))return false;\n if(!aczoK37ApproachClip(point.x-hi.x,direction.x,first,last))return false;\n if(!aczoK37ApproachClip(lo.y-point.y,-direction.y,first,last))return false;\n if(!aczoK37ApproachClip(point.y-hi.y,direction.y,first,last))return false;\n if(!aczoK37ApproachClip(lo.z-point.z,-direction.z,first,last))return false;\n return aczoK37ApproachClip(point.z-hi.z,direction.z,first,last);\n}\nbool aczoK37ApproachPrism(vec3 point,vec3 direction,float range,vec2 origin,vec2 axis,float span,float top,float grade,float floorZ,float floorGrade,float width,float taper){\n vec2 delta=point.xy-origin,side=vec2(axis.y,-axis.x);\n vec3 p=vec3(dot(delta,side),dot(delta,axis),point.z),d=vec3(dot(direction.xy,side),dot(direction.xy,axis),direction.z);\n float first=.12,last=range;\n if(!aczoK37ApproachClip(-p.y,-d.y,first,last))return false;\n if(!aczoK37ApproachClip(p.y-span,d.y,first,last))return false;\n if(!aczoK37ApproachClip(floorZ+floorGrade*p.y-p.z,floorGrade*d.y-d.z,first,last))return false;\n if(!aczoK37ApproachClip(p.z-top-grade*p.y,d.z-grade*d.y,first,last))return false;\n float extension=width+taper*(top+grade*p.y-p.z),extensionD=taper*(grade*d.y-d.z);\n if(!aczoK37ApproachClip(p.x-extension,d.x-extensionD,first,last))return false;\n return aczoK37ApproachClip(-p.x-extension,-d.x-extensionD,first,last);\n}\nbool aczoK37ApproachOccluded(vec3 point,vec3 direction,float range){\n // Match the existing regional material clip: off-map invisible ramp pieces\n // cannot cast a ghost shadow back onto the active map.\n float first=.12,last=range;\n if(!aczoK37ApproachClip(-500.-point.x,-direction.x,first,last))return false;\n if(!aczoK37ApproachClip(point.x-300.,direction.x,first,last))return false;\n if(!aczoK37ApproachClip(-630.-point.y,-direction.y,first,last))return false;\n if(!aczoK37ApproachClip(point.y-200.,direction.y,first,last))return false;\n float skip=max(0.,first-.12);point+=direction*skip;range=last-skip;\n if(aczoK37ApproachBox(point,direction,range,vec3(-503.7591403,-437.061441,-0.14),vec3(-400.2356975,-263.7158446,11.0776808))){\n  if(aczoK37ApproachPrism(point,direction,range,vec2(-499.3580661,-265.3092365),vec2(0.3392135,-0.9407094),44.2175081,0.2462161,0.0041301,-0.13,0.0,4.5775408,0.24))return true;\n  if(aczoK37ApproachPrism(point,direction,range,vec2(-484.4436266,-306.646557),vec2(0.2859947,-0.9582312),40.1119021,0.4276823,0.0106284,-0.13,0.0,4.5253476,0.24))return true;\n  if(aczoK37ApproachPrism(point,direction,range,vec2(-473.0998186,-344.724296),vec2(0.3602623,-0.9328511),20.5143547,0.8502228,0.05176,-0.13,0.0,4.6372732,0.24))return true;\n  if(aczoK37ApproachPrism(point,direction,range,vec2(-465.8480446,-363.5324319),vec2(0.4241598,-0.9055874),15.0126756,1.891211,0.0927946,-0.13,0.0,4.5212879,0.24))return true;\n  if(aczoK37ApproachPrism(point,direction,range,vec2(-459.7107591,-376.6944426),vec2(0.5047541,-0.8632632),13.3427775,3.2463836,0.1083297,-0.13,0.0,4.5750532,0.24))return true;\n  if(aczoK37ApproachPrism(point,direction,range,vec2(-453.389266,-387.6078367),vec2(0.6122094,-0.7906957),12.6384592,4.6173653,0.1115149,-0.13,0.0,4.6111828,0.24))return true;\n  if(aczoK37ApproachPrism(point,direction,range,vec2(-446.1435144,-397.0338984),vec2(0.7065546,-0.7076586),13.1486644,5.9344362,0.1215586,-0.13,0.0,4.555506,0.24))return true;\n  if(aczoK37ApproachPrism(point,direction,range,vec2(-437.143318,-406.0626432),vec2(0.7564602,-0.6540397),19.7826575,7.569233,0.101613,-0.13,0.0,4.5353854,0.055))return true;\n  if(aczoK37ApproachPrism(point,direction,range,vec2(-422.4880989,-418.7515845),vec2(0.8044526,-0.5940169),23.8628029,9.4671602,0.0670718,-0.13,0.0,4.5117739,0.055))return true;\n }\n if(aczoK37ApproachBox(point,direction,range,vec3(-231.4371388,-633.6902369,-0.14),vec3(-127.137545,-556.9967838,11.0424555))){\n  if(aczoK37ApproachPrism(point,direction,range,vec2(-228.2770681,-561.0962121),vec2(0.7922159,-0.6102409),32.0186351,11.0324555,-0.0051985,-0.13,0.0,4.5480771,0.055))return true;\n  if(aczoK37ApproachPrism(point,direction,range,vec2(-203.1994545,-580.4299788),vec2(0.8312051,-0.5559659),25.6865997,10.8703909,-0.0066038,-0.13,0.0,4.5987191,0.055))return true;\n  if(aczoK37ApproachPrism(point,direction,range,vec2(-155.357614,-612.1835442),vec2(0.8253344,-0.5646443),30.7565699,10.5223418,-0.0035054,-0.13,0.0,4.4242902,0.055))return true;\n  if(aczoK37ApproachPrism(point,direction,range,vec2(-183.0716319,-593.9236128),vec2(0.8350361,-0.5501952),33.3028273,10.8496332,-0.0055337,10.6281614,-0.0055337,4.4663866,0.0))return true;\n }\n return false;\n}\n#endif\nuniform float aczoSearchStrength;uniform vec3 aczoSearchOrigin0,aczoSearchOrigin1,aczoSearchDirection0,aczoSearchDirection1;\n bool aczoK25SearchBox(vec3 p,vec3 d,float lengthToLight,vec3 lo,vec3 hi){\n  vec3 safe=vec3(abs(d.x)<.0001?.0001:d.x,abs(d.y)<.0001?.0001:d.y,abs(d.z)<.0001?.0001:d.z);\n  vec3 a=(lo-p)/safe,b=(hi-p)/safe,enter=min(a,b),leave=max(a,b);\n  float first=max(max(enter.x,enter.y),enter.z),last=min(min(leave.x,leave.y),leave.z);\n  return max(first,.12)<min(last,lengthToLight-.12);\n }\n float aczoK25SearchVisibility(vec3 point,vec3 origin){\n  vec2 axis=normalize(vec2(.807,-.591)),crossAxis=vec2(-axis.y,axis.x),delta=point.xy-vec2(-315.8,-497.);\n  vec3 deltaLight=origin-point;float distance=length(deltaLight);if(distance<1.)return 1.;\n  if(aczoSearchStrength>.001&&aczoK37ApproachOccluded(point+deltaLight*(.55/distance),deltaLight/distance,distance-.67))return 0.;\n  vec3 p=vec3(dot(delta,crossAxis),dot(delta,axis),point.z),d=vec3(dot(deltaLight.xy,crossAxis),dot(deltaLight.xy,axis),deltaLight.z)/distance;\n  // Small bias avoids shadowing the illuminated masonry face with its simplified blocker.\n  p+=d*.55;distance-=.55;\n  if(aczoK25SearchBox(p,d,distance,vec3(-4.3,-108.5,10.90),vec3(4.3,108.5,11.16)))return 0.;\n  for(int i=0;i<6;i++){float y=i==0?-82.5:i==1?-50.5:i==2?-14.5:i==3?23.5:i==4?56.5:84.5;\n   if(aczoK25SearchBox(p,d,distance,vec3(-4.0,y-1.35,-.3),vec3(4.0,y+1.35,9.15)))return 0.;}\n  return 1.;\n }\n vec3 aczoK25SearchContribution(vec3 point,vec3 normal,vec3 origin,vec3 beam,bool water){\n  vec3 toward=origin-point;float distance=length(toward);if(distance<.1||distance>420.)return vec3(0.);\n  vec3 L=toward/distance;float cone=smoothstep(.975,.993,dot(-L,beam));if(cone<.002)return vec3(0.);\n  float visibility=aczoK25SearchVisibility(point,origin);if(visibility<.5)return vec3(0.);\n  float fade=(1.-smoothstep(270.,420.,distance))/(1.+distance*distance*.000018);\n  float facing=max(0.,dot(normal,L));\n  float value=water?(.10+pow(max(0.,dot(reflect(-L,normal),normalize(cameraPosition-point))),28.)*4.6)*(.35+.65*facing):(.04+.96*facing)*.85;\n  return vec3(.82,.89,1.)*value*cone*fade*aczoSearchStrength;\n }\n vec3 aczoK25SearchWater(vec3 point,vec3 normal){\n  if(aczoSearchStrength<.001)return vec3(0.);\n  return aczoK25SearchContribution(point,normal,aczoSearchOrigin0,aczoSearchDirection0,true);\n }\n vec3 aczoK25SearchLand(vec3 point){\n  if(aczoSearchStrength<.001)return vec3(0.);\n  return aczoK25SearchContribution(point,vec3(0.,0.,1.),aczoSearchOrigin0,aczoSearchDirection0,false);\n }\n";
+const aczoK25SearchlightGLSL=aczoR4BridgeGLSL('search',"\n#ifndef ACZO_K37_APPROACH_OCCLUSION\n#define ACZO_K37_APPROACH_OCCLUSION\n// Same two real approach ramps; no extra shadow maps, textures or draw passes.\nbool aczoK37ApproachClip(float p,float d,inout float first,inout float last){\n if(abs(d)<.000001)return p<=0.;\n float t=-p/d;if(d>0.)last=min(last,t);else first=max(first,t);return first<=last;\n}\nbool aczoK37ApproachBox(vec3 point,vec3 direction,float range,vec3 lo,vec3 hi){\n float first=.12,last=range;\n if(!aczoK37ApproachClip(lo.x-point.x,-direction.x,first,last))return false;\n if(!aczoK37ApproachClip(point.x-hi.x,direction.x,first,last))return false;\n if(!aczoK37ApproachClip(lo.y-point.y,-direction.y,first,last))return false;\n if(!aczoK37ApproachClip(point.y-hi.y,direction.y,first,last))return false;\n if(!aczoK37ApproachClip(lo.z-point.z,-direction.z,first,last))return false;\n return aczoK37ApproachClip(point.z-hi.z,direction.z,first,last);\n}\nbool aczoK37ApproachPrism(vec3 point,vec3 direction,float range,vec2 origin,vec2 axis,float span,float top,float grade,float floorZ,float floorGrade,float width,float taper){\n vec2 delta=point.xy-origin,side=vec2(axis.y,-axis.x);\n vec3 p=vec3(dot(delta,side),dot(delta,axis),point.z),d=vec3(dot(direction.xy,side),dot(direction.xy,axis),direction.z);\n float first=.12,last=range;\n if(!aczoK37ApproachClip(-p.y,-d.y,first,last))return false;\n if(!aczoK37ApproachClip(p.y-span,d.y,first,last))return false;\n if(!aczoK37ApproachClip(floorZ+floorGrade*p.y-p.z,floorGrade*d.y-d.z,first,last))return false;\n if(!aczoK37ApproachClip(p.z-top-grade*p.y,d.z-grade*d.y,first,last))return false;\n float extension=width+taper*(top+grade*p.y-p.z),extensionD=taper*(grade*d.y-d.z);\n if(!aczoK37ApproachClip(p.x-extension,d.x-extensionD,first,last))return false;\n return aczoK37ApproachClip(-p.x-extension,-d.x-extensionD,first,last);\n}\nbool aczoK37ApproachOccluded(vec3 point,vec3 direction,float range){\n // Match the existing regional material clip: off-map invisible ramp pieces\n // cannot cast a ghost shadow back onto the active map.\n float first=.12,last=range;\n if(!aczoK37ApproachClip(-500.-point.x,-direction.x,first,last))return false;\n if(!aczoK37ApproachClip(point.x-300.,direction.x,first,last))return false;\n if(!aczoK37ApproachClip(-630.-point.y,-direction.y,first,last))return false;\n if(!aczoK37ApproachClip(point.y-200.,direction.y,first,last))return false;\n float skip=max(0.,first-.12);point+=direction*skip;range=last-skip;\n if(aczoK37ApproachBox(point,direction,range,vec3(-503.7591403,-437.061441,-0.14),vec3(-400.2356975,-263.7158446,11.0776808))){\n  if(aczoK37ApproachPrism(point,direction,range,vec2(-499.3580661,-265.3092365),vec2(0.3392135,-0.9407094),44.2175081,0.2462161,0.0041301,-0.13,0.0,4.5775408,0.24))return true;\n  if(aczoK37ApproachPrism(point,direction,range,vec2(-484.4436266,-306.646557),vec2(0.2859947,-0.9582312),40.1119021,0.4276823,0.0106284,-0.13,0.0,4.5253476,0.24))return true;\n  if(aczoK37ApproachPrism(point,direction,range,vec2(-473.0998186,-344.724296),vec2(0.3602623,-0.9328511),20.5143547,0.8502228,0.05176,-0.13,0.0,4.6372732,0.24))return true;\n  if(aczoK37ApproachPrism(point,direction,range,vec2(-465.8480446,-363.5324319),vec2(0.4241598,-0.9055874),15.0126756,1.891211,0.0927946,-0.13,0.0,4.5212879,0.24))return true;\n  if(aczoK37ApproachPrism(point,direction,range,vec2(-459.7107591,-376.6944426),vec2(0.5047541,-0.8632632),13.3427775,3.2463836,0.1083297,-0.13,0.0,4.5750532,0.24))return true;\n  if(aczoK37ApproachPrism(point,direction,range,vec2(-453.389266,-387.6078367),vec2(0.6122094,-0.7906957),12.6384592,4.6173653,0.1115149,-0.13,0.0,4.6111828,0.24))return true;\n  if(aczoK37ApproachPrism(point,direction,range,vec2(-446.1435144,-397.0338984),vec2(0.7065546,-0.7076586),13.1486644,5.9344362,0.1215586,-0.13,0.0,4.555506,0.24))return true;\n  if(aczoK37ApproachPrism(point,direction,range,vec2(-437.143318,-406.0626432),vec2(0.7564602,-0.6540397),19.7826575,7.569233,0.101613,-0.13,0.0,4.5353854,0.055))return true;\n  if(aczoK37ApproachPrism(point,direction,range,vec2(-422.4880989,-418.7515845),vec2(0.8044526,-0.5940169),23.8628029,9.4671602,0.0670718,-0.13,0.0,4.5117739,0.055))return true;\n }\n if(aczoK37ApproachBox(point,direction,range,vec3(-231.4371388,-633.6902369,-0.14),vec3(-127.137545,-556.9967838,11.0424555))){\n  if(aczoK37ApproachPrism(point,direction,range,vec2(-228.2770681,-561.0962121),vec2(0.7922159,-0.6102409),32.0186351,11.0324555,-0.0051985,-0.13,0.0,4.5480771,0.055))return true;\n  if(aczoK37ApproachPrism(point,direction,range,vec2(-203.1994545,-580.4299788),vec2(0.8312051,-0.5559659),25.6865997,10.8703909,-0.0066038,-0.13,0.0,4.5987191,0.055))return true;\n  if(aczoK37ApproachPrism(point,direction,range,vec2(-155.357614,-612.1835442),vec2(0.8253344,-0.5646443),30.7565699,10.5223418,-0.0035054,-0.13,0.0,4.4242902,0.055))return true;\n  if(aczoK37ApproachPrism(point,direction,range,vec2(-183.0716319,-593.9236128),vec2(0.8350361,-0.5501952),33.3028273,10.8496332,-0.0055337,10.6281614,-0.0055337,4.4663866,0.0))return true;\n }\n return false;\n}\n#endif\nuniform float aczoSearchStrength;uniform vec3 aczoSearchOrigin0,aczoSearchOrigin1,aczoSearchDirection0,aczoSearchDirection1;\n bool aczoK25SearchBox(vec3 p,vec3 d,float lengthToLight,vec3 lo,vec3 hi){\n  vec3 safe=vec3(abs(d.x)<.0001?.0001:d.x,abs(d.y)<.0001?.0001:d.y,abs(d.z)<.0001?.0001:d.z);\n  vec3 a=(lo-p)/safe,b=(hi-p)/safe,enter=min(a,b),leave=max(a,b);\n  float first=max(max(enter.x,enter.y),enter.z),last=min(min(leave.x,leave.y),leave.z);\n  return max(first,.12)<min(last,lengthToLight-.12);\n }\n float aczoK25SearchVisibility(vec3 point,vec3 origin){\n  vec2 axis=normalize(vec2(.807,-.591)),crossAxis=vec2(-axis.y,axis.x),delta=point.xy-vec2(-315.8,-497.);\n  vec3 deltaLight=origin-point;float distance=length(deltaLight);if(distance<1.)return 1.;\n  if(aczoSearchStrength>.001&&aczoK37ApproachOccluded(point+deltaLight*(.55/distance),deltaLight/distance,distance-.67))return 0.;\n  vec3 p=vec3(dot(delta,crossAxis),dot(delta,axis),point.z),d=vec3(dot(deltaLight.xy,crossAxis),dot(deltaLight.xy,axis),deltaLight.z)/distance;\n  // Small bias avoids shadowing the illuminated masonry face with its simplified blocker.\n  p+=d*.55;distance-=.55;\n  if(aczoK25SearchBox(p,d,distance,vec3(-4.3,-108.5,10.90),vec3(4.3,108.5,11.16)))return 0.;\n  for(int i=0;i<6;i++){float y=i==0?-82.5:i==1?-50.5:i==2?-14.5:i==3?23.5:i==4?56.5:84.5;\n   if(aczoK25SearchBox(p,d,distance,vec3(-4.0,y-1.35,-.3),vec3(4.0,y+1.35,9.15)))return 0.;}\n  return 1.;\n }\n vec3 aczoK25SearchContribution(vec3 point,vec3 normal,vec3 origin,vec3 beam,bool water){\n  vec3 toward=origin-point;float distance=length(toward);if(distance<.1||distance>420.)return vec3(0.);\n  vec3 L=toward/distance;float cone=smoothstep(.975,.993,dot(-L,beam));if(cone<.002)return vec3(0.);\n  float visibility=aczoK25SearchVisibility(point,origin);if(visibility<.5)return vec3(0.);\n  float fade=(1.-smoothstep(270.,420.,distance))/(1.+distance*distance*.000018);\n  float facing=max(0.,dot(normal,L));\n  float value=water?(.10+pow(max(0.,dot(reflect(-L,normal),normalize(cameraPosition-point))),28.)*4.6)*(.35+.65*facing):(.04+.96*facing)*.85;\n  return vec3(.82,.89,1.)*value*cone*fade*aczoSearchStrength;\n }\n vec3 aczoK25SearchWater(vec3 point,vec3 normal){\n  if(aczoSearchStrength<.001)return vec3(0.);\n  return aczoK25SearchContribution(point,normal,aczoSearchOrigin0,aczoSearchDirection0,true);\n }\n vec3 aczoK25SearchLand(vec3 point){\n  if(aczoSearchStrength<.001)return vec3(0.);\n  return aczoK25SearchContribution(point,vec3(0.,0.,1.),aczoSearchOrigin0,aczoSearchDirection0,false);\n }\n"); // BRIDGE-R4: shared bridge proxy
 const aczoBridgeDownlightGLSL=`
 uniform float aczoBridgeNight;
 uniform vec3 aczoBridgeLamp0,aczoBridgeLamp1,aczoBridgeLamp2,aczoBridgeLamp3;
@@ -48852,7 +49234,7 @@ const aczoSurveyLowPolyBushItems=[];
 const aczoSurveyForestUnderstoryItems=[];
 const aczoSurveyReedSegments=[],aczoSurveyReedHeads=[],aczoSurveyReedBladeItems=[];
 let aczoPerf2DetailedTrees=0,aczoPerf2LowPolyTrees=0,aczoPerf2DetailedConifers=0,aczoPerf2LowPolyConifers=0;
-const ACZO_SURVEY_SEGMENT_CHUNK_SIZE=42;
+const ACZO_SURVEY_SEGMENT_CHUNK_SIZE=(typeof ACZO_OPT8_ENABLED!=='undefined'&&ACZO_OPT8_ENABLED)?84:42; // OPT-8b: 84 m (default; ?opt8=0 = 42 m)
 const ACZO_SURVEY_SEGMENT_CHUNK_THRESHOLD=5000;
 const aczoSurveyFineLodMeshes=[],aczoSurveySprayLodMeshes=[];
 let aczoSurveyReducedDetail=false;
@@ -53817,7 +54199,7 @@ const aczoK35Panorama=(()=>{
   for(let i=0;i<roots.length;i++){const a=roots[i],b=copies[i];b.visible=a.visible;b.position.copy(a.position);b.quaternion.copy(a.quaternion);b.scale.copy(a.scale);b.layers.mask=a.layers.mask;}
   uniforms.uSkyTop.value.copy(skyMat.uniforms.topColor.value);uniforms.uSkyBottom.value.copy(skyMat.uniforms.bottomColor.value);
   uniforms.uSkyFocus.value.copy(skyMat.uniforms.aczoSkyWorldFocus.value);uniforms.uSkyCenter.value.copy(sky.position);uniforms.uSkyRadius.value=900*sky.scale.x;uniforms.uSkyOffset.value=skyMat.uniforms.offset.value;uniforms.uSkyExponent.value=skyMat.uniforms.exponent.value;
-  uniforms.uSun.value.copy(sun.position).sub(sun.target.position).normalize();uniforms.uNight.value=simulationEnabled?THREE.MathUtils.clamp(sceneNightFactor,0,1):0;uniforms.uDay.value=simulationEnabled?THREE.MathUtils.clamp(satUniforms.dayLight.value,.03,1):1;
+  uniforms.uSun.value.copy(sun.position).sub(sun.target.position).normalize();uniforms.uNight.value=simulationEnabled?THREE.MathUtils.clamp(sceneNightFactor,0,1):0;uniforms.uDay.value=simulationEnabled?THREE.MathUtils.clamp(satUniforms.dayLight.aczoOpen??satUniforms.dayLight.value,.03,1):1;
   uniforms.uCloud.value=simulationEnabled?THREE.MathUtils.clamp(Number(liveWeather.cloud||0)/100,0,1):0;uniforms.uRain.value=simulationEnabled?THREE.MathUtils.clamp(Number(liveWeather.precipitation||liveWeather.rain||0)/1.5,0,1):0;
   uniforms.uRiver.value.copy(moselWaterMat.uniforms.aczoK12Haze.value);
  }
@@ -53941,6 +54323,31 @@ function aczoK79OptimizeRiverShaders(mat){
 
 aczoK5dInit();
 aczoK79OptimizeRiverShaders(moselWaterMat);
+(function aczoOpt10SoftenMoselGlint(){
+ // OPT-10 (2026-11): Mosel only. Narrower lobes + less whitening, same colours.
+ const edits=[
+  ['pow(sourceSd,1.65)','pow(sourceSd,2.3)'],['pow(sourceSd,5.0)','pow(sourceSd,6.5)'],
+  ['pow(sourceMd,1.65)','pow(sourceMd,2.3)'],['pow(sourceMd,5.0)','pow(sourceMd,6.5)'],
+  ['color+=vec3(1.0,.965,.82)*solarScatter*solarScatterBreak*.82;','color+=vec3(1.0,.965,.82)*solarScatter*solarScatterBreak*.70;'],
+  ['clamp(solarScatter*solarScatterBreak*.12,0.0,.18)','clamp(solarScatter*solarScatterBreak*.12,0.0,.12)'],
+  ['color+=vec3(.84,.93,1.0)*moonScatter*moonScatterBreak*.76;','color+=vec3(.84,.93,1.0)*moonScatter*moonScatterBreak*.64;'],
+  ['clamp(moonScatter*moonScatterBreak*.10,0.0,.14)','clamp(moonScatter*moonScatterBreak*.10,0.0,.09)'],
+  ['pow(sd,5.2)','pow(sd,6.5)'],['pow(md,5.2)','pow(md,6.5)'],
+  ['clamp(celestialViewSpec*.38,0.0,.72)','clamp(celestialViewSpec*.32,0.0,.55)']
+ ];
+ try{
+  let f=moselWaterMat.fragmentShader,missing=[];
+  for(const [a,b] of edits){if(f.split(a).length===2)f=f.replace(a,b);else missing.push(a);}
+  if(missing.length)console.warn('OPT-10: Mosel-Anker nicht eindeutig, unverändert:',missing);
+  moselWaterMat.fragmentShader=f;moselWaterMat.needsUpdate=true;
+  // Additive sun/moon overlay of the Mosel: about 15 % less, same light colour.
+  for(const m of [typeof directSunMoselReflectionMat!=='undefined'?directSunMoselReflectionMat:null,typeof directMoonMoselReflectionMat!=='undefined'?directMoonMoselReflectionMat:null]){
+   if(!m||typeof m.fragmentShader!=='string')continue;
+   const a='gl_FragColor=vec4(lightColor,clamp(intensity,0.0,.92));';
+   if(m.fragmentShader.split(a).length===2){m.fragmentShader=m.fragmentShader.replace(a,'gl_FragColor=vec4(lightColor,clamp(intensity*.85,0.0,.80));');m.needsUpdate=true;}
+  }
+ }catch(error){console.warn('OPT-10 übersprungen:',error);}
+})();
 (function loop(frameNow=performance.now()){
  requestAnimationFrame(loop);
  if(!window.__aczoSafeStart.readyForFrames)return;
@@ -54055,6 +54462,7 @@ aczoK79OptimizeRiverShaders(moselWaterMat);
     updateRealBirchSeason(aczoSeasonDayNow);
     window.__aczoNextSeasonMaterialUpdateAt=aczoSeasonPerfNow+(aczoSeasonFast?80:500);
   }
+  if(typeof aczoHillTick==='function')aczoHillTick(visualDt); // HILL-R5
   updateAczoSurveyForestLod();
   updateAczoWildBoars(visualDt);
   updateAczoRealBirchFineLod();
@@ -54084,7 +54492,7 @@ aczoK79OptimizeRiverShaders(moselWaterMat);
         celestialPower=(moonDisc.userData.astronomicallyVisible?(.18+.28*mf):0)*cloudClear;
         satUniforms.celestialColor.value.set(0xb8d8ff);
       }else{
-        celestialPower=(sun.visible ? .62 : 0)*cloudClear;
+        celestialPower=(sun.visible ? .62 : 0)*cloudClear*(typeof aczoHillLight==='function'?aczoHillLight('pond'):1);
         satUniforms.celestialColor.value.set(0xffe1a0);
       }
     }else{
@@ -54120,7 +54528,7 @@ aczoK79OptimizeRiverShaders(moselWaterMat);
      // Eigenständige Reflexionsstärke: nicht mehr vom vergleichsweise kleinen
      // Three.js-Lichtwert abhängig. Wolken schwächen sie weiterhin realistisch.
      waterUniforms.sunStrength.value=(sun.visible && simulationEnabled)
-       ? Math.min(.74,.82*sunCloud)
+       ? Math.min(.74,.82*sunCloud)*(typeof aczoHillLight==='function'?aczoHillLight('pond'):1)
        : 0.0;
    }
    if(typeof moonLight!=='undefined'){
@@ -56150,6 +56558,8 @@ const shared=window.__aczoCompetitionShared;if(!shared)return;
 const ACZO_ZPC_RULES=Object.freeze({perch:{min:22,factor:20},zander:{min:42,factor:13},pike:{min:45,factor:10}});
 const ACZO_ZPC_BONUS=new Set(['rainbow_trout','asp','smallmouth_bass']);
 function aczoZpcCard(){return {fixed:{perch:null,zander:null,pike:null},various:[],bonus:[],units:0};}
+// ZPC-R6: cup length = whole centimetres, rounded half up (62,4 -> 62, 62,5 -> 63); minimum sizes use the measured length.
+function aczoZpcRoundCm(cm){return Math.floor(Number(cm)+.5+1e-8);}
 function aczoZpcFishUnits(species,cm){const r=ACZO_ZPC_RULES[species];return r&&Number.isFinite(cm)&&cm>=r.min?Math.floor(cm+.5+1e-8)*r.factor:0;}
 function aczoZpcScore(card,catchData){
  const species=catchData.species,cm=Number(catchData.cm);
@@ -56303,13 +56713,13 @@ function layoutCupHud(){
 function show(on){pauseCard(!!on&&fishing());if(on)hud.classList.remove('show');overlay.classList.toggle('show',on);overlay.setAttribute('aria-hidden',on?'false':'true');ui.classList.toggle('aczo-zpc-open',on);ui.classList.toggle('aczo-tournament-overlay-open',on);try{cupMusicSync();}catch(_){}}
 for(const species of ['perch','zander','pike'])ui.style.setProperty('--aczo-zpc-fish-'+species,'url("'+fishImageData[species]+'")');
 function cardCount(card){return Object.values(card.fixed).filter(Boolean).length+card.various.length;}
-function slot(f,species){const sp=f?.species||species;return '<span class="aczo-zpc-slot '+(f?'filled':'')+'" title="'+escape(f?(fishDisplayNames[sp]||sp)+' · '+f.cm+' cm':'Offen: '+(fishDisplayNames[sp]||sp||'Zusatzfisch'))+'"><i class="aczo-zpc-fish '+(sp?'aczo-zpc-fish-'+sp:'')+'" aria-hidden="true"></i><small>'+(f?String(f.cm).replace('.',',')+' cm':species?'–':'')+'</small></span>';}
+function slot(f,species){const sp=f?.species||species;return '<span class="aczo-zpc-slot '+(f?'filled':'')+'" title="'+escape(f?(fishDisplayNames[sp]||sp)+' · '+aczoZpcRoundCm(f.cm)+' cm':'Offen: '+(fishDisplayNames[sp]||sp||'Zusatzfisch'))+'"><i class="aczo-zpc-fish '+(sp?'aczo-zpc-fish-'+sp:'')+'" aria-hidden="true"></i><small>'+(f?aczoZpcRoundCm(f.cm)+' cm':species?'–':'')+'</small></span>';}
 function sorted(){return [...Z.participants].sort(aczoZpcCompare);}
 function table(){return '<div class="aczo-zpc-scroll"><table class="aczo-zpc-table"><thead><tr><th>TEILNEHMER</th><th>FIXED</th><th>VARIOUS</th><th>BONUS<br>PUNKTE</th><th>GESAMT<br>PUNKTE</th></tr></thead><tbody>'+sorted().map(p=>'<tr class="'+(p.isPlayer?'player':'')+'"><td><span class="aczo-zpc-name"><span class="aczo-zpc-avatar" aria-hidden="true">'+escape(p.name.slice(0,2).toLocaleUpperCase('de-DE'))+'</span><span>'+escape(p.name)+(p.isPlayer?' ★':'')+(cardCount(p.card)===6?'<small class="aczo-zpc-full-tag">Full Card!</small>':'')+'</span></span></td><td><span class="aczo-zpc-slots">'+['perch','zander','pike'].map(s=>slot(p.card.fixed[s],s)).join('')+'</span></td><td><span class="aczo-zpc-slots">'+[0,1,2].map(i=>slot(p.card.various[i],null)).join('')+'</span></td><td><span class="aczo-zpc-bonus">'+p.card.bonus.length*10+'<small>'+p.card.bonus.length+' / 3</small></span></td><td>'+points(p.card.units)+'</td></tr>').join('')+'</tbody></table></div>';}
 function renderCard(){
  const intro=Z.phase==='intro',result=Z.phase==='results',rank=sorted().findIndex(p=>p.isPlayer)+1;
  const prizes=result?'<p>'+Z.resultOrder.slice(0,4).map((p,i)=>'<strong>'+(i+1)+'. '+escape(p.name)+'</strong> · '+points(p.card.units)+' Punkte · '+PRIZES[i].toLocaleString('de-DE')+' EP').join('<br>')+'</p><p>Du belegst Platz '+rank+' von 7. Normale Fang-EP bleiben erhalten.</p>':'';
- overlay.innerHTML='<article><header class="aczo-zpc-head"><h2>ZPC<small>ZEWEN PREDATOR CUP</small></h2><img class="aczo-zpc-logo" src="'+ACZO_ZPC_LOGO+'" alt="ZPC BANK" width="90" height="92"><div class="aczo-zpc-head-controls"><strong>'+(intro?'20:00':result?'SIEGEREHRUNG':'<small class="aczo-zpc-pause-label">PAUSE · RESTZEIT</small>'+time(Z.endAt-cupNow()))+'</strong>'+(intro?'<button type="button" data-zpc-exit>Abbrechen</button>':!result?'<button type="button" data-zpc-close title="Fangkarte minimieren">Minimieren</button>':'')+'</div></header>'+(Z.notice?'<p class="aczo-zpc-notice '+(Z.fullCardNotice?'aczo-zpc-full-notice':'')+'" role="status">'+escape(Z.notice)+'</p>':'')+table()+'<footer class="aczo-zpc-footer">'+prizes+'<p class="zpc-rule-line">Barsch ab 22 cm × 2 · Zander ab 42 cm × 1,3 · Hecht ab 45 cm × 1</p><p>Je ein Pflichtfisch + 3 freie Wertungsfische. Mosel-Bonus: Forelle, Rapfen, Schwarzbarsch ab 40 cm · je 10 Punkte · höchstens 3 Fische. Nur Kunstköder; Lockpaste erlaubt.</p>'+(intro?'<p>Freie Platzwahl am Weiher und an der Mosel. Die 20 Minuten beginnen mit „Cup starten“. Nächste neue Teilnahme nach fünf Tagen.</p><button type="button" data-zpc-begin>Cup starten · 20 Minuten</button>':result?'<button type="button" data-zpc-finish>Zurück zur Stellenauswahl</button>':'')+'</footer></article>';
+ overlay.innerHTML='<article><header class="aczo-zpc-head"><h2>ZPC<small>ZEWEN PREDATOR CUP</small></h2><img class="aczo-zpc-logo" src="'+ACZO_ZPC_LOGO+'" alt="ZPC BANK" width="90" height="92"><div class="aczo-zpc-head-controls"><strong>'+(intro?'20:00':result?'SIEGEREHRUNG':'<small class="aczo-zpc-pause-label">PAUSE · RESTZEIT</small>'+time(Z.endAt-cupNow()))+'</strong>'+(intro?'<button type="button" data-zpc-exit>Abbrechen</button>':!result?'<button type="button" data-zpc-close title="Fangkarte minimieren">Minimieren</button>':'')+'</div></header>'+(Z.notice?'<p class="aczo-zpc-notice '+(Z.fullCardNotice?'aczo-zpc-full-notice':'')+'" role="status">'+escape(Z.notice)+'</p>':'')+table()+'<footer class="aczo-zpc-footer">'+prizes+'<p class="zpc-rule-line">Barsch ab 22 cm × 2 · Zander ab 42 cm × 1,3 · Hecht ab 45 cm × 1</p><p>Längen in ganzen cm, ab ,5 aufgerundet (nicht auf das Mindestmaß). Je ein Pflichtfisch + 3 freie Wertungsfische. Mosel-Bonus: Forelle, Rapfen, Schwarzbarsch ab 40 cm · je 10 Punkte · höchstens 3 Fische. Nur Kunstköder; Lockpaste erlaubt.</p>'+(intro?'<p>Freie Platzwahl am Weiher und an der Mosel. Die 20 Minuten beginnen mit „Cup starten“. Nächste neue Teilnahme nach fünf Tagen.</p><button type="button" data-zpc-begin>Cup starten · 20 Minuten</button>':result?'<button type="button" data-zpc-finish>Zurück zur Stellenauswahl</button>':'')+'</footer></article>';
  overlay.querySelector('[data-zpc-begin]')?.addEventListener('click',begin);overlay.querySelector('[data-zpc-exit]')?.addEventListener('click',()=>beginLeaveAngling());
  overlay.querySelector('[data-zpc-finish]')?.addEventListener('click',finish);
  overlay.querySelector('[data-zpc-close]')?.addEventListener('click',()=>{Z.cardManual=false;Z.cardUntil=0;show(false);});
@@ -56395,9 +56805,9 @@ function caught(event){
  Z.fullCardNotice=false;catchFeedback.hidden=true;
  if(scored.changed){
   getPlayer().card=scored.card;cupNews();Z.fullCardNotice=before<6&&cardCount(scored.card)===6;
-  Z.notice=Z.fullCardNotice?'Full Card! Alle sechs Wertungsplätze sind besetzt.':(scored.reason==='bonus'?'Bonusfisch +10 Punkte: ':'Gewertet: ')+name+' · '+String(c.cm).replace('.',',')+' cm';
+  Z.notice=Z.fullCardNotice?'Full Card! Alle sechs Wertungsplätze sind besetzt.':(scored.reason==='bonus'?'Bonusfisch +10 Punkte: ':'Gewertet: ')+name+' · '+aczoZpcRoundCm(c.cm)+' cm';
   if(Z.fullCardNotice)playerFeedback('Full Card!','Alle sechs Wertungsfische in der Karte. Jetzt kannst du deine Punkte weiter verbessern.','full');
-  else playerFeedback(scored.reason==='bonus'?'Bonusfisch · +10 Punkte':'Fisch in der Wertung',name+' · '+String(c.cm).replace('.',',')+' cm. Fang-EP bleiben erhalten.','success');
+  else playerFeedback(scored.reason==='bonus'?'Bonusfisch · +10 Punkte':'Fisch in der Wertung',name+' · '+aczoZpcRoundCm(c.cm)+' cm. Fang-EP bleiben erhalten.','success');
   Z.pendingCard=true;checkpoint();
  }else if(scored.reason==='small'){
   const min=ACZO_ZPC_RULES[c.species]?.min||40;
@@ -57231,6 +57641,74 @@ setInterval(()=>{try{tick();}catch(e){console.warn('ZPC:',e);}},250);
  update();
 })();
 
+</script>
+<style id="aczoUiRound3">
+/* UI-18: uniform close controls, at least 44x44 px touch target, top right */
+#helpClose,#anglingDailyQuestIntroClose,#aczoCloseCard,#aczoFullscreenHelpClose{width:44px!important;height:44px!important;min-width:44px!important;min-height:44px!important;top:8px!important;right:8px!important;padding:0!important;border-radius:50%!important;font-size:22px!important;line-height:1!important;display:inline-flex!important;align-items:center!important;justify-content:center!important}
+#anglingMainCloseBtn,#anglingLogTopCloseBtn{width:44px!important;height:44px!important;min-width:44px!important;min-height:44px!important;padding:0!important;border-radius:50%!important;font-size:22px!important;line-height:1!important;display:inline-flex!important;align-items:center!important;justify-content:center!important;flex:0 0 44px!important}
+.angling-panel-close{min-height:44px!important;min-width:84px!important;height:auto!important;display:inline-flex!important;align-items:center!important;justify-content:center!important}
+.angling-game-panel-head{padding-right:104px!important;min-height:60px}
+.angling-leaderboard-panel .angling-game-panel-head{padding-right:104px!important}
+.help-card>h2,.help-card>h3,.angling-daily-quest-intro-card>h2,.angling-daily-quest-intro-card>h3{padding-right:52px}
+/* UI-19: grouped map tools */
+.map-tools-panel .aczo-tools-heading{grid-column:1/-1;margin:2px 2px 0;font-size:9px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:#47705a;text-align:left}
+.map-tools-panel.open{max-height:330px!important}
+.controls.aczo-tools-weather-moved{grid-template-columns:repeat(4,minmax(0,1fr))!important}
+@media(max-width:700px){.map-tools-panel.open{max-height:430px!important}.map-tools-panel>button{min-height:38px!important;font-size:10.5px!important}.map-tools-panel .aczo-tools-heading{font-size:8.5px}}
+/* UI-17: section descriptions under the new group titles */
+#anglingMainMenu .aczo-ui17-shortcut[hidden]{display:none!important}
+</style>
+<script id="aczoUiRound3Script">
+(function aczoUiRound3(){
+ 'use strict';
+ const $=id=>document.getElementById(id);
+ // UI-19: map tools in three labelled groups; weather toggle moves into "Einstellungen".
+ try{
+  const panel=$('mapToolsPanel'),sim=$('simBtn'),gfx=$('aczoGraphicsQuality');
+  if(panel&&!panel.dataset.aczoGrouped){
+   const heading=text=>{const el=document.createElement('small');el.className='aczo-tools-heading';el.textContent=text;return el;};
+   const groups=[['Ansicht',['aczoMapFullscreen','resetView','landscapeOverview','overlayBtn']],['Karte & Werkzeuge',['contourBtn','measureBtn','locBtn','printBtn']]];
+   const frag=document.createDocumentFragment();
+   for(const [title,ids] of groups){frag.append(heading(title));for(const id of ids){const el=$(id);if(el)frag.append(el);}}
+   frag.append(heading('Einstellungen'));
+   if(sim){const bar=sim.parentElement;frag.append(sim);bar?.classList.add('aczo-tools-weather-moved');}
+   if(gfx)frag.append(gfx);
+   panel.prepend(frag);panel.dataset.aczoGrouped='1';
+  }
+ }catch(error){console.warn('UI-19 übersprungen:',error);}
+ // UI-17: main menu groups "Angeln", "Fortschritt", "Konto & Hilfe".
+ try{
+  const menu=$('anglingMainMenu'),overview=$('aczo-main-overview');
+  if(menu&&overview&&!overview.dataset.aczoGrouped){
+   overview.dataset.aczoGrouped='1';
+   const sections=[...overview.querySelectorAll(':scope > section.angling-main-section')];
+   const setTitle=(section,small,title,desc)=>{const t=section?.querySelector('.angling-main-section-title');if(!t)return;const s=t.querySelector('small'),h=t.querySelector('h3');if(s)s.textContent=small;if(h)h.textContent=title;let p=t.querySelector('p');if(desc){if(!p){p=document.createElement('p');t.append(p);}p.textContent=desc;}};
+   const progress=$('anglingMainLogBtn')?.closest('section'),help=$('anglingMainHelpBtn')?.closest('section'),play=$('anglingMainPlayBtn')?.closest('section');
+   setTitle(progress,'MEINE DATEN','📊 Fortschritt','Fangbuch, Bestenlisten, Hall of Fame und Tagesaufgaben.');
+   setTitle(help,'SERVICE','👤 Konto & Hilfe','Profil, Community, Einstellungen und Hilfe.');
+   const button=(label,cls)=>{const b=document.createElement('button');b.type='button';b.className='angling-main-btn aczo-ui17-shortcut'+(cls?' '+cls:'');b.textContent=label;return b;};
+   const helpActions=help?.querySelector('.angling-main-actions');
+   if(helpActions){
+    for(const [label,target] of [['👤 Profil','profile'],['👥 Community','community'],['⚙️ Einstellungen','settings']]){
+     const b=button(label);b.addEventListener('click',()=>menu.querySelector('[data-main-target="'+target+'"]')?.click());
+     helpActions.insertBefore(b,$('anglingMainHelpBtn'));
+    }
+   }
+   // Tacklebox and shop shortcuts, only while their game buttons are usable.
+   const playActions=play?.querySelector('.angling-main-actions'),shortcuts=[];
+   if(playActions){
+    for(const [label,id] of [['🎒 Köderbox','anglingBaitBoxBtn'],['🛒 Shop','anglingShopBtn']]){
+     const b=button(label);b.hidden=true;b.dataset.aczoTarget=id;
+     b.addEventListener('click',()=>{const target=$(id);$('anglingMainCloseBtn')?.click();requestAnimationFrame(()=>target?.click());});
+     playActions.append(b);shortcuts.push(b);
+    }
+   }
+   // Shown in angling mode; openAnglingShop/openAnglingBaitBox keep their own guards.
+   const sync=()=>{const angling=typeof anglingMode!=='undefined'&&!!anglingMode;for(const b of shortcuts){const t=$(b.dataset.aczoTarget);b.hidden=!(angling&&t&&!t.disabled);}};
+   new MutationObserver(sync).observe(menu,{attributes:true,attributeFilter:['class','hidden','style','aria-hidden']});sync();
+  }
+ }catch(error){console.warn('UI-17 übersprungen:',error);}
+})();
 </script>
 <script>window.__aczoSafeStart.start();</script>
 </body>
