@@ -8645,9 +8645,10 @@ function aczoConfigureUnderwaterShadowLight(light){
   light.shadow.radius=1.35;
 }
 function updateUnderwaterObstacleShadows(submerged){
-  const below=!!submerged;
   const anglingUnderwater=typeof anglingMode!=='undefined'&&anglingMode
     &&typeof anglingCinematicView!=='undefined'&&anglingCinematicView==='underwater';
+  // SHADOW-R14: the lure view is always submerged (avoids a one-frame light switch and its shader burst).
+  const below=!!submerged||anglingUnderwater;
   const surface=!!(!is2D&&!below&&!anglingUnderwater&&ground&&ground.visible);
   const active=below||surface;
   // PERF18: NEUTRAL = statische Referenz-/Performanceansicht. Keine
@@ -10359,11 +10360,16 @@ let aczoK81ShadowGeometry=null;
 // not change; recover slowly, and never resize during a camera flight or drill.
 function aczoCreateRenderReserve(){
  return {scale:1,last:0,elapsed:0,frames:0,lastChange:0,good:0,mode:'',base:0,gap:0,trial:0,holdUntil:0,
-  reset(){this.scale=1;this.last=this.elapsed=this.frames=this.good=0;this.lastChange=this.trial=this.holdUntil=0;},
-  sample(now,gap,blocked,mode,base){
+  reset(){this.scale=1;this.last=this.elapsed=this.frames=this.good=0;this.lastChange=this.trial=this.holdUntil=0;this.cpuBound=null;this.scope='';},
+  sample(now,gap,blocked,mode,base,scope=''){
    if(this.mode!==mode||this.base!==base){this.reset();this.mode=mode;this.base=base;}
+   // RESERVE-R15: a new scene starts a fresh measurement window (resolution itself is kept).
+   if(this.scope!==scope){this.scope=scope;this.last=this.elapsed=this.frames=this.good=0;}
    if(this.gap!==gap){this.last=this.elapsed=this.frames=this.good=this.trial=0;this.gap=gap;}
-   if(blocked){this.reset();return this.scale;}
+   // RESERVE-R14: pause during transitions instead of resetting to full size (no rebuild after each flight).
+   if(blocked){this.last=this.elapsed=this.frames=this.good=0;return this.scale;}
+   // RESERVE-R14: fewer pixels did not help in this session -> keep the selected resolution.
+   if(this.cpuBound&&this.cpuBound.has(scope)){this.last=now;return this.scale;}
    if(now<this.holdUntil){this.last=now;return this.scale;}
    const elapsed=now-this.last;this.last=now;
    if(elapsed>0&&elapsed<gap*5){this.elapsed+=elapsed;this.frames++;}
@@ -10371,7 +10377,7 @@ function aczoCreateRenderReserve(){
    const ratio=this.elapsed/(this.frames*gap);this.elapsed=this.frames=0;
    if(ratio>1.24){
     // Restore sharpness when fewer pixels do not help; this does not identify CPU vs GPU vertex/driver limits.
-    if(this.scale<=.88&&this.trial&&ratio>=this.trial*.97){this.scale=1;this.holdUntil=now+30000;this.trial=this.good=0;this.lastChange=now;return this.scale;}
+    if(this.scale<=.88&&this.trial&&ratio>=this.trial*.97){this.scale=1;this.holdUntil=now+30000;this.trial=this.good=0;this.lastChange=now;(this.cpuBound||(this.cpuBound=new Set())).add(scope);return this.scale;}
     if(this.scale===1)this.trial=ratio;
     this.scale=Math.max(.82,Math.round((this.scale-.06)*100)/100);this.good=0;this.lastChange=now;
    }
@@ -10388,7 +10394,8 @@ function aczoApplyRenderReserve(now,gap){
   ||!!fishTransition||!!anglingCameraTransition||!!anglingHallOfFameActive||anglingPhotoWallsActive()
   ||anglingMode&&['casting','drilling','landing','strike'].includes(anglingState);
  // Entry/transition code owns its framebuffer; do not resize during its flight.
- const scale=aczoRenderReserve.sample(now,gap,excluded,aczoGraphicsMode,base);
+ const scope=anglingMode?(typeof anglingCinematicView!=='undefined'&&anglingCinematicView==='underwater'?'uw':'shore'):'map';
+ const scale=aczoRenderReserve.sample(now,gap,excluded,aczoGraphicsMode,base,scope);
  if(excluded)return;
  const ratio=Math.max(.55,base*scale);
  if(Math.abs(renderer.getPixelRatio()-ratio)>.005){renderer.setPixelRatio(ratio);scheduleViewerResize();}
