@@ -27,8 +27,8 @@ for(const type of ['keydown','keyup'])window.addEventListener(type,event=>window
   const loader=document.getElementById('mapStartupLoader');if(loader){loader.classList.remove('is-done','is-ready');loader.style.opacity='1';loader.style.visibility='visible';}
   console.error('ACZO56 Startfehler:',error);
  };
- window.addEventListener('error',e=>{if(!boot.firstFrame&&e.target===window){stageError=e.error||new Error(e.message||'JavaScript-Startfehler');boot.fail(stageError);}});
- window.addEventListener('unhandledrejection',e=>{if(!boot.firstFrame){stageError=e.reason||new Error('Startvorbereitung fehlgeschlagen');boot.fail(stageError);}});
+ window.addEventListener('error',e=>{if(!boot.firstFrame&&e.target===window){if(!e.error&&/^script error\.?$/i.test(String(e.message||'').trim())){console.warn('ACZO56: fremder Skriptfehler beim Start ignoriert (z. B. Safari-Teilen-Menü).');return;}stageError=e.error||new Error(e.message||'JavaScript-Startfehler');boot.fail(stageError);}});
+ window.addEventListener('unhandledrejection',e=>{if(!boot.firstFrame){if(/^script error\.?$/i.test(String(e.reason&&e.reason.message!==undefined?e.reason.message:e.reason||'').trim())){console.warn('ACZO56: fremde Promise-Fehlermeldung beim Start ignoriert.');return;}stageError=e.reason||new Error('Startvorbereitung fehlgeschlagen');boot.fail(stageError);}});
  // OPT-1/OPT-2 (Performance 2026-11): cheap synchronous budget check for tight
  // build loops and frame-independent work slices. The loader still gets a real
  // animation frame at least every 50 ms.
@@ -10388,7 +10388,10 @@ function aczoCreateRenderReserve(){
  };
 }
 const aczoRenderReserve=aczoCreateRenderReserve();
+// RESERVE-R17: automatic resolution steps are off; the selected graphics setting is used unchanged.
+const ACZO_RENDER_RESERVE_ACTIVE=false;
 function aczoApplyRenderReserve(now,gap){
+ if(!ACZO_RENDER_RESERVE_ACTIVE)return;
  const base=aczoGraphicsTargetPixelRatio(),boot=window.__aczoSafeStart;
  const excluded=fishMode||!boot?.firstFrame||document.hidden||!!window.__aczoTransitionPrep?.working||!!window.__aczoTransitionPrep?.busy
   ||!!fishTransition||!!anglingCameraTransition||!!anglingHallOfFameActive||anglingPhotoWallsActive()
