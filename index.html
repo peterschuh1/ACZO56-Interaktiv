@@ -29347,15 +29347,17 @@ function anglingFeedStock(id){return Math.max(0,Math.floor(Number(anglingProgres
 function predatorPitPasteExpiresFor(lureId=anglingSelectedLureId){return Number(predatorPitPasteByLure.get(lureId))||0;}
 function predatorPitPasteActive(lureId=anglingSelectedLureId){return anglingUsesArtificialLure()&&Date.now()<predatorPitPasteExpiresFor(lureId);}
 function predatorPitPasteFactor(){return predatorPitPasteActive(anglingSelectedLureId)?PREDATOR_PIT_PASTE_BONUS:1;}
+// PASTE-R13: write icon texts only when they change (colour icon module keeps the icon).
+function aczoPasteSetText(element,value){if(!element)return;if(typeof aczoSetIconText==='function')aczoSetIconText(element,value);else if(element.textContent!==value)element.textContent=value;}
 function predatorPitPasteTimeLabel(lureId){const left=Math.max(0,predatorPitPasteExpiresFor(lureId)-Date.now());if(left<=0)return '';const sec=Math.ceil(left/1000),m=Math.floor(sec/60),ss=String(sec%60).padStart(2,'0');return m+':'+ss;}
 function updatePredatorPitPasteTimer(){
  const now=Date.now();let changed=false;for(const [id,expires] of predatorPitPasteByLure){if(now>=expires){predatorPitPasteByLure.delete(id);delete anglingProgress.predatorPitPasteExpiries[id];changed=true;}}if(changed)saveAnglingProgress({preserveXpRevision:true,skipCloudSync:true,skipEpSync:true});
  const label=predatorPitPasteTimeLabel(anglingSelectedLureId),active=!!label&&anglingUsesArtificialLure();
  const pasteTimerFishingState=['casting','lure-waiting','lure-retrieving','lure-attack','lure-missed'].includes(anglingState);
  const pasteTimerUiClear=!anglingUi.classList.contains('main-menu-open')&&!anglingUi.classList.contains('game-panel-open')&&!anglingUi.classList.contains('is-drilling')&&!anglingUi.classList.contains('is-landing')&&!anglingUi.classList.contains('is-caught')&&!anglingUi.classList.contains('is-catch-sequence');
- if(predatorPitPasteTimer){const underwater=anglingCinematicView==='underwater';predatorPitPasteTimer.classList.toggle('underwater',underwater);predatorPitPasteTimer.classList.toggle('shore',!underwater);predatorPitPasteTimer.classList.toggle('show',active&&anglingMode&&pasteTimerFishingState&&pasteTimerUiClear);if(active){const strong=predatorPitPasteTimer.querySelector('strong'),span=predatorPitPasteTimer.querySelector('span');if(strong)strong.textContent='☢ Lockpaste';if(span)span.textContent=label;}}
+ if(predatorPitPasteTimer){const underwater=anglingCinematicView==='underwater';predatorPitPasteTimer.classList.toggle('underwater',underwater);predatorPitPasteTimer.classList.toggle('shore',!underwater);predatorPitPasteTimer.classList.toggle('show',active&&anglingMode&&pasteTimerFishingState&&pasteTimerUiClear);if(active){const strong=predatorPitPasteTimer.querySelector(':scope > strong'),span=predatorPitPasteTimer.querySelector(':scope > span');aczoPasteSetText(strong,'☢ Lockpaste');if(span&&span.textContent!==label)span.textContent=label;}}
  // Restzeit direkt auf jedem behandelten Köder in der geöffneten Tacklebox aktualisieren.
- document.querySelectorAll('.angling-item-card[data-product^="lure:"]').forEach(card=>{const lureId=card.dataset.product.slice(5),badges=card.querySelector('.aczo-item-badges');if(!badges)return;let b=badges.querySelector('.aczo-paste-active');const t=predatorPitPasteTimeLabel(lureId);if(t){if(!b){b=document.createElement('span');b.className='aczo-paste-active';badges.append(b);}b.textContent='☢ Lockpaste '+t;}else b?.remove();});
+ document.querySelectorAll('.angling-item-card[data-product^="lure:"]').forEach(card=>{const lureId=card.dataset.product.slice(5),badges=card.querySelector('.aczo-item-badges');if(!badges)return;let b=badges.querySelector('.aczo-paste-active');const t=predatorPitPasteTimeLabel(lureId);if(t){if(!b){b=document.createElement('span');b.className='aczo-paste-active';badges.append(b);}aczoPasteSetText(b,'☢ Lockpaste '+t);}else b?.remove();});
 }
 function activatePredatorPitPaste(){const id='predator_pit_paste',lureId=anglingSelectedLureId;if(!anglingUsesArtificialLure()){showAnglingToast('Predatorpit Lockpaste kann nur auf einen montierten Kunstköder aufgetragen werden.',1700);return;}if(anglingFeedStock(id)<1){showAnglingToast('Keine Predatorpit Lockpaste mehr vorhanden.',1400);return;}if(predatorPitPasteActive(lureId)){showAnglingToast('Auf diesem Kunstköder wirkt die Lockpaste bereits.',1300);return;}anglingProgress.feedInventory[id]=anglingFeedStock(id)-1;const expires=Date.now()+PREDATOR_PIT_PASTE_DURATION;predatorPitPasteByLure.set(lureId,expires);anglingProgress.predatorPitPasteExpiries[lureId]=expires;saveAnglingProgress();predatorPitPasteFxLast.copy(anglingLure.position);predatorPitPasteFxHasLast=true;updatePredatorPitPasteTimer();renderAnglingBaitBox();showAnglingToast('Predatorpit Lockpaste auf '+(ANGLING_LURE_CATALOG[lureId]?.name||'Kunstköder')+' aufgetragen · 4 Minuten',1900);}
 function aczoSoftbaitDecorId(lureId=anglingSelectedLureId){
@@ -36517,7 +36519,7 @@ function updateAnglingFeedSystem(dt){
 
    const m=Math.floor(left/60000),s=Math.floor((left%60000)/1000);
    const shortName=spot.type==='premium'?'Premium':spot.type==='normal'?'Normal':'Günstig';
-   timer.textContent='🟡 Futterplatz '+(i+1)+' · '+shortName+' · '+m+':'+String(s).padStart(2,'0');
+   aczoPasteSetText(timer,'🟡 Futterplatz '+(i+1)+' · '+shortName+' · '+m+':'+String(s).padStart(2,'0'));
 
    const p=mesh.position.clone().project(camera),rect=renderer.domElement.getBoundingClientRect();
    if(p.z>-1&&p.z<1){
