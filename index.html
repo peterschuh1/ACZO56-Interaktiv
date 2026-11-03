@@ -31086,6 +31086,19 @@ function applyAnglingCloudPlayer(player,{force=false}={}){
   return true;
 }
 let aczoBadgeMaskSynced=false; // BADGE-R11: höchstens ein Nachreichen pro Sitzung
+// BADGE-R12: true when the API24 server lacks badges that follow from the saved state; then the local
+// revision is raised by one so the next normal sync is accepted and carries the badge mask.
+function aczoBadgeCatchUp(player){
+ if(aczoBadgeMaskSynced||!player||typeof player!=='object'||!Object.prototype.hasOwnProperty.call(player,'awards')||typeof aczoBadgeMask!=='function')return false;
+ const serverMask=(Number(player.awards&&player.awards.m)||0)>>>0,localMask=aczoBadgeMask();
+ if(((localMask&~serverMask)>>>0)===0)return false;
+ aczoBadgeMaskSynced=true;
+ anglingProgress.xpRevision=Math.max(Math.max(0,Math.floor(Number(player.revision)||0)),Math.max(0,Math.floor(Number(anglingProgress.xpRevision)||0)))+1;
+ anglingLastCloudSignature=anglingCloudSignature();
+ saveAnglingProgress({preserveXpRevision:true,skipCloudSync:true,skipEpSync:true});
+ window.setTimeout(()=>{try{aczoCardCache.clear();aczoCardLoads.clear();}catch(_e){}},20000);
+ return true;
+}
 async function loadAnglingPlayerCloud({skipShared=false,retryTransient=true}={}){
   if(aczoSessionUnverified())return false;
   const current=aczoCloudContext();
@@ -31190,16 +31203,7 @@ async function loadAnglingPlayerCloud({skipShared=false,retryTransient=true}={})
     }
     // BADGE-R11: Der Server (API24) kennt Abzeichen noch nicht, die sich aus dem gespeicherten Stand ergeben
     // (z. B. nach dem Update vor dem nächsten Fang): einmal einen normalen Abgleich senden. API23 sendet kein awards.
-    if(!aczoBadgeMaskSynced&&Object.prototype.hasOwnProperty.call(player,'awards')&&typeof aczoBadgeMask==='function'){
-      const serverMask=(Number(player.awards&&player.awards.m)||0)>>>0,localMask=aczoBadgeMask();
-      if(((localMask&~serverMask)>>>0)!==0){
-        aczoBadgeMaskSynced=true;
-        anglingProgress.xpRevision=Math.max(serverRevision,Math.max(0,Math.floor(Number(anglingProgress.xpRevision)||0)))+1;
-        anglingLastCloudSignature=anglingCloudSignature();
-        saveAnglingProgress({preserveXpRevision:true,skipCloudSync:true,skipEpSync:true});
-        await syncAnglingPlayerCloud();
-      }
-    }
+    if(aczoBadgeCatchUp(player))await syncAnglingPlayerCloud();
 
     anglingLastCloudSuccessAt=Date.now();
     anglingLastCloudMessage='Abgeglichen';
@@ -42248,6 +42252,7 @@ async function aczoFinishAccountLogin(data,generation=aczoAuthGeneration){
     aczoApplyAccountPlayer(data);
     anglingLastCloudSuccessAt=Date.now();anglingLastCloudMessage='Abgeglichen';updateAnglingCloudStatus();
     aczoInvalidatePublicData();aczoPreloadPublicData().catch(()=>{});
+    try{aczoBadgeCatchUp(data.player);}catch(_e){} // BADGE-R12: Kontositzung - Abzeichen einmal nachreichen
     if(Number(anglingProgress.xpRevision||0)>Number(data.player.revision||0))scheduleAnglingCloudSync(900);
     if(aczoStartAfterAccountLogin){
       aczoStartAfterAccountLogin=false;
