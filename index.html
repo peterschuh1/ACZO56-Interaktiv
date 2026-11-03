@@ -5180,20 +5180,28 @@ body.aczo-share-preview-open{overflow:hidden!important}
 #aczoBadgesCount{font-size:10px;line-height:1.3;color:#adc8b9}
 #aczoBadgesTrack{height:4px;border-radius:99px;background:rgba(211,236,220,.12);overflow:hidden;min-width:0}
 #aczoBadgesFill{display:block;height:100%;width:100%;transform:scaleX(0);transform-origin:left;border-radius:inherit;background:linear-gradient(90deg,#9e8e55,#dfcc87);transition:transform .45s ease}
-#aczoBadges .aczo-badge-group{margin:6px 0 4px;font-size:9.5px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:#adc8b9}
-#aczoBadges .aczo-badge-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px}
+#aczoBadges .aczo-badge-group{display:flex;align-items:center;gap:8px;flex:none;width:100%;min-height:40px;margin:0;padding:6px 10px;border-radius:10px;border:1px solid rgba(255,255,255,.12);background:rgba(255,255,255,.035);color:#adc8b9;font:inherit;letter-spacing:0;white-space:normal;text-align:left;cursor:pointer}
+#aczoBadges .aczo-badge-group-name{flex:1;min-width:0;font-size:9.5px;font-weight:700;letter-spacing:.06em;text-transform:uppercase}
+#aczoBadges .aczo-badge-group-count{flex:none;font-size:10px;font-weight:700;color:#d6e2d8}
+#aczoBadges .aczo-badge-group-count.is-complete{color:#ffe983}
+#aczoBadges .aczo-badge-group-chevron{flex:none;font-size:11px;line-height:1;transition:transform .18s ease}
+#aczoBadges .aczo-badge-group[aria-expanded="true"] .aczo-badge-group-chevron{transform:rotate(180deg)}
+#aczoBadges .aczo-badge-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px;margin:0 0 4px}
+#aczoBadges .aczo-badge-grid[hidden]{display:none!important}
 #aczoBadges .aczo-badge{display:flex;align-items:center;gap:7px;flex:none;min-width:0;min-height:42px;margin:0;padding:6px 8px;border-radius:10px;border:1px solid rgba(255,255,255,.12);background:rgba(255,255,255,.045);color:#d6e2d8;font:inherit;letter-spacing:0;white-space:normal;text-align:left;cursor:pointer}
+#aczoBadges .aczo-badge.is-open{grid-column:1/-1;align-items:flex-start;padding:8px 10px}
 #aczoBadges .aczo-badge-icon{flex:none;font-size:17px;line-height:1;filter:grayscale(1);opacity:.42}
 #aczoBadges .aczo-badge-text{display:block;min-width:0}
 #aczoBadges .aczo-badge b{display:block;font-size:10.5px;font-weight:700;line-height:1.25;overflow-wrap:anywhere}
 #aczoBadges .aczo-badge small{display:block;margin-top:1px;font-size:9.5px;font-weight:400;line-height:1.3;color:#9fb5a8;overflow-wrap:anywhere}
+#aczoBadges .aczo-badge .aczo-badge-need{display:none;margin-top:3px;font-size:10.5px;line-height:1.4;color:#e4ece5}
+#aczoBadges .aczo-badge.is-open .aczo-badge-need{display:block}
 #aczoBadges .aczo-badge.is-earned{border-color:rgba(255,215,72,.55);background:linear-gradient(135deg,rgba(88,65,5,.75),rgba(26,48,27,.88));color:#ffe983}
 #aczoBadges .aczo-badge.is-earned .aczo-badge-icon{filter:none;opacity:1}
 #aczoBadges .aczo-badge.is-earned small{color:rgba(255,255,255,.78)}
-#aczoBadges .aczo-badge[aria-pressed="true"]{outline:2px solid #dfcc87;outline-offset:1px}
-#aczoBadgesDetail{min-height:1.4em;padding:2px 1px 0;font-size:10.5px;line-height:1.45;color:#d6e2d8}
-#aczoBadgesDetail strong{color:#e9deb2;font-weight:700}
-@media (prefers-reduced-motion:reduce){#aczoBadgesFill{transition:none}}
+#aczoBadges .aczo-badge.is-earned .aczo-badge-need{color:#fff6d2}
+#aczoBadges .aczo-badge.is-open{outline:2px solid #dfcc87;outline-offset:1px}
+@media (prefers-reduced-motion:reduce){#aczoBadgesFill,#aczoBadges .aczo-badge-group-chevron{transition:none}}
 #aczoProfileRankFill{display:block;height:100%;width:100%;transform:scaleX(0);transform-origin:left;border-radius:inherit;background:linear-gradient(90deg,#9e8e55,#dfcc87);transition:transform .45s ease}
 #aczoAnglerCard .aczo-card-rank{display:block;margin:0 0 8px;color:#e9d99a;font-size:11.5px;font-weight:600;line-height:1.35;overflow-wrap:anywhere}
 
@@ -5909,7 +5917,6 @@ function aczoSetIconText(element,value){
                  <div class="aczo-badges-head"><strong>🏅 Abzeichen</strong><span id="aczoBadgesCount"></span></div>
                  <div id="aczoBadgesTrack" role="progressbar" aria-label="Erhaltene Abzeichen" aria-valuemin="0" aria-valuemax="20" aria-valuenow="0"><span id="aczoBadgesFill"></span></div>
                  <div id="aczoBadgesList"></div>
-                 <div id="aczoBadgesDetail" aria-live="polite"></div>
                </div>
                <div id="aczoAccountChoices" class="aczo-account-actions">
                  <button type="button" id="aczoShowRegister" class="angling-main-btn primary">🔐 Spielerkonto erstellen</button>
@@ -28308,7 +28315,7 @@ var ACZO_BADGES=[
  {id:'master',group:'Artenvielfalt',icon:'🌈',name:'Artenmeister',need:'Fange alle 27 Fischarten aus Weiher und Mosel.',state:()=>aczoBadgeSteps(aczoBadgeCount(ACZO_BADGE_ALL),27,'Arten')},
  {id:'predators',group:'Artenvielfalt',icon:'🦈',name:'Raubfisch-Quartett',need:'Fange Hecht, Zander, Barsch und Wels.',state:()=>aczoBadgeSteps(aczoBadgeCount(['pike','zander','perch','catfish']),4,'Arten')},
  {id:'carps',group:'Artenvielfalt',icon:'🎏',name:'Karpfen-Trio',need:'Fange Schuppen-, Spiegel- und Graskarpfen.',state:()=>aczoBadgeSteps(aczoBadgeCount(['carp','mirrorcarp','grasscarp']),3,'Arten')},
- {id:'koi',group:'Seltene Fische',icon:'🏅',name:'Hüter des gelben Koi',need:'Fange den gelben Koi des Weihers.',state:()=>aczoBadgeOnce(aczoBadgeHas('koi'))},
+ {id:'koi',group:'Seltene Fische',icon:'✨',name:'Hüter des gelben Koi',need:'Fange den gelben Koi des Weihers.',state:()=>aczoBadgeOnce(aczoBadgeHas('koi'))},
  {id:'mandarin',group:'Seltene Fische',icon:'🐉',name:'Bezwinger des Mandarin-Wels',need:'Fange den Mandarin-Wels der Mosel.',state:()=>aczoBadgeOnce(aczoBadgeHas('mandarin_catfish'))},
  {id:'sturgeon',group:'Seltene Fische',icon:'🦕',name:'Urfisch',need:'Fange einen Stör.',state:()=>aczoBadgeOnce(aczoBadgeHas('sturgeon'))},
  {id:'burbot',group:'Seltene Fische',icon:'🌙',name:'Nachtgespenst',need:'Fange eine Quappe.',state:()=>aczoBadgeOnce(aczoBadgeHas('burbot'))},
@@ -28326,6 +28333,8 @@ function aczoBadgeAnnounce(before,deferred){
  if(!Array.isArray(before)||typeof queueAnglingPostCatchNotice!=='function')return;
  for(const id of aczoBadgeEarnedIds()){if(before.includes(id))continue;const b=ACZO_BADGES.find(x=>x.id===id);if(b)queueAnglingPostCatchNotice('🏅 Neues Abzeichen: '+b.name+' · im Profil',2400,!!deferred);}
 }
+// Groups fold open on tap (all closed by default, the total stays visible above); a tapped
+// badge opens in place over the full row and shows its requirement there (no scrolling).
 function aczoUpdateProfileBadges(){
  const root=document.getElementById('aczoBadges');if(!root||!Array.isArray(ACZO_BADGES))return;
  const available=anglingSetupComplete&&!aczoSessionUnverified();
@@ -28337,29 +28346,45 @@ function aczoUpdateProfileBadges(){
  document.getElementById('aczoBadgesCount').textContent=earned+' von '+total+' erhalten';
  document.getElementById('aczoBadgesFill').style.transform='scaleX('+(total?earned/total:0)+')';
  const track=document.getElementById('aczoBadgesTrack');track.setAttribute('aria-valuenow',String(earned));track.setAttribute('aria-valuemax',String(total));
- const list=document.getElementById('aczoBadgesList'),selected=root.dataset.badgeSelected||'';
- list.textContent='';let grid=null,group='';
- ACZO_BADGES.forEach((b,i)=>{
-  if(b.group!==group){group=b.group;const h=document.createElement('div');h.className='aczo-badge-group';h.textContent=group;list.appendChild(h);grid=document.createElement('div');grid.className='aczo-badge-grid';list.appendChild(grid);}
-  const st=states[i],btn=document.createElement('button');btn.type='button';btn.className='aczo-badge'+(st.done?' is-earned':'');btn.dataset.badge=b.id;
-  btn.setAttribute('aria-pressed',b.id===selected?'true':'false');
-  const icon=document.createElement('span');icon.className='aczo-badge-icon';icon.setAttribute('aria-hidden','true');icon.textContent=b.icon;
-  const text=document.createElement('span');text.className='aczo-badge-text';
-  const name=document.createElement('b');name.textContent=b.name;const small=document.createElement('small');small.textContent=st.done?'Erhalten':st.prog;
-  text.append(name,small);btn.append(icon,text);
-  btn.setAttribute('aria-label',b.name+(st.done?', erhalten':', noch nicht erhalten'+(st.prog&&st.prog!=='Noch offen'?', '+st.prog:'')));
-  grid.appendChild(btn);
+ const list=document.getElementById('aczoBadgesList'),openGroups=(root.dataset.badgeOpenGroups||'').split('|').filter(Boolean),openBadge=root.dataset.badgeOpen||'';
+ list.textContent='';
+ const groups=[];ACZO_BADGES.forEach((b,i)=>{let g=groups.find(x=>x.name===b.group);if(!g){g={name:b.group,items:[]};groups.push(g);}g.items.push(i);});
+ groups.forEach((g,gi)=>{
+  const open=openGroups.includes(g.name),have=g.items.filter(i=>states[i].done).length;
+  const head=document.createElement('button');head.type='button';head.className='aczo-badge-group';head.dataset.badgeGroup=g.name;
+  head.id='aczoBadgeGroup'+gi;head.setAttribute('aria-expanded',open?'true':'false');head.setAttribute('aria-controls','aczoBadgeGrid'+gi);
+  const label=document.createElement('span');label.className='aczo-badge-group-name';label.textContent=g.name;
+  const count=document.createElement('span');count.className='aczo-badge-group-count'+(have===g.items.length?' is-complete':'');count.textContent=have+' / '+g.items.length;
+  const chevron=document.createElement('span');chevron.className='aczo-badge-group-chevron';chevron.setAttribute('aria-hidden','true');chevron.textContent='▾';
+  head.append(label,count,chevron);list.appendChild(head);
+  const grid=document.createElement('div');grid.className='aczo-badge-grid';grid.id='aczoBadgeGrid'+gi;grid.hidden=!open;
+  g.items.forEach(i=>{
+   const b=ACZO_BADGES[i],st=states[i],isOpen=b.id===openBadge,btn=document.createElement('button');
+   btn.type='button';btn.className='aczo-badge'+(st.done?' is-earned':'')+(isOpen?' is-open':'');btn.dataset.badge=b.id;btn.setAttribute('aria-expanded',isOpen?'true':'false');
+   const icon=document.createElement('span');icon.className='aczo-badge-icon';icon.setAttribute('aria-hidden','true');icon.textContent=b.icon;
+   const text=document.createElement('span');text.className='aczo-badge-text';
+   const name=document.createElement('b');name.textContent=b.name;
+   const status=document.createElement('small');status.className='aczo-badge-status';status.textContent=st.done?'Erhalten':st.prog;
+   const need=document.createElement('small');need.className='aczo-badge-need';need.textContent=b.need;
+   text.append(name,need,status);btn.append(icon,text);
+   btn.setAttribute('aria-label',b.name+(st.done?', erhalten':', noch nicht erhalten'+(st.prog&&st.prog!=='Noch offen'?', '+st.prog:'')));
+   grid.appendChild(btn);
+  });
+  list.appendChild(grid);
  });
- aczoShowBadgeDetail(selected,states);
- if(!list.dataset.badgeClick){list.dataset.badgeClick='1';list.addEventListener('click',e=>{const btn=e.target.closest('button[data-badge]');if(!btn)return;root.dataset.badgeSelected=btn.dataset.badge;list.querySelectorAll('button[data-badge]').forEach(x=>x.setAttribute('aria-pressed',x===btn?'true':'false'));aczoShowBadgeDetail(btn.dataset.badge);});}
-}
-function aczoShowBadgeDetail(id,states){
- const el=document.getElementById('aczoBadgesDetail');if(!el)return;
- const i=ACZO_BADGES.findIndex(b=>b.id===id);
- if(i<0){el.textContent='Tippe auf ein Abzeichen, um die Bedingung zu sehen.';return;}
- const b=ACZO_BADGES[i],st=(states||aczoBadgeStates())[i];
- el.textContent='';const name=document.createElement('strong');name.textContent=b.icon+' '+b.name;
- el.append(name,document.createTextNode(' · '+b.need+(st.done?' · Erhalten.':'')));
+ if(!list.dataset.badgeClick){list.dataset.badgeClick='1';list.addEventListener('click',e=>{
+  const head=e.target.closest('button[data-badge-group]');
+  if(head){
+   const name=head.dataset.badgeGroup,grid=document.getElementById(head.getAttribute('aria-controls'));const open=head.getAttribute('aria-expanded')!=='true';
+   head.setAttribute('aria-expanded',open?'true':'false');if(grid)grid.hidden=!open;
+   const set=new Set((root.dataset.badgeOpenGroups||'').split('|').filter(Boolean));if(open)set.add(name);else set.delete(name);root.dataset.badgeOpenGroups=[...set].join('|');
+   return;
+  }
+  const btn=e.target.closest('button[data-badge]');if(!btn)return;
+  const open=btn.getAttribute('aria-expanded')!=='true';
+  list.querySelectorAll('button[data-badge]').forEach(x=>{const on=open&&x===btn;x.classList.toggle('is-open',on);x.setAttribute('aria-expanded',on?'true':'false');});
+  root.dataset.badgeOpen=open?btn.dataset.badge:'';
+ });}
 }
 function aczoUpdateProfileRank(){
   try{aczoUpdateProfileBadges();}catch(_e){} // BADGE-R9
