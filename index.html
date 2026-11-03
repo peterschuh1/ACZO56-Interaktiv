@@ -5049,6 +5049,10 @@ body.aczo-share-preview-open{overflow:hidden!important}
 .aczo-card-stat{padding:14px;background:#c7fce408;border:1px solid #b6e6ca20;border-radius:13px}
 .aczo-card-stat strong{display:block;font-size:25px;line-height:1.2;color:#f5e2a6}.aczo-card-stat span{font-size:11px;color:#a9c9bb}
 .aczo-card-record{position:relative;border:1px solid #d2b15a55;border-radius:14px;background:linear-gradient(110deg,#d9b85316,#d9b85306);padding:16px}
+.aczo-card-badges{border:1px solid #d2b15a40;border-radius:14px;background:#d9b8530c;padding:12px 14px;margin:0 0 12px}
+.aczo-card-badge-list{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+.aczo-card-badge{display:inline-block;padding:4px 9px;border-radius:99px;border:1px solid rgba(255,215,72,.45);background:rgba(88,65,5,.45);color:#ffe983;font-size:11px;font-weight:700;line-height:1.3}
+.aczo-card-badge-wins{margin:8px 0 0;font-size:11.5px;color:#e9deb2}
 .aczo-card-record strong{display:block;font-size:19px;margin:7px 75px 0 0}.aczo-card-length{position:absolute;right:16px;bottom:16px;font-size:20px;font-weight:700;color:#f5dfa0}
 .aczo-card-since{font-size:11px!important;margin:15px 0 4px!important;color:#adc8bd}.aczo-card-note{font-size:10px!important;line-height:1.5;margin:8px 0 0!important;color:#88aa9a}
 .aczo-card-loading{padding:40px 12px;font-size:15px;text-align:center;color:#cbe4d6}
@@ -6203,7 +6207,7 @@ function aczoSetIconText(element,value){
          <section><h3>🌗 Aktivitätszeiten</h3><p>Hecht und Barsch sind morgens und abends aktiver, Zander auch bei Dunkelheit und Wolken. Aal und Wels bevorzugen Abend und Nacht. Zwischen 13 und 15 Uhr sinkt die allgemeine Beißlust.</p></section>
          <section><h3>📏 Fischgrößen &amp; Gewichte</h3><p>Große Fische sind selten und kämpfen stärker. Persönliche und öffentliche Rekorde werden gleich bewertet.</p></section>
          <section><h3>⭐ EP &amp; Shop</h3><p>Fänge bringen EP für den Shop. Deine Gesamt-EP bestimmen dauerhaft die Anglerstufe. Es gibt 20 Stufen bis 80.000 Gesamt-EP und zum Titel „ACZO56-Legende“. Den Fortschritt siehst du im Profil.</p></section>
-         <section><h3>🏅 Abzeichen</h3><p>Für besondere Fänge und Ziele gibt es 20 Abzeichen. Im Hauptmenü unter „Profil“ siehst du, welche du schon hast und was für die übrigen nötig ist. Abzeichen bleiben dauerhaft und gehören zu deinem Spielstand.</p></section>
+         <section><h3>🏅 Abzeichen</h3><p>Für besondere Fänge, Ziele und Wettbewerbe gibt es 24 Abzeichen. Seltene Abzeichen erscheinen bei sichtbarem Namen kurz als Meldung bei anderen Anglern. Im Hauptmenü unter „Profil“ siehst du, welche du schon hast und was für die übrigen nötig ist. Abzeichen bleiben dauerhaft und gehören zu deinem Spielstand.</p></section>
          <section><h3>🎯 Tagesaufgaben</h3><p>Jeden Spieltag warten drei Aufgaben mit EP-Belohnungen. Für alle drei gibt es einen Tagesbonus. Du findest sie jederzeit im Hauptmenü unter „Fortschritt“.</p></section>
          <section><h3>🏆 Highscore &amp; Bestenliste</h3><p>Bestfänge aus Weiher und Mosel zählen gemeinsam. Mit Anzeigename und Freigabe erscheinen deine Artenrekorde auch in der Online-Bestenliste.</p></section>
          <section><h3>✨ Hall of Fame</h3><p>Die Hall of Fame zeigt Ranglisten und besondere Ehrenfänge. Während der Präsentation pausiert das Spiel. „Zurück“ bringt dich wieder zum Angeln.</p></section>
@@ -6493,7 +6497,7 @@ Melde Fehler bitte mit Gerät, Browser und betroffenem Spielmodus.
 </div>
        <details class="help-note" style="cursor:pointer">
          <summary style="font-weight:800">Update-Historie</summary>
-          <div style="margin-top:8px;cursor:default;overflow-wrap:anywhere"><strong>V.4.2 · 03.11.2026</strong><ul style="padding-left:20px"><li>Schnellerer Spielstart und ruhigere Darstellung, vor allem bei Wald und Vegetation.</li><li>Hauptmenü neu gegliedert in Angeln, Fortschritt sowie Konto & Hilfe; Köderbox und Shop direkt unter „Angeln“. Kartenmenü mit den Bereichen Ansicht, Karte & Werkzeuge und Einstellungen.</li><li>Die Konzer Brücke wirft vollständige Schatten bei Sonne und Mond; Schiffsscheinwerfer beleuchten die Brücke.</li><li>Licht folgt dem echten Gelände: Hinter den Hügeln um Konz liegt das Tal abends früher und morgens länger im Schatten. Auch der Mond leuchtet erst, wenn er über dem Hügelkamm steht.</li><li>Dezentere Sonnen- und Mondspiegelung auf der Mosel, gleichmäßigere Wolkenspiegelung bei flachem Blick über das Wasser.</li><li>Neu: 20 Abzeichen im Profil für besondere Fänge und Ziele.</li><li>Pavillondach auch von unten sichtbar.</li><li>ZPC: Längen in ganzen Zentimetern, ab ,5 aufgerundet; Zeitwarnungen bei 5 Minuten, 1 Minute und 30 Sekunden.</li><li>Wettbewerbe: Die Infobox macht die Sicht frei, im ZPC von Wurf und Köderführung bis zum Keschern, beim Wettangeln während Drill und Keschern. Meldungen aus dieser Zeit erscheinen danach.</li></ul><strong>V.4.1 · 27.10.2026</strong><ul style="padding-left:20px"><li>Zewen Predator Cup mit sieben Anglern, 20 Minuten Dauer, freier Gewässerwahl und Punkte-Fangkarte. Erneute Teilnahme nach fünf Tagen.</li><li>Freies Erkunden am Weiher und an der Mosel, mit öffnenden Toren und direktem Wechsel zum Angeln.</li><li>Erweiterte Mosellandschaft bis zur Konzer Brücke mit Hafen, Zügen und Schiffsverkehr.</li><li>Moselangeln mit Strömung, Schiffssog und Wellen sowie eigener Fischpopulation und Unterwasserlandschaft.</li><li>Lebendige Umgebung mit Wasservogelfamilien, Fütterungen und Polizeiboot.</li></ul></div>
+          <div style="margin-top:8px;cursor:default;overflow-wrap:anywhere"><strong>V.4.2 · 03.11.2026</strong><ul style="padding-left:20px"><li>Schnellerer Spielstart und ruhigere Darstellung, vor allem bei Wald und Vegetation.</li><li>Hauptmenü neu gegliedert in Angeln, Fortschritt sowie Konto & Hilfe; Köderbox und Shop direkt unter „Angeln“. Kartenmenü mit den Bereichen Ansicht, Karte & Werkzeuge und Einstellungen.</li><li>Die Konzer Brücke wirft vollständige Schatten bei Sonne und Mond; Schiffsscheinwerfer beleuchten die Brücke.</li><li>Licht folgt dem echten Gelände: Hinter den Hügeln um Konz liegt das Tal abends früher und morgens länger im Schatten. Auch der Mond leuchtet erst, wenn er über dem Hügelkamm steht.</li><li>Dezentere Sonnen- und Mondspiegelung auf der Mosel, gleichmäßigere Wolkenspiegelung bei flachem Blick über das Wasser.</li><li>Neu: 24 Abzeichen im Profil für besondere Fänge, Ziele und Wettbewerbe; sie erscheinen auch auf der Anglerkarte.</li><li>Hall of Fame: Ehrentafel für den Mandarin-Wels, Erstfang von Koi und Mandarin-Wels, die meisten Abzeichen und die Pokalsieger von ZPC und Wettangeln.</li><li>Pavillondach auch von unten sichtbar.</li><li>ZPC: Längen in ganzen Zentimetern, ab ,5 aufgerundet; Zeitwarnungen bei 5 Minuten, 1 Minute und 30 Sekunden.</li><li>Wettbewerbe: Die Infobox macht die Sicht frei, im ZPC von Wurf und Köderführung bis zum Keschern, beim Wettangeln während Drill und Keschern. Meldungen aus dieser Zeit erscheinen danach.</li></ul><strong>V.4.1 · 27.10.2026</strong><ul style="padding-left:20px"><li>Zewen Predator Cup mit sieben Anglern, 20 Minuten Dauer, freier Gewässerwahl und Punkte-Fangkarte. Erneute Teilnahme nach fünf Tagen.</li><li>Freies Erkunden am Weiher und an der Mosel, mit öffnenden Toren und direktem Wechsel zum Angeln.</li><li>Erweiterte Mosellandschaft bis zur Konzer Brücke mit Hafen, Zügen und Schiffsverkehr.</li><li>Moselangeln mit Strömung, Schiffssog und Wellen sowie eigener Fischpopulation und Unterwasserlandschaft.</li><li>Lebendige Umgebung mit Wasservogelfamilien, Fütterungen und Polizeiboot.</li></ul></div>
           <div style="margin-top:8px;cursor:default;overflow-wrap:anywhere"><strong>V.3.3 · 08.10.2026</strong><ul style="padding-left:20px"><li>20 Erfahrungsstufen bis 80.000 Gesamt-EP mit Rangtiteln und Aufstiegsanimation.</li></ul></div>
           <div style="margin-top:8px;cursor:default;overflow-wrap:anywhere"><strong>V.3.1 · 06.10.2026</strong><ul style="padding-left:20px"><li>Wettangeln mit ausgelosten Angelplätzen, KI-Anglern und Siegerehrung.</li></ul></div>
           <div style="margin-top:8px;cursor:default;overflow-wrap:anywhere"><strong>V.3.0 · 04.10.2026</strong><ul style="padding-left:20px"><li>Bootsangeln mit der Sabrina, E-Motor und Hecksonar sowie versteckte Köderfunde.</li></ul></div>
@@ -28235,7 +28239,8 @@ function anglingCloudStateForSync(){
     selectedEquipment:anglingProgress.selectedEquipment||'',
     selectedRod:anglingProgress.selectedRod||'rod_standard',
     selectedNet:anglingProgress.selectedNet||'net_standard',
-    foundSpecies:(typeof fishFoundSpecies!=='undefined'&&fishFoundSpecies)?Array.from(fishFoundSpecies).sort():[]
+    foundSpecies:(typeof fishFoundSpecies!=='undefined'&&fishFoundSpecies)?Array.from(fishFoundSpecies).sort():[],
+    awards:aczoAwardsSanitize(anglingProgress.awards) // BADGE-R10
   };
 }
 function anglingCloudSignature(){
@@ -28305,31 +28310,62 @@ function aczoBadgeSteps(have,need,unit){return {done:have>=need,prog:aczoBadgeNu
 function aczoBadgeOnce(done){return {done:!!done,prog:'Noch offen'};}
 function aczoBadgeSize(species,min,label){const best=aczoBadgeBest(species);return {done:best>=min,prog:best>0?'Bester '+label+' '+formatAnglingLength(best):'Noch kein '+label};}
 var ACZO_BADGES=[
- {id:'first',group:'Erfahrung',icon:'🎣',name:'Petri Heil',need:'Fange deinen ersten Fisch.',state:()=>aczoBadgeOnce(aczoBadgeCatches()>=1)},
- {id:'catch100',group:'Erfahrung',icon:'🪣',name:'Hundert im Kescher',need:'Fange insgesamt 100 Fische.',state:()=>aczoBadgeSteps(aczoBadgeCatches(),100,'Fänge')},
- {id:'catch1000',group:'Erfahrung',icon:'🎖️',name:'Tausendfänger',need:'Fange insgesamt 1.000 Fische.',state:()=>aczoBadgeSteps(aczoBadgeCatches(),1000,'Fänge')},
- {id:'legend',group:'Erfahrung',icon:'👑',name:'ACZO56-Legende',need:'Erreiche Stufe 20.',state:()=>{const l=anglingLevelInfo().current.level;return {done:l>=20,prog:'Stufe '+l+' / 20'};}},
- {id:'species10',group:'Artenvielfalt',icon:'🐟',name:'Vielseitig',need:'Fange 10 verschiedene Fischarten.',state:()=>aczoBadgeSteps(aczoBadgeCount(ACZO_BADGE_ALL),10,'Arten')},
- {id:'pond',group:'Artenvielfalt',icon:'🐠',name:'Weiher komplett',need:'Fange alle 15 Fischarten des Weihers (ohne den gelben Koi).',state:()=>aczoBadgeSteps(aczoBadgeCount(ACZO_BADGE_POND),15,'Arten')},
- {id:'mosel',group:'Artenvielfalt',icon:'🌊',name:'Mosel komplett',need:'Fange alle 10 Fischarten, die es nur in der Mosel gibt (ohne den Mandarin-Wels).',state:()=>aczoBadgeSteps(aczoBadgeCount(ACZO_BADGE_MOSEL),10,'Arten')},
- {id:'master',group:'Artenvielfalt',icon:'🌈',name:'Artenmeister',need:'Fange alle 27 Fischarten aus Weiher und Mosel.',state:()=>aczoBadgeSteps(aczoBadgeCount(ACZO_BADGE_ALL),27,'Arten')},
- {id:'predators',group:'Artenvielfalt',icon:'🦈',name:'Raubfisch-Quartett',need:'Fange Hecht, Zander, Barsch und Wels.',state:()=>aczoBadgeSteps(aczoBadgeCount(['pike','zander','perch','catfish']),4,'Arten')},
- {id:'carps',group:'Artenvielfalt',icon:'🎏',name:'Karpfen-Trio',need:'Fange Schuppen-, Spiegel- und Graskarpfen.',state:()=>aczoBadgeSteps(aczoBadgeCount(['carp','mirrorcarp','grasscarp']),3,'Arten')},
- {id:'koi',group:'Seltene Fische',icon:'✨',name:'Hüter des gelben Koi',need:'Fange den gelben Koi des Weihers.',state:()=>aczoBadgeOnce(aczoBadgeHas('koi'))},
- {id:'mandarin',group:'Seltene Fische',icon:'🐉',name:'Bezwinger des Mandarin-Wels',need:'Fange den Mandarin-Wels der Mosel.',state:()=>aczoBadgeOnce(aczoBadgeHas('mandarin_catfish'))},
- {id:'sturgeon',group:'Seltene Fische',icon:'🦕',name:'Urfisch',need:'Fange einen Stör.',state:()=>aczoBadgeOnce(aczoBadgeHas('sturgeon'))},
- {id:'burbot',group:'Seltene Fische',icon:'🌙',name:'Nachtgespenst',need:'Fange eine Quappe.',state:()=>aczoBadgeOnce(aczoBadgeHas('burbot'))},
- {id:'pike120',group:'Trophäen',icon:'📏',name:'Kapitaler Meterhecht',need:'Fange einen Hecht ab 120 cm.',state:()=>aczoBadgeSize('pike',120,'Hecht')},
- {id:'catfish220',group:'Trophäen',icon:'🐋',name:'Zwei-Meter-Waller',need:'Fange einen Wels ab 220 cm.',state:()=>aczoBadgeSize('catfish',220,'Wels')},
- {id:'zander90',group:'Trophäen',icon:'🦷',name:'Großzander',need:'Fange einen Zander ab 90 cm.',state:()=>aczoBadgeSize('zander',90,'Zander')},
- {id:'trophy',group:'Trophäen',icon:'💎',name:'Kapitaler Fang',need:'Fange einen Fisch nahe der Höchstgröße seiner Art.',state:()=>aczoBadgeOnce(aczoBadgeTrophyCount()>=1)},
- {id:'trophy3',group:'Trophäen',icon:'🏆',name:'Trophäensammler',need:'Fange in 3 verschiedenen Arten einen Fisch nahe der Höchstgröße.',state:()=>aczoBadgeSteps(aczoBadgeTrophyCount(),3,'Arten')},
- {id:'boat',group:'Entdecker',icon:'🧭',name:'Schatzsucher',need:'Finde alle 3 Bootsfunde am Weiher.',state:()=>aczoBadgeSteps(aczoBadgeBoatFinds(),3,'Funde')}
+ {id:'first',bit:0,group:'Erfahrung',icon:'🎣',name:'Petri Heil',need:'Fange deinen ersten Fisch.',state:()=>aczoBadgeOnce(aczoBadgeCatches()>=1)},
+ {id:'catch100',bit:1,group:'Erfahrung',icon:'🪣',name:'Hundert im Kescher',need:'Fange insgesamt 100 Fische.',state:()=>aczoBadgeSteps(aczoBadgeCatches(),100,'Fänge')},
+ {id:'catch1000',bit:2,group:'Erfahrung',icon:'🎖️',name:'Tausendfänger',need:'Fange insgesamt 1.000 Fische.',state:()=>aczoBadgeSteps(aczoBadgeCatches(),1000,'Fänge')},
+ {id:'legend',bit:3,group:'Erfahrung',icon:'👑',name:'ACZO56-Legende',need:'Erreiche Stufe 20.',state:()=>{const l=anglingLevelInfo().current.level;return {done:l>=20,prog:'Stufe '+l+' / 20'};}},
+ {id:'species10',bit:4,group:'Artenvielfalt',icon:'🐟',name:'Vielseitig',need:'Fange 10 verschiedene Fischarten.',state:()=>aczoBadgeSteps(aczoBadgeCount(ACZO_BADGE_ALL),10,'Arten')},
+ {id:'pond',bit:5,group:'Artenvielfalt',icon:'🐠',name:'Weiher komplett',need:'Fange alle 15 Fischarten des Weihers (ohne den gelben Koi).',state:()=>aczoBadgeSteps(aczoBadgeCount(ACZO_BADGE_POND),15,'Arten')},
+ {id:'mosel',bit:6,group:'Artenvielfalt',icon:'🌊',name:'Mosel komplett',need:'Fange alle 10 Fischarten, die es nur in der Mosel gibt (ohne den Mandarin-Wels).',state:()=>aczoBadgeSteps(aczoBadgeCount(ACZO_BADGE_MOSEL),10,'Arten')},
+ {id:'master',bit:7,group:'Artenvielfalt',icon:'🌈',name:'Artenmeister',need:'Fange alle 27 Fischarten aus Weiher und Mosel.',state:()=>aczoBadgeSteps(aczoBadgeCount(ACZO_BADGE_ALL),27,'Arten')},
+ {id:'predators',bit:8,group:'Artenvielfalt',icon:'🦈',name:'Raubfisch-Quartett',need:'Fange Hecht, Zander, Barsch und Wels.',state:()=>aczoBadgeSteps(aczoBadgeCount(['pike','zander','perch','catfish']),4,'Arten')},
+ {id:'carps',bit:9,group:'Artenvielfalt',icon:'🎏',name:'Karpfen-Trio',need:'Fange Schuppen-, Spiegel- und Graskarpfen.',state:()=>aczoBadgeSteps(aczoBadgeCount(['carp','mirrorcarp','grasscarp']),3,'Arten')},
+ {id:'koi',bit:10,group:'Seltene Fische',icon:'✨',name:'Hüter des gelben Koi',need:'Fange den gelben Koi des Weihers.',state:()=>aczoBadgeOnce(aczoBadgeHas('koi'))},
+ {id:'mandarin',bit:11,group:'Seltene Fische',icon:'🐉',name:'Bezwinger des Mandarin-Wels',need:'Fange den Mandarin-Wels der Mosel.',state:()=>aczoBadgeOnce(aczoBadgeHas('mandarin_catfish'))},
+ {id:'sturgeon',bit:12,group:'Seltene Fische',icon:'🦕',name:'Urfisch',need:'Fange einen Stör.',state:()=>aczoBadgeOnce(aczoBadgeHas('sturgeon'))},
+ {id:'burbot',bit:13,group:'Seltene Fische',icon:'🌙',name:'Nachtgespenst',need:'Fange eine Quappe.',state:()=>aczoBadgeOnce(aczoBadgeHas('burbot'))},
+ {id:'pike120',bit:14,group:'Trophäen',icon:'📏',name:'Kapitaler Meterhecht',need:'Fange einen Hecht ab 120 cm.',state:()=>aczoBadgeSize('pike',120,'Hecht')},
+ {id:'catfish220',bit:15,group:'Trophäen',icon:'🐋',name:'Zwei-Meter-Waller',need:'Fange einen Wels ab 220 cm.',state:()=>aczoBadgeSize('catfish',220,'Wels')},
+ {id:'zander90',bit:16,group:'Trophäen',icon:'🦷',name:'Großzander',need:'Fange einen Zander ab 90 cm.',state:()=>aczoBadgeSize('zander',90,'Zander')},
+ {id:'trophy',bit:17,group:'Trophäen',icon:'💎',name:'Kapitaler Fang',need:'Fange einen Fisch nahe der Höchstgröße seiner Art.',state:()=>aczoBadgeOnce(aczoBadgeTrophyCount()>=1)},
+ {id:'trophy3',bit:18,group:'Trophäen',icon:'🏆',name:'Trophäensammler',need:'Fange in 3 verschiedenen Arten einen Fisch nahe der Höchstgröße.',state:()=>aczoBadgeSteps(aczoBadgeTrophyCount(),3,'Arten')},
+ {id:'boat',bit:19,group:'Entdecker',icon:'🧭',name:'Schatzsucher',need:'Finde alle 3 Bootsfunde am Weiher.',state:()=>aczoBadgeSteps(aczoBadgeBoatFinds(),3,'Funde')},
+ // BADGE-R10: Wettbewerbe (Zähler aus der Siegerehrung, gesichert in der Cloud-Zelle "Abzeichen JSON").
+ {id:'zpcFinish',bit:20,group:'Wettbewerbe',icon:'🎫',name:'Cup-Teilnehmer',need:'Spiele einen Zewen Predator Cup bis zur Siegerehrung.',state:()=>aczoBadgeOnce(aczoAwardsGet().zf>=1)},
+ {id:'zpcWin',bit:21,group:'Wettbewerbe',icon:'🥇',name:'Cup-Sieger',need:'Gewinne einen Zewen Predator Cup.',state:()=>aczoBadgeWins(aczoAwardsGet().zw)},
+ {id:'tourFinish',bit:22,group:'Wettbewerbe',icon:'🪝',name:'Wettangler',need:'Spiele ein Wettangeln bis zur Siegerehrung.',state:()=>aczoBadgeOnce(aczoAwardsGet().tf>=1)},
+ {id:'tourWin',bit:23,group:'Wettbewerbe',icon:'🏅',name:'Wettangel-Sieger',need:'Gewinne ein Wettangeln.',state:()=>aczoBadgeWins(aczoAwardsGet().tw)}
 ];
-function aczoBadgeStates(){return ACZO_BADGES.map(b=>{try{const st=b.state();return {done:!!st.done,prog:String(st.prog||'')};}catch(_e){return {done:false,prog:''};}});}
+// BADGE-R10: Zähler, Bitmaske und Meldungen.
+var ACZO_BADGE_LIVE_BITS=[2,3,5,6,7,14,15,18,19,21,23]; // seltene Abzeichen, gleiche Liste wie im Google-Code
+function aczoAwardsSanitize(v){const o=v&&typeof v==='object'&&!Array.isArray(v)?v:{},c=x=>Math.max(0,Math.min(100000,Math.floor(Number(x)||0)));const a={zf:c(o.zf),zw:c(o.zw),tf:c(o.tf),tw:c(o.tw)};a.zw=Math.min(a.zw,a.zf);a.tw=Math.min(a.tw,a.tf);return a;}
+function aczoAwardsGet(){if(!anglingProgress.awards||typeof anglingProgress.awards!=='object')anglingProgress.awards=aczoAwardsSanitize({});return anglingProgress.awards;}
+function aczoBadgeWins(n){n=Math.floor(Number(n)||0);return {done:n>=1,prog:'Noch offen',extra:n>1?n+' Siege':''};}
+function aczoBadgeMask(){let m=0;try{const st=aczoBadgeStates();ACZO_BADGES.forEach((b,i)=>{if(st[i].done&&Number.isInteger(b.bit)&&b.bit>=0&&b.bit<24)m|=1<<b.bit;});}catch(_e){}return m>>>0;}
+function aczoAwardsForSync(){const a=aczoAwardsSanitize(aczoAwardsGet());return {m:aczoBadgeMask(),zf:a.zf,zw:a.zw,tf:a.tf,tw:a.tw};}
+// Rare badges go to the live channel (the live module decides whether the server supports it).
+function aczoBadgeBroadcast(ids){for(const id of ids){const b=ACZO_BADGES.find(x=>x.id===id);if(b&&ACZO_BADGE_LIVE_BITS.includes(b.bit)){try{window.dispatchEvent(new CustomEvent('aczo-badge-earned',{detail:{bit:b.bit}}));}catch(_e){}}}}
+// Competition badges are announced once the ceremony is over and the player is back at the rod.
+function aczoBadgeAnnounceWhenFree(ids,tries=0){
+ const ui=typeof anglingUi!=='undefined'?anglingUi:null;
+ const busy=!ui||!anglingMode||anglingState!=='ready'||['aczo-tournament-active','aczo-tournament-cinematic','aczo-tournament-overlay-open','aczo-zpc-open'].some(c=>ui.classList.contains(c))
+  ||(typeof anglingCatchPresentationActive==='function'&&anglingCatchPresentationActive())||(typeof anglingGamePanelOpen==='function'&&anglingGamePanelOpen());
+ if(busy&&tries<800){window.setTimeout(()=>aczoBadgeAnnounceWhenFree(ids,tries+1),1500);return;}
+ for(const id of ids){const b=ACZO_BADGES.find(x=>x.id===id);if(b&&typeof queueAnglingPostCatchNotice==='function')queueAnglingPostCatchNotice('🏅 Neues Abzeichen: '+b.name+' · im Profil',2400,false);}
+}
+function aczoAwardsRecordCompetition(kind,won){
+ const before=aczoBadgeEarnedIds(),a=aczoAwardsSanitize(aczoAwardsGet());
+ if(kind==='zpc'){a.zf++;if(won)a.zw++;}else if(kind==='tour'){a.tf++;if(won)a.tw++;}else return;
+ anglingProgress.awards=aczoAwardsSanitize(a);
+ try{saveAnglingProgress();}catch(_e){}
+ const fresh=aczoBadgeEarnedIds().filter(id=>!before.includes(id));
+ if(fresh.length){aczoBadgeBroadcast(fresh);aczoBadgeAnnounceWhenFree(fresh);}
+}
+function aczoBadgeStates(){return ACZO_BADGES.map(b=>{try{const st=b.state();return {done:!!st.done,prog:String(st.prog||''),extra:String(st.extra||'')};}catch(_e){return {done:false,prog:'',extra:''};}});}
 function aczoBadgeEarnedIds(){const st=aczoBadgeStates();return ACZO_BADGES.filter((b,i)=>st[i].done).map(b=>b.id);}
 // Announce badges that a local event (catch, boat find) just completed. Never used for cloud loads.
 function aczoBadgeAnnounce(before,deferred){
+ try{if(Array.isArray(before))aczoBadgeBroadcast(aczoBadgeEarnedIds().filter(id=>!before.includes(id)));}catch(_e){} // BADGE-R10
  if(!Array.isArray(before)||typeof queueAnglingPostCatchNotice!=='function')return;
  for(const id of aczoBadgeEarnedIds()){if(before.includes(id))continue;const b=ACZO_BADGES.find(x=>x.id===id);if(b)queueAnglingPostCatchNotice('🏅 Neues Abzeichen: '+b.name+' · im Profil',2400,!!deferred);}
 }
@@ -28339,7 +28375,7 @@ function aczoUpdateProfileBadges(){
  const root=document.getElementById('aczoBadges');if(!root||!Array.isArray(ACZO_BADGES))return;
  const available=anglingSetupComplete&&!aczoSessionUnverified();
  root.hidden=!available;if(!available){root.dataset.badgeSignature='';return;}
- const states=aczoBadgeStates(),signature=String(anglingPlayerProfile.id||'')+'|'+states.map(s=>(s.done?'1':'0')+s.prog).join('|');
+ const states=aczoBadgeStates(),signature=String(anglingPlayerProfile.id||'')+'|'+states.map(s=>(s.done?'1':'0')+s.prog+s.extra).join('|');
  if(root.dataset.badgeSignature===signature)return;
  root.dataset.badgeSignature=signature;
  const earned=states.filter(s=>s.done).length,total=ACZO_BADGES.length;
@@ -28364,7 +28400,7 @@ function aczoUpdateProfileBadges(){
    const icon=document.createElement('span');icon.className='aczo-badge-icon';icon.setAttribute('aria-hidden','true');icon.textContent=b.icon;
    const text=document.createElement('span');text.className='aczo-badge-text';
    const name=document.createElement('b');name.textContent=b.name;
-   const status=document.createElement('small');status.className='aczo-badge-status';status.textContent=st.done?'Erhalten':st.prog;
+   const status=document.createElement('small');status.className='aczo-badge-status';status.textContent=st.done?'Erhalten'+(st.extra?' · '+st.extra:''):st.prog;
    const need=document.createElement('small');need.className='aczo-badge-need';need.textContent=b.need;
    text.append(name,need,status);btn.append(icon,text);
    btn.setAttribute('aria-label',b.name+(st.done?', erhalten':', noch nicht erhalten'+(st.prog&&st.prog!=='Noch offen'?', '+st.prog:'')));
@@ -30856,6 +30892,7 @@ function anglingCloudSyncPayload(){
     selectedRod:s.selectedRod,
     selectedNet:s.selectedNet,
     foundSpecies:s.foundSpecies,
+    awards:aczoAwardsForSync(), // BADGE-R10: ignored by API23, stored by API24
     // V8.90: Die Freigabe muss bei jedem Cloud-Abgleich mitgesendet werden.
     // Sonst interpretiert das Backend ein fehlendes Feld als false.
     presenceNameVisible:!!anglingPresenceNamed,
@@ -30932,7 +30969,9 @@ function anglingCloudPlayerStateSignature(player){
     selectedEquipment:typeof player.selectedEquipment==='string'?player.selectedEquipment:'',
     selectedRod:typeof player.selectedRod==='string'&&player.selectedRod?player.selectedRod:'rod_standard',
     selectedNet:typeof player.selectedNet==='string'&&player.selectedNet?player.selectedNet:'net_standard',
-    foundSpecies:Array.isArray(player.foundSpecies)?player.foundSpecies.filter(id=>fishDisplayNames[id]).sort():[]
+    foundSpecies:Array.isArray(player.foundSpecies)?player.foundSpecies.filter(id=>fishDisplayNames[id]).sort():[],
+    // BADGE-R10: an API23 server sends no awards -> compare with the local value (no false difference).
+    awards:aczoAwardsSanitize(Object.prototype.hasOwnProperty.call(player,'awards')?player.awards:anglingProgress.awards)
   };
   anglingApplyInventory(state.naturalInventory,player.naturalInventory);
   anglingApplyInventory(state.lureInventory,player.lureInventory);
@@ -30969,6 +31008,7 @@ function applyAnglingCloudPlayer(player,{force=false}={}){
   anglingProgress.baitfish=Math.max(0,Math.floor(Number(player.baitfish)||0));
   anglingProgress.records=anglingSanitizeCloudRecords(player.records);
   anglingProgress.moselRareCooldowns=aczoK42SanitizeCooldowns(player.moselRareCooldowns);
+  if(Object.prototype.hasOwnProperty.call(player,'awards'))anglingProgress.awards=aczoAwardsSanitize(player.awards); // BADGE-R10
 
   if(player.bonusState&&typeof player.bonusState==='object'){
     anglingProgress.bonusState.lastFirstCatchDay=
@@ -31740,6 +31780,7 @@ function refreshAnglingAfterFullReset(){
   anglingProgress.xp=0;
   anglingProgress.lifetimeXp=0;
   anglingProgress.totalCatches=0;
+  anglingProgress.awards={zf:0,zw:0,tf:0,tw:0};
   anglingProgress.boatFinds={};
   anglingProgress.baitfish=0;
   anglingProgress.records={};
@@ -31958,7 +31999,7 @@ async function resetAnglingEverything(){
     }
   }else{
     // Offline: dieselben Startwerte lokal herstellen.
-    anglingProgress.xp=0;anglingProgress.lifetimeXp=0;anglingProgress.totalCatches=0;
+    anglingProgress.xp=0;anglingProgress.lifetimeXp=0;anglingProgress.totalCatches=0;anglingProgress.awards={zf:0,zw:0,tf:0,tw:0};
     anglingProgress.baitfish=0;anglingProgress.records={};anglingProgress.bonusState={lastFirstCatchDay:''};anglingProgress.moselRareCooldowns={};
     Object.assign(anglingProgress.naturalInventory,{worm:18,maggot:24,corn:20,premium_corn:0,maggot_mix:0,mistworm:0,mini_boilie:0,dew_worm:0,sturgeon_pellet:0,boilie:0,popup:0,bank_worm_bundle:0});
     Object.assign(anglingProgress.lureInventory,{predatorpit_spinner:0,predatorpit_softbait:0,spinner_basic:1,softbait_basic:1,spinner_premium:0,softbait_premium:0,pike_special:0,zander_special:0,perch_special:0,catfish_special:0});
@@ -32364,6 +32405,28 @@ function buildAnglingHallOfFameSlides(){
       fireworks:3
     });
   }
+  // BADGE-R10 (API24): Erstfang, Mandarin-Wels, Abzeichen und Pokalsieger. Ältere Server liefern diese Felder nicht.
+  try{
+    const firstText=f=>{if(!f||!f.caughtAt)return '';const d=new Date(f.caughtAt);if(!Number.isFinite(d.getTime()))return '';
+      return ' Erstfang: '+(f.name?String(f.name).slice(0,30)+' am ':'am ')+d.toLocaleDateString('de-DE',{day:'numeric',month:'long',year:'numeric'})+'.';};
+    const koiSlide=slides.find(x=>x.kicker==='🏅 GELBER KOI · EHRENTAFEL');
+    if(koiSlide)koiSlide.detail+=firstText(hof?.firstCatches?.koi);
+    const mandarin=Array.isArray(hof?.mandarinCatchers)?hof.mandarinCatchers:[];
+    if(mandarin.length)slides.push({
+      kicker:'🐉 MANDARIN-WELS · EHRENTAFEL',
+      title:mandarin.length===1?'Ein besonderer Fang':mandarin.length+' eingetragene Fänger',
+      value:mandarin.map(r=>String(r.name||'Anonym').slice(0,30)).join(' · '),
+      detail:'Die veröffentlichten Fänger des einzigen Mandarin-Wels der Mosel.'+firstText(hof?.firstCatches?.mandarin),
+      fireworks:3
+    });
+    const total=typeof ACZO_BADGES!=='undefined'?ACZO_BADGES.length:24;
+    rankingSlide('🏅 ABZEICHEN','Die meisten Abzeichen',Array.isArray(hof?.badgeTop3)?hof.badgeTop3:[],
+      r=>(Number(r.value)||0)+' von '+total+' Abzeichen',"Es zählen Angler mit sichtbarem Namen.");
+    rankingSlide('🥇 ZEWEN PREDATOR CUP','Die meisten Cup-Siege',Array.isArray(hof?.cupWinnersTop3)?hof.cupWinnersTop3:[],
+      r=>{const n=Number(r.value)||0;return n+(n===1?' Sieg':' Siege');},"Gewonnene Zewen Predator Cups von Anglern mit sichtbarem Namen.");
+    rankingSlide('🏅 WETTANGELN','Die meisten Wettangel-Siege',Array.isArray(hof?.tournamentWinnersTop3)?hof.tournamentWinnersTop3:[],
+      r=>{const n=Number(r.value)||0;return n+(n===1?' Sieg':' Siege');},"Gewonnene Wettangeln von Anglern mit sichtbarem Namen.");
+  }catch(_e){}
 
   // Eine einzige persönliche Zusammenfassung statt fünf teilweise doppelter Folien.
   const info=anglingLevelInfo();
@@ -42408,6 +42471,18 @@ function aczoRenderAnglerCard(p){
     const tile=aczoTextNode('div','aczo-card-stat','');tile.append(aczoTextNode('strong','',Math.max(0,Number(value)||0).toLocaleString('de-DE')),aczoTextNode('span','',label));stats.append(tile);
   }
   body.append(stats);
+  // BADGE-R10 (API24): Abzeichen, die drei seltensten und Siege. Ältere Server senden nichts davon.
+  if(Number(p.badgeCount)>0&&typeof ACZO_BADGES!=='undefined'){
+    const box=aczoTextNode('div','aczo-card-badges','');
+    box.append(aczoTextNode('small','aczo-card-eyebrow','ABZEICHEN · '+Math.floor(Number(p.badgeCount))+' VON '+ACZO_BADGES.length));
+    const list=aczoTextNode('div','aczo-card-badge-list','');
+    (Array.isArray(p.rareBadges)?p.rareBadges:[]).slice(0,3).forEach(bit=>{const b=ACZO_BADGES.find(x=>x.bit===bit);if(b)list.append(aczoTextNode('span','aczo-card-badge',b.icon+' '+b.name));});
+    if(list.childNodes.length)box.append(list);
+    const wins=[];const zw=Math.floor(Number(p.zpcWins)||0),tw=Math.floor(Number(p.tournamentWins)||0);
+    if(zw>0)wins.push('🥇 '+zw+(zw===1?' Cup-Sieg':' Cup-Siege'));if(tw>0)wins.push('🏅 '+tw+(tw===1?' Wettangel-Sieg':' Wettangel-Siege'));
+    if(wins.length)box.append(aczoTextNode('p','aczo-card-badge-wins',wins.join(' · ')));
+    body.append(box);
+  }
   const record=aczoTextNode('div','aczo-card-record','');
   record.append(aczoTextNode('small','aczo-card-eyebrow','GRÖSSTER ÖFFENTLICHER FANG'));
   if(p.biggestCatch){
@@ -51301,7 +51376,7 @@ const ANGLING_LEADERBOARD_INTRO_KEY='aczo56-angling-leaderboard-intro-v1';
 <script type="application/x-aczo-stage" data-label="Angelwelt wird vorbereitet">
 let anglingWasExistingPlayerAtLoad=false;
 try{anglingWasExistingPlayerAtLoad=!!localStorage.getItem(ANGLING_STORAGE_KEY);}catch(err){}
-const anglingProgress={baitfish:0,totalCatches:0,xp:0,lifetimeXp:0,xpRevision:0,catches:[],records:{},bonusState:{lastFirstCatchDay:''},predatorPitPasteExpiries:{},
+const anglingProgress={baitfish:0,totalCatches:0,xp:0,lifetimeXp:0,xpRevision:0,catches:[],records:{},awards:{zf:0,zw:0,tf:0,tw:0},bonusState:{lastFirstCatchDay:''},predatorPitPasteExpiries:{},
   naturalInventory:{worm:18,maggot:24,corn:20,premium_corn:0,maggot_mix:0,mistworm:0,mini_boilie:0,dew_worm:0,sturgeon_pellet:0,boilie:0,popup:0,bank_worm_bundle:0},
   lureInventory:{predatorpit_spinner:0,predatorpit_softbait:0,spinner_basic:1,softbait_basic:1,spinner_premium:0,softbait_premium:0,pike_special:0,zander_special:0,perch_special:0,catfish_special:0},
   feedInventory:{cheap:0,normal:0,premium:0,predator_pit_paste:0},
@@ -51315,6 +51390,8 @@ try{
   anglingProgress.xp=Math.max(0,Math.floor(Number(saved.xp)||0));
   anglingProgress.lifetimeXp=Math.max(0,Math.floor(Number(saved.lifetimeXp)||0));
   anglingProgress.xpRevision=Math.max(0,Math.floor(Number(saved.xpRevision)||0));
+  // BADGE-R10: Wettbewerbszähler (fehlt in älteren Spielständen -> 0).
+  {const a=saved.awards&&typeof saved.awards==='object'&&!Array.isArray(saved.awards)?saved.awards:{},c=x=>Math.max(0,Math.min(100000,Math.floor(Number(x)||0)));anglingProgress.awards={zf:c(a.zf),zw:Math.min(c(a.zw),c(a.zf)),tf:c(a.tf),tw:Math.min(c(a.tw),c(a.tf))};}
   if(saved.moselRareCooldowns&&typeof saved.moselRareCooldowns==='object')anglingProgress.moselRareCooldowns=Object.fromEntries(Object.entries(saved.moselRareCooldowns).filter(([k,v])=>Number.isFinite(v)&&v>Date.now()&&v<Date.now()+21*60000));
   if(saved.bonusState&&typeof saved.bonusState==='object'){
     anglingProgress.bonusState.lastFirstCatchDay=typeof saved.bonusState.lastFirstCatchDay==='string'?saved.bonusState.lastFirstCatchDay:'';
@@ -56435,6 +56512,7 @@ function safelyEndFishing(){
 function grantPrize(){
   if(S.prizeGranted)return 0;S.prizeGranted=true;
   const rank=S.resultOrder.findIndex(p=>p.isPlayer)+1,prize=T.prizes[rank-1]||0;
+  try{if(typeof aczoAwardsRecordCompetition==='function')aczoAwardsRecordCompetition('tour',rank===1);}catch(_e){} // BADGE-R10
   if(prize>0){
     const oldLevel=anglingLevelInfo().current.level;
     anglingProgress.xp+=prize;anglingProgress.lifetimeXp+=prize;
@@ -57000,7 +57078,7 @@ function ai(now){
  }
 }
 function cleanWorld(){window.__aczoTransitionPrep?.cancel();anglingCameraTransition=null;try{resetAnglingCast();anglingBankClearRuntime();closeAnglingGamePanels();aczoExploreStop();if(aczoBoatActive())aczoBoatReset();aczoMoselFishingEnd();resetAnglingUnderwaterState(false);enforceAnglingSurfaceOnly();}catch(e){console.warn('ZPC Rückkehr:',e);}}
-function grant(){if(Z.prizeGranted)return;Z.prizeGranted=true;checkpoint();const rank=Z.resultOrder.findIndex(p=>p.isPlayer),xp=PRIZES[rank]||0;if(xp){const old=anglingLevelInfo().current.level;anglingProgress.xp+=xp;anglingProgress.lifetimeXp+=xp;saveAnglingProgress();const next=anglingLevelInfo().current.level;if(next>old)aczoQueueLevelUp(old,next);}updateAnglingSetupUi();}
+function grant(){if(Z.prizeGranted)return;Z.prizeGranted=true;checkpoint();const rank=Z.resultOrder.findIndex(p=>p.isPlayer),xp=PRIZES[rank]||0;try{if(typeof aczoAwardsRecordCompetition==='function')aczoAwardsRecordCompetition('zpc',rank===0);}catch(_e){} /* BADGE-R10 */if(xp){const old=anglingLevelInfo().current.level;anglingProgress.xp+=xp;anglingProgress.lifetimeXp+=xp;saveAnglingProgress();const next=anglingLevelInfo().current.level;if(next>old)aczoQueueLevelUp(old,next);}updateAnglingSetupUi();}
 function ceremony(){
  Z.phase='ending';ui.classList.add('aczo-tournament-cinematic');show(false);hud.classList.remove('show');cleanWorld();Z.resultOrder=sorted();restoreGear();grant();checkpoint();
  const generation=Z.generation;let finished=false;
@@ -57487,6 +57565,8 @@ setInterval(()=>{try{tick();}catch(e){console.warn('ZPC:',e);}},250);
   let queue=[],outgoing=[],current=null,shownUntil=0;
   const seen=new Map();
   const landedRecords=new WeakSet();
+  // BADGE-R10: Abzeichen-Meldungen. Nur senden, wenn der Abruf liveBadgeVersion 1 meldet (API24).
+  let badgeSupported=null;const outgoingBadges=[];
 
   function identity(){
     if(typeof anglingCloudEnabled==='undefined'||!anglingCloudEnabled||typeof anglingSetupComplete==='undefined'||!anglingSetupComplete
@@ -57526,7 +57606,7 @@ setInterval(()=>{try{tick();}catch(e){console.warn('ZPC:',e);}},250);
       if(current&&performance.now()>=shownUntil)hideCurrent(false);
       if(!current&&queue.length){
         current=queue.shift();shownUntil=performance.now()+5000;
-        toast.textContent=current.name+' hat gerade '+current.species+' gefangen · '+Number(current.cm).toFixed(1).replace('.',',')+' cm';
+        toast.textContent=current.text||(current.name+' hat gerade '+current.species+' gefangen · '+Number(current.cm).toFixed(1).replace('.',',')+' cm');
         toast.hidden=false;
       }
     }
@@ -57567,7 +57647,7 @@ setInterval(()=>{try{tick();}catch(e){console.warn('ZPC:',e);}},250);
       // Alte Google-Versionen dürfen niemals eine unbekannte POST-Action erhalten.
       if(data?.liveCatchVersion!==1){supported=false;outgoing=[];return;}
       if(data.ok!==true||!Number.isFinite(data.serverNow)||!Array.isArray(data.events))throw new Error('Ungültige Fangmeldungen.');
-      supported=true;
+      supported=true;badgeSupported=data.liveBadgeVersion===1;if(!badgeSupported)outgoingBadges.length=0;
       if(primed){
         for(const event of data.events){
           if(!event||typeof event.id!=='string'||event.id.length>160||seen.has(event.id)||event.playerId===data.viewerId
@@ -57576,10 +57656,17 @@ setInterval(()=>{try{tick();}catch(e){console.warn('ZPC:',e);}},250);
             ||!Number.isFinite(event.at)||event.at<cursor||event.at>data.serverNow||event.at<data.serverNow-TTL_MS)continue;
           seen.set(event.id,event.at);queue.push({name:event.name,species:event.species,cm:event.cm});
         }
+        if(data.liveBadgeVersion===1&&Array.isArray(data.badges))for(const event of data.badges){
+          const badge=typeof ACZO_BADGES!=='undefined'?ACZO_BADGES.find(b=>b.bit===event?.badge):null;
+          if(!badge||typeof event.id!=='string'||event.id.length>160||seen.has('b:'+event.id)||event.playerId===data.viewerId
+            ||typeof event.name!=='string'||event.name.length<2||event.name.length>30
+            ||!Number.isFinite(event.at)||event.at<cursor||event.at>data.serverNow||event.at<data.serverNow-TTL_MS)continue;
+          seen.set('b:'+event.id,event.at);queue.push({text:'🏅 '+event.name+' hat das Abzeichen „'+badge.name+'“ erhalten'});
+        }
       }
       cursor=Math.max(cursor,data.serverNow);primed=true;
       for(const [id,time] of seen)if(time<cursor-TTL_MS)seen.delete(id);
-      showNext();flushOutgoing();
+      showNext();flushOutgoing();flushBadges();
     }catch(_err){/* Bestehendes Spiel und Cloud-Speichern bleiben unabhängig. */}
     finally{
       window.clearTimeout(timeout);
@@ -57602,6 +57689,34 @@ setInterval(()=>{try{tick();}catch(e){console.warn('ZPC:',e);}},250);
       }
     }finally{if(generation===ownGeneration)publishing=false;}
   }
+  async function flushBadges(){
+    if(publishing||supported!==true||badgeSupported!==true||!actor)return;
+    const ownGeneration=generation;publishing=true;
+    try{
+      while(generation===ownGeneration&&actor&&outgoingBadges.length){
+        const event=outgoingBadges[0],owner=identity();
+        if(performance.now()-event.queuedAt>TTL_MS||typeof anglingPresenceNamed==='undefined'||!anglingPresenceNamed){outgoingBadges.shift();continue;}
+        // Earned during a competition: keep it until normal fishing resumes (within 5 minutes).
+        if(!owner||owner.key!==actor.key||!normalFishing()||!(owner.sessionToken||owner.recoveryCode))break;
+        outgoingBadges.shift();
+        try{
+          await anglingLeaderboardJson(ANGLING_LEADERBOARD_ENDPOINT,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},
+            body:JSON.stringify({action:'publishLiveBadge',playerId:owner.playerId,sessionToken:owner.sessionToken,recoveryCode:owner.recoveryCode,
+              presenceNameVisible:true,eventId:event.id,badge:event.badge})},18000);
+        }catch(_err){/* Flüchtige Meldung, kein erneuter Versuch. */}
+      }
+    }finally{if(generation===ownGeneration)publishing=false;}
+  }
+  window.addEventListener('aczo-badge-earned',event=>{
+    const bit=Number(event?.detail?.bit);if(!Number.isInteger(bit)||badgeSupported===false)return;
+    if(typeof anglingPresenceNamed==='undefined'||!anglingPresenceNamed)return;
+    let random='';
+    if(window.crypto?.getRandomValues){const bytes=new Uint32Array(2);window.crypto.getRandomValues(bytes);random=Array.from(bytes,n=>n.toString(36)).join('_');}
+    else random=Math.random().toString(36).slice(2)+'_'+Math.random().toString(36).slice(2);
+    outgoingBadges.push({id:'badge_'+Date.now().toString(36)+'_'+random,badge:bit,queuedAt:performance.now()});
+    if(outgoingBadges.length>6)outgoingBadges.shift();
+    syncSession();flushBadges();
+  });
   function landed(event){
     syncSession();
     const caught=event.detail;
