@@ -5194,7 +5194,9 @@ body.aczo-share-preview-open{overflow:hidden!important}
 #aczoBadges .aczo-badge-grid[hidden]{display:none!important}
 #aczoBadges .aczo-badge{display:flex;align-items:center;gap:7px;flex:none;min-width:0;min-height:42px;margin:0;padding:6px 8px;border-radius:10px;border:1px solid rgba(255,255,255,.12);background:rgba(255,255,255,.045);color:#d6e2d8;font:inherit;letter-spacing:0;white-space:normal;text-align:left;cursor:pointer}
 #aczoBadges .aczo-badge.is-open{grid-column:1/-1;align-items:flex-start;padding:8px 10px}
-#aczoBadges .aczo-badge-icon{flex:none;font-size:17px;line-height:1;filter:grayscale(1);opacity:.42}
+#aczoBadges .aczo-badge-icon{flex:none;font-size:17px;line-height:1;filter:grayscale(1);opacity:.42;font-family:"Apple Color Emoji","Segoe UI Emoji","Noto Color Emoji","Twemoji Mozilla","EmojiOne Color",sans-serif;font-variant-emoji:emoji}
+#aczoBadges .aczo-badges-head strong,.aczo-card-badge-wins{font-family:Arial,Helvetica,"Apple Color Emoji","Segoe UI Emoji","Noto Color Emoji","Twemoji Mozilla","EmojiOne Color",sans-serif}
+.aczo-card-badge-icon{font-family:"Apple Color Emoji","Segoe UI Emoji","Noto Color Emoji","Twemoji Mozilla","EmojiOne Color",sans-serif;font-variant-emoji:emoji}
 #aczoBadges .aczo-badge-text{display:block;min-width:0}
 #aczoBadges .aczo-badge b{display:block;font-size:10.5px;font-weight:700;line-height:1.25;overflow-wrap:anywhere}
 #aczoBadges .aczo-badge small{display:block;margin-top:1px;font-size:9.5px;font-weight:400;line-height:1.3;color:#9fb5a8;overflow-wrap:anywhere}
@@ -28308,34 +28310,50 @@ function aczoBadgeBoatFinds(){
 function aczoBadgeNum(n){return Math.floor(Number(n)||0).toLocaleString('de-DE');}
 function aczoBadgeSteps(have,need,unit){return {done:have>=need,prog:aczoBadgeNum(Math.min(have,need))+' / '+aczoBadgeNum(need)+' '+unit};}
 function aczoBadgeOnce(done){return {done:!!done,prog:'Noch offen'};}
-function aczoBadgeSize(species,min,label){const best=aczoBadgeBest(species);return {done:best>=min,prog:best>0?'Bester '+label+' '+formatAnglingLength(best):'Noch kein '+label};}
+function aczoBadgeSize(species,min,label){const best=aczoBadgeBest(species);return {done:best>=min,prog:best>0?'Bester '+label+' '+formatAnglingLength(best):'Noch kein '+label,extra:best>0?formatAnglingLength(best):''};}
 var ACZO_BADGES=[
  {id:'first',bit:0,group:'Erfahrung',icon:'🎣',name:'Petri Heil',need:'Fange deinen ersten Fisch.',state:()=>aczoBadgeOnce(aczoBadgeCatches()>=1)},
- {id:'catch100',bit:1,group:'Erfahrung',icon:'🪣',name:'Hundert im Kescher',need:'Fange insgesamt 100 Fische.',state:()=>aczoBadgeSteps(aczoBadgeCatches(),100,'Fänge')},
- {id:'catch1000',bit:2,group:'Erfahrung',icon:'🎖️',name:'Tausendfänger',need:'Fange insgesamt 1.000 Fische.',state:()=>aczoBadgeSteps(aczoBadgeCatches(),1000,'Fänge')},
- {id:'legend',bit:3,group:'Erfahrung',icon:'👑',name:'ACZO56-Legende',need:'Erreiche Stufe 20.',state:()=>{const l=anglingLevelInfo().current.level;return {done:l>=20,prog:'Stufe '+l+' / 20'};}},
- {id:'species10',bit:4,group:'Artenvielfalt',icon:'🐟',name:'Vielseitig',need:'Fange 10 verschiedene Fischarten.',state:()=>aczoBadgeSteps(aczoBadgeCount(ACZO_BADGE_ALL),10,'Arten')},
+ {id:'catch100',bit:1,group:'Erfahrung',icon:'💯',name:'Hundert im Kescher',need:'Fange insgesamt 100 Fische.',state:()=>aczoBadgeExtra(aczoBadgeSteps(aczoBadgeCatches(),100,'Fänge'),aczoBadgeNum(aczoBadgeCatches())+' Fänge')},
+ {id:'catch1000',bit:2,group:'Erfahrung',icon:'🌟',name:'Tausendfänger',need:'Fange insgesamt 1.000 Fische.',state:()=>aczoBadgeExtra(aczoBadgeSteps(aczoBadgeCatches(),1000,'Fänge'),aczoBadgeNum(aczoBadgeCatches())+' Fänge')},
+ {id:'legend',bit:3,group:'Erfahrung',icon:'👑',name:'ACZO56-Legende',need:'Erreiche Stufe 20.',state:()=>{const l=anglingLevelInfo().current.level;return {done:l>=20,prog:'Stufe '+l+' / 20',extra:aczoBadgeNum(anglingProgress.lifetimeXp)+' Gesamt-EP'};}},
+ {id:'species10',bit:4,group:'Artenvielfalt',icon:'🐟',name:'Vielseitig',need:'Fange 10 verschiedene Fischarten.',state:()=>{const k=aczoBadgeCount(ACZO_BADGE_ALL);return aczoBadgeExtra(aczoBadgeSteps(k,10,'Arten'),k+' Arten');}},
  {id:'pond',bit:5,group:'Artenvielfalt',icon:'🐠',name:'Weiher komplett',need:'Fange alle 15 Fischarten des Weihers (ohne den gelben Koi).',state:()=>aczoBadgeSteps(aczoBadgeCount(ACZO_BADGE_POND),15,'Arten')},
  {id:'mosel',bit:6,group:'Artenvielfalt',icon:'🌊',name:'Mosel komplett',need:'Fange alle 10 Fischarten, die es nur in der Mosel gibt (ohne den Mandarin-Wels).',state:()=>aczoBadgeSteps(aczoBadgeCount(ACZO_BADGE_MOSEL),10,'Arten')},
  {id:'master',bit:7,group:'Artenvielfalt',icon:'🌈',name:'Artenmeister',need:'Fange alle 27 Fischarten aus Weiher und Mosel.',state:()=>aczoBadgeSteps(aczoBadgeCount(ACZO_BADGE_ALL),27,'Arten')},
- {id:'predators',bit:8,group:'Artenvielfalt',icon:'🦈',name:'Raubfisch-Quartett',need:'Fange Hecht, Zander, Barsch und Wels.',state:()=>aczoBadgeSteps(aczoBadgeCount(['pike','zander','perch','catfish']),4,'Arten')},
+ {id:'predators',bit:8,group:'Artenvielfalt',icon:'⚡',name:'Raubfisch-Quartett',need:'Fange Hecht, Zander, Barsch und Wels.',state:()=>aczoBadgeSteps(aczoBadgeCount(['pike','zander','perch','catfish']),4,'Arten')},
  {id:'carps',bit:9,group:'Artenvielfalt',icon:'🎏',name:'Karpfen-Trio',need:'Fange Schuppen-, Spiegel- und Graskarpfen.',state:()=>aczoBadgeSteps(aczoBadgeCount(['carp','mirrorcarp','grasscarp']),3,'Arten')},
- {id:'koi',bit:10,group:'Seltene Fische',icon:'✨',name:'Hüter des gelben Koi',need:'Fange den gelben Koi des Weihers.',state:()=>aczoBadgeOnce(aczoBadgeHas('koi'))},
- {id:'mandarin',bit:11,group:'Seltene Fische',icon:'🐉',name:'Bezwinger des Mandarin-Wels',need:'Fange den Mandarin-Wels der Mosel.',state:()=>aczoBadgeOnce(aczoBadgeHas('mandarin_catfish'))},
- {id:'sturgeon',bit:12,group:'Seltene Fische',icon:'🦕',name:'Urfisch',need:'Fange einen Stör.',state:()=>aczoBadgeOnce(aczoBadgeHas('sturgeon'))},
- {id:'burbot',bit:13,group:'Seltene Fische',icon:'🌙',name:'Nachtgespenst',need:'Fange eine Quappe.',state:()=>aczoBadgeOnce(aczoBadgeHas('burbot'))},
+ {id:'koi',bit:10,group:'Seltene Fische',icon:'✨',name:'Hüter des gelben Koi',need:'Fange den gelben Koi des Weihers.',state:()=>aczoBadgeExtra(aczoBadgeOnce(aczoBadgeHas('koi')),aczoBadgeCatchDate('koi'))},
+ {id:'mandarin',bit:11,group:'Seltene Fische',icon:'🐉',name:'Bezwinger des Mandarin-Wels',need:'Fange den Mandarin-Wels der Mosel.',state:()=>aczoBadgeExtra(aczoBadgeOnce(aczoBadgeHas('mandarin_catfish')),aczoBadgeBestText('mandarin_catfish'))},
+ {id:'sturgeon',bit:12,group:'Seltene Fische',icon:'🐢',name:'Urfisch',need:'Fange einen Stör.',state:()=>aczoBadgeExtra(aczoBadgeOnce(aczoBadgeHas('sturgeon')),aczoBadgeBestText('sturgeon'))},
+ {id:'burbot',bit:13,group:'Seltene Fische',icon:'🌙',name:'Nachtgespenst',need:'Fange eine Quappe.',state:()=>aczoBadgeExtra(aczoBadgeOnce(aczoBadgeHas('burbot')),aczoBadgeBestText('burbot'))},
  {id:'pike120',bit:14,group:'Trophäen',icon:'📏',name:'Kapitaler Meterhecht',need:'Fange einen Hecht ab 120 cm.',state:()=>aczoBadgeSize('pike',120,'Hecht')},
  {id:'catfish220',bit:15,group:'Trophäen',icon:'🐋',name:'Zwei-Meter-Waller',need:'Fange einen Wels ab 220 cm.',state:()=>aczoBadgeSize('catfish',220,'Wels')},
- {id:'zander90',bit:16,group:'Trophäen',icon:'🦷',name:'Großzander',need:'Fange einen Zander ab 90 cm.',state:()=>aczoBadgeSize('zander',90,'Zander')},
- {id:'trophy',bit:17,group:'Trophäen',icon:'💎',name:'Kapitaler Fang',need:'Fange einen Fisch nahe der Höchstgröße seiner Art.',state:()=>aczoBadgeOnce(aczoBadgeTrophyCount()>=1)},
- {id:'trophy3',bit:18,group:'Trophäen',icon:'🏆',name:'Trophäensammler',need:'Fange in 3 verschiedenen Arten einen Fisch nahe der Höchstgröße.',state:()=>aczoBadgeSteps(aczoBadgeTrophyCount(),3,'Arten')},
- {id:'boat',bit:19,group:'Entdecker',icon:'🧭',name:'Schatzsucher',need:'Finde alle 3 Bootsfunde am Weiher.',state:()=>aczoBadgeSteps(aczoBadgeBoatFinds(),3,'Funde')},
+ {id:'zander90',bit:16,group:'Trophäen',icon:'👀',name:'Großzander',need:'Fange einen Zander ab 90 cm.',state:()=>aczoBadgeSize('zander',90,'Zander')},
+ {id:'trophy',bit:17,group:'Trophäen',icon:'💎',name:'Kapitaler Fang',need:'Fange einen Fisch nahe der Höchstgröße seiner Art.',state:()=>aczoBadgeExtra(aczoBadgeOnce(aczoBadgeTrophyCount()>=1),aczoBadgeTrophyBest())},
+ {id:'trophy3',bit:18,group:'Trophäen',icon:'🏆',name:'Trophäensammler',need:'Fange in 3 verschiedenen Arten einen Fisch nahe der Höchstgröße.',state:()=>{const k=aczoBadgeTrophyCount();return aczoBadgeExtra(aczoBadgeSteps(k,3,'Arten'),k+' Arten');}},
+ {id:'boat',bit:19,group:'Entdecker',icon:'💰',name:'Schatzsucher',need:'Finde alle 3 Bootsfunde am Weiher.',state:()=>aczoBadgeSteps(aczoBadgeBoatFinds(),3,'Funde')},
  // BADGE-R10: Wettbewerbe (Zähler aus der Siegerehrung, gesichert in der Cloud-Zelle "Abzeichen JSON").
- {id:'zpcFinish',bit:20,group:'Wettbewerbe',icon:'🎫',name:'Cup-Teilnehmer',need:'Spiele einen Zewen Predator Cup bis zur Siegerehrung.',state:()=>aczoBadgeOnce(aczoAwardsGet().zf>=1)},
- {id:'zpcWin',bit:21,group:'Wettbewerbe',icon:'🥇',name:'Cup-Sieger',need:'Gewinne einen Zewen Predator Cup.',state:()=>aczoBadgeWins(aczoAwardsGet().zw)},
- {id:'tourFinish',bit:22,group:'Wettbewerbe',icon:'🪝',name:'Wettangler',need:'Spiele ein Wettangeln bis zur Siegerehrung.',state:()=>aczoBadgeOnce(aczoAwardsGet().tf>=1)},
- {id:'tourWin',bit:23,group:'Wettbewerbe',icon:'🏅',name:'Wettangel-Sieger',need:'Gewinne ein Wettangeln.',state:()=>aczoBadgeWins(aczoAwardsGet().tw)}
+ {id:'zpcFinish',bit:20,group:'Wettbewerbe',icon:'🎫',name:'Cup-Teilnehmer',need:'Spiele einen Zewen Predator Cup bis zur Siegerehrung.',state:()=>{const n=aczoAwardsGet().zf;return aczoBadgeExtra(aczoBadgeOnce(n>=1),n>1?n+' Teilnahmen':'');}},
+ {id:'zpcWin',bit:21,group:'Wettbewerbe',icon:'🎆',name:'Cup-Sieger',need:'Gewinne einen Zewen Predator Cup.',state:()=>aczoBadgeWins(aczoAwardsGet().zw)},
+ {id:'tourFinish',bit:22,group:'Wettbewerbe',icon:'⏱️',name:'Wettangler',need:'Spiele ein Wettangeln bis zur Siegerehrung.',state:()=>{const n=aczoAwardsGet().tf;return aczoBadgeExtra(aczoBadgeOnce(n>=1),n>1?n+' Teilnahmen':'');}},
+ {id:'tourWin',bit:23,group:'Wettbewerbe',icon:'🎉',name:'Wettangel-Sieger',need:'Gewinne ein Wettangeln.',state:()=>aczoBadgeWins(aczoAwardsGet().tw)}
 ];
+// BADGE-R11: eigene Werte auf erhaltenen Abzeichen (Größe, Zahl, Datum).
+function aczoBadgeExtra(st,extra){st.extra=extra||'';return st;}
+function aczoBadgeBestText(species){const b=aczoBadgeBest(species);return b>0?formatAnglingLength(b):'';}
+function aczoBadgeCatchDate(species){
+ let t=Number(anglingProgress.records&&anglingProgress.records[species]&&anglingProgress.records[species].time)||0;
+ if(!(t>0)&&Array.isArray(anglingProgress.catches)){const c=anglingProgress.catches.find(x=>x&&x.species===species);t=Number(c&&c.time)||0;}
+ const d=new Date(t);return t>0&&Number.isFinite(d.getTime())?d.toLocaleDateString('de-DE'):'';
+}
+function aczoBadgeRange(species){
+ try{const k=typeof ACZO_K42_FISH!=='undefined'?ACZO_K42_FISH[species]:null;if(k&&Number(k.max)>Number(k.min))return [Number(k.min),Number(k.max)];}catch(_e){}
+ const r=typeof anglingCatchSizes!=='undefined'?anglingCatchSizes[species]:null;return Array.isArray(r)&&r.length>1&&Number(r[1])>Number(r[0])?[Number(r[0]),Number(r[1])]:null;
+}
+function aczoBadgeTrophyBest(){
+ let best=null;for(const sp of ACZO_BADGE_ALL){if(!aczoBadgeTrophy(sp))continue;const r=aczoBadgeRange(sp),cm=aczoBadgeBest(sp),q=r?(cm-r[0])/(r[1]-r[0]):0;if(!best||q>best.q)best={sp,cm,q};}
+ return best?(fishDisplayNames[best.sp]||best.sp)+' '+formatAnglingLength(best.cm):'';
+}
 // BADGE-R10: Zähler, Bitmaske und Meldungen.
 var ACZO_BADGE_LIVE_BITS=[2,3,5,6,7,14,15,18,19,21,23]; // seltene Abzeichen, gleiche Liste wie im Google-Code
 function aczoAwardsSanitize(v){const o=v&&typeof v==='object'&&!Array.isArray(v)?v:{},c=x=>Math.max(0,Math.min(100000,Math.floor(Number(x)||0)));const a={zf:c(o.zf),zw:c(o.zw),tf:c(o.tf),tw:c(o.tw)};a.zw=Math.min(a.zw,a.zf);a.tw=Math.min(a.tw,a.tf);return a;}
@@ -31067,6 +31085,7 @@ function applyAnglingCloudPlayer(player,{force=false}={}){
   refreshAnglingCommerceViews();
   return true;
 }
+let aczoBadgeMaskSynced=false; // BADGE-R11: höchstens ein Nachreichen pro Sitzung
 async function loadAnglingPlayerCloud({skipShared=false,retryTransient=true}={}){
   if(aczoSessionUnverified())return false;
   const current=aczoCloudContext();
@@ -31167,7 +31186,19 @@ async function loadAnglingPlayerCloud({skipShared=false,retryTransient=true}={})
        (serverRevision===localRevision&&serverSignature!==localSignature)){
       if(!applyAnglingCloudPlayer(player))return false;
     }else if(localRevision>serverRevision){
-      await syncAnglingPlayerCloud();
+      await syncAnglingPlayerCloud();aczoBadgeMaskSynced=true;
+    }
+    // BADGE-R11: Der Server (API24) kennt Abzeichen noch nicht, die sich aus dem gespeicherten Stand ergeben
+    // (z. B. nach dem Update vor dem nächsten Fang): einmal einen normalen Abgleich senden. API23 sendet kein awards.
+    if(!aczoBadgeMaskSynced&&Object.prototype.hasOwnProperty.call(player,'awards')&&typeof aczoBadgeMask==='function'){
+      const serverMask=(Number(player.awards&&player.awards.m)||0)>>>0,localMask=aczoBadgeMask();
+      if(((localMask&~serverMask)>>>0)!==0){
+        aczoBadgeMaskSynced=true;
+        anglingProgress.xpRevision=Math.max(serverRevision,Math.max(0,Math.floor(Number(anglingProgress.xpRevision)||0)))+1;
+        anglingLastCloudSignature=anglingCloudSignature();
+        saveAnglingProgress({preserveXpRevision:true,skipCloudSync:true,skipEpSync:true});
+        await syncAnglingPlayerCloud();
+      }
     }
 
     anglingLastCloudSuccessAt=Date.now();
@@ -32422,9 +32453,9 @@ function buildAnglingHallOfFameSlides(){
     const total=typeof ACZO_BADGES!=='undefined'?ACZO_BADGES.length:24;
     rankingSlide('🏅 ABZEICHEN','Die meisten Abzeichen',Array.isArray(hof?.badgeTop3)?hof.badgeTop3:[],
       r=>(Number(r.value)||0)+' von '+total+' Abzeichen',"Es zählen Angler mit sichtbarem Namen.");
-    rankingSlide('🥇 ZEWEN PREDATOR CUP','Die meisten Cup-Siege',Array.isArray(hof?.cupWinnersTop3)?hof.cupWinnersTop3:[],
+    rankingSlide('🎆 ZEWEN PREDATOR CUP','Die meisten Cup-Siege',Array.isArray(hof?.cupWinnersTop3)?hof.cupWinnersTop3:[],
       r=>{const n=Number(r.value)||0;return n+(n===1?' Sieg':' Siege');},"Gewonnene Zewen Predator Cups von Anglern mit sichtbarem Namen.");
-    rankingSlide('🏅 WETTANGELN','Die meisten Wettangel-Siege',Array.isArray(hof?.tournamentWinnersTop3)?hof.tournamentWinnersTop3:[],
+    rankingSlide('🎉 WETTANGELN','Die meisten Wettangel-Siege',Array.isArray(hof?.tournamentWinnersTop3)?hof.tournamentWinnersTop3:[],
       r=>{const n=Number(r.value)||0;return n+(n===1?' Sieg':' Siege');},"Gewonnene Wettangeln von Anglern mit sichtbarem Namen.");
   }catch(_e){}
 
@@ -42476,10 +42507,10 @@ function aczoRenderAnglerCard(p){
     const box=aczoTextNode('div','aczo-card-badges','');
     box.append(aczoTextNode('small','aczo-card-eyebrow','ABZEICHEN · '+Math.floor(Number(p.badgeCount))+' VON '+ACZO_BADGES.length));
     const list=aczoTextNode('div','aczo-card-badge-list','');
-    (Array.isArray(p.rareBadges)?p.rareBadges:[]).slice(0,3).forEach(bit=>{const b=ACZO_BADGES.find(x=>x.bit===bit);if(b)list.append(aczoTextNode('span','aczo-card-badge',b.icon+' '+b.name));});
+    (Array.isArray(p.rareBadges)?p.rareBadges:[]).slice(0,3).forEach(bit=>{const b=ACZO_BADGES.find(x=>x.bit===bit);if(b){const chip=aczoTextNode('span','aczo-card-badge','');chip.append(aczoTextNode('span','aczo-card-badge-icon',b.icon),document.createTextNode(' '+b.name));list.append(chip);}});
     if(list.childNodes.length)box.append(list);
     const wins=[];const zw=Math.floor(Number(p.zpcWins)||0),tw=Math.floor(Number(p.tournamentWins)||0);
-    if(zw>0)wins.push('🥇 '+zw+(zw===1?' Cup-Sieg':' Cup-Siege'));if(tw>0)wins.push('🏅 '+tw+(tw===1?' Wettangel-Sieg':' Wettangel-Siege'));
+    if(zw>0)wins.push('🎆 '+zw+(zw===1?' Cup-Sieg':' Cup-Siege'));if(tw>0)wins.push('🎉 '+tw+(tw===1?' Wettangel-Sieg':' Wettangel-Siege'));
     if(wins.length)box.append(aczoTextNode('p','aczo-card-badge-wins',wins.join(' · ')));
     body.append(box);
   }
